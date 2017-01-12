@@ -41,6 +41,11 @@ web3._extend({
 			params: 1
 		}),
 		new web3._extend.Method({
+			name: 'removePeer',
+			call: 'admin_removePeer',
+			params: 1
+		}),
+		new web3._extend.Method({
 			name: 'exportChain',
 			call: 'admin_exportChain',
 			params: 1,
@@ -383,22 +388,15 @@ web3._extend({
 			params: 2
 		}),
 		new web3._extend.Method({
-			name: 'signAndSendTransaction',
-			call: 'personal_signAndSendTransaction',
-			params: 2,
-			inputFormatter: [web3._extend.formatters.inputTransactionFormatter, null]
-		}),
-		new web3._extend.Method({
-			name: 'sendTransaction',
-			call: 'personal_sendTransaction',
-			params: 2,
-			inputFormatter: [web3._extend.formatters.inputTransactionFormatter, null]
+			name: 'sign',
+			call: 'personal_sign',
+			params: 3,
+			inputFormatter: [null, web3._extend.formatters.inputAddressFormatter, null]
 		}),
 		new web3._extend.Method({
 			name: 'ecRecover',
 			call: 'personal_ecRecover',
-			params: 2,
-			inputFormatter: [null, null]
+			params: 2
 		})
 	]
 });
