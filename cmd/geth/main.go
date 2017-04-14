@@ -229,7 +229,11 @@ func initGenesis(ctx *cli.Context) {
 		log.Fatal("need path argument to genesis JSON file")
 	}
 
-	chainDB, err := ethdb.NewLDBDatabase(filepath.Join(MustMakeDataDir(ctx), "chaindata"), 0, 0)
+	// TODO: optimize number of max cache handles by OS
+	// see https://github.com/google/leveldb/issues/181 and https://godoc.org/github.com/syndtr/goleveldb/leveldb/opt#Options
+	// for reference issue possibly related to too low file number
+	// (apparently there is a clamp to 64 now)
+	chainDB, err := ethdb.NewLDBDatabase(filepath.Join(MustMakeDataDir(ctx), "chaindata"), 0, 1023)
 	if err != nil {
 		log.Fatal("could not open database: ", err)
 	}
