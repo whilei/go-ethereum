@@ -1309,7 +1309,6 @@ func TestEIP155Transition(t *testing.T) {
 		funds   = big.NewInt(1000000000)
 		genesis = WriteGenesisBlockForTesting(db, GenesisAccount{address, funds})
 		config  = &ChainConfig{
-			ChainId: big.NewInt(1),
 			Forks: []*Fork{
 				{
 					Name:  "Homestead",
@@ -1387,7 +1386,7 @@ func TestEIP155Transition(t *testing.T) {
 			}
 			block.AddTx(tx)
 
-			tx, err = basicTx(types.NewChainIdSigner(config.ChainId))
+			tx, err = basicTx(types.NewChainIdSigner(big.NewInt(1)))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1399,7 +1398,7 @@ func TestEIP155Transition(t *testing.T) {
 			}
 			block.AddTx(tx)
 
-			tx, err = basicTx(types.NewChainIdSigner(config.ChainId))
+			tx, err = basicTx(types.NewChainIdSigner(big.NewInt(1)))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1428,7 +1427,6 @@ func TestEIP155Transition(t *testing.T) {
 
 	// generate an invalid chain id transaction
 	config = &ChainConfig{
-		ChainId: big.NewInt(2),
 		Forks: []*Fork{
 			{
 				Name:  "Homestead",

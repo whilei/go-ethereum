@@ -825,7 +825,19 @@ func (s *PublicBlockChainAPI) rpcOutputBlock(b *types.Block, inclTx bool, fullTx
 		if fullTx {
 			formatTx = func(tx *types.Transaction) (interface{}, error) {
 				if tx.Protected() {
-					tx.SetSigner(types.NewChainIdSigner(s.bc.Config().ChainId))
+					signer := types.ChainIdSigner{}
+					if s.bc.Config().IsDiehard(b.Number()) {
+						feat, _, ok := s.bc.Config().GetFeature(b.Number(), "eip155")
+						if !ok {
+							panic("required eip155 not configured for diehard fork")
+						}
+						chainID, ok := feat.GetBigInt("chainID")
+						if !ok {
+							panic("required eip155 chainID option not configured")
+						}
+						signer = types.NewChainIdSigner(chainID)
+					}
+					tx.SetSigner(signer)
 				}
 				return newRPCTransaction(b, tx.Hash())
 			}

@@ -125,10 +125,11 @@ type ChainIdSigner struct {
 	chainId, chainIdMul *big.Int
 }
 
-func NewChainIdSigner(chainId *big.Int) ChainIdSigner {
+func NewChainIdSigner(chainID *big.Int) ChainIdSigner {
+
 	return ChainIdSigner{
-		chainId:    chainId,
-		chainIdMul: new(big.Int).Mul(chainId, big.NewInt(2)),
+		chainId:    chainID,
+		chainIdMul: new(big.Int).Mul(chainID, big.NewInt(2)),
 	}
 }
 

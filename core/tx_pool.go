@@ -78,9 +78,10 @@ type TxPool struct {
 }
 
 func NewTxPool(config *ChainConfig, eventMux *event.TypeMux, currentStateFn stateFn, gasLimitFn func() *big.Int) *TxPool {
+
 	pool := &TxPool{
 		config:       config,
-		signer:       types.NewChainIdSigner(config.ChainId),
+		signer:       types.ChainIdSigner{}, // will be replaced per event
 		pending:      make(map[common.Hash]*types.Transaction),
 		queue:        make(map[common.Address]map[common.Hash]*types.Transaction),
 		eventMux:     eventMux,
@@ -110,6 +111,17 @@ func (pool *TxPool) eventLoop() {
 			pool.mu.Lock()
 			if ev.Block != nil && pool.config.IsHomestead(ev.Block.Number()) {
 				pool.homestead = true
+			}
+			if ev.Block != nil && pool.config.IsDiehard(ev.Block.Number()) {
+				feat, _, ok := pool.config.GetFeature(ev.Block.Number(), "eip155")
+				if !ok {
+					panic("required eip155 not configured for diehard fork")
+				}
+				val, ok := feat.GetBigInt("chainID")
+				if !ok {
+					panic("required eip155 chainID option not configured")
+				}
+				pool.signer = types.NewChainIdSigner(val)
 			}
 
 			pool.resetState()

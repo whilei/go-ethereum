@@ -32,7 +32,7 @@ import (
 
 func testChainConfig() *ChainConfig {
 	return &ChainConfig{
-		ChainId: big.NewInt(2),
+		//ChainId: big.NewInt(2),
 		Forks: []*Fork{
 			{
 				Name:  "Homestead",

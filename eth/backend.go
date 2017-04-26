@@ -151,7 +151,16 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 	if err != nil {
 		return nil, err
 	}
-	glog.V(logger.Info).Infof("Protocol Versions: %v, Network Id: %v, Chain Id: %v", ProtocolVersions, config.NetworkId, config.ChainConfig.ChainId)
+	cid := new(big.Int)
+	feat, _, ok := config.ChainConfig.GetFeature(config.ChainConfig.ForkByName("Diehard").Block, "eip155")
+	if ok {
+		val, ok := feat.GetBigInt("chainID")
+		if !ok {
+			panic("eip155 feature value not configured")
+		}
+		cid = val
+	}
+	glog.V(logger.Info).Infof("Protocol Versions: %v, Network Id: %v, Chain Id: %v", ProtocolVersions, config.NetworkId, cid)
 
 	// Load up any custom genesis block if requested
 	if config.Genesis != nil {

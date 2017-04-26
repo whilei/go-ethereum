@@ -356,15 +356,29 @@ func (self *worker) makeCurrent(parent *types.Block, header *types.Header) error
 	if err != nil {
 		return err
 	}
+
 	work := &Work{
 		config:    self.config,
-		signer:    types.NewChainIdSigner(self.config.ChainId),
+		signer:    types.ChainIdSigner{},
 		state:     state,
 		ancestors: set.New(),
 		family:    set.New(),
 		uncles:    set.New(),
 		header:    header,
 		createdAt: time.Now(),
+	}
+
+	blockNum := big.NewInt(0).Add(parent.Number(), big.NewInt(1))
+	if self.config.IsDiehard(blockNum) {
+		feat, _, ok := self.config.GetFeature(blockNum, "eip155")
+		if !ok {
+			panic("required eip155 not configured for diehard fork")
+		}
+		chainID, ok := feat.GetBigInt("chainID")
+		if !ok {
+			panic("required eip155 chainID option not configured")
+		}
+		work.signer = types.NewChainIdSigner(chainID)
 	}
 
 	// when 08 is processed ancestors contain 07 (quick block)

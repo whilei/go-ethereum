@@ -85,11 +85,8 @@ type GenesisAccount struct {
 // that any network, identified by its genesis block, can have its own
 // set of configuration options.
 type ChainConfig struct {
-	ChainId *big.Int `json:"chainID"` // don't include in JSON... ?
-
 	// Forks holds fork block requirements. See ErrHashKnownFork.
 	Forks Forks `json:"forks"`
-
 	// BadHashes holds well known blocks with consensus issues. See ErrHashKnownBad.
 	BadHashes []*BadHash `json:"badHashes"`
 }
