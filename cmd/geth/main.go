@@ -39,6 +39,7 @@ import (
 	"github.com/ethereumproject/go-ethereum/logger/glog"
 	"github.com/ethereumproject/go-ethereum/metrics"
 	"github.com/ethereumproject/go-ethereum/node"
+	"github.com/davecgh/go-spew/spew"
 )
 
 // Version is the application revision identifier. It can be set with the linker
@@ -60,6 +61,7 @@ func makeCLIApp() (app *cli.App) {
 		upgradedbCommand,
 		removedbCommand,
 		dumpCommand,
+		statusCommand,
 		rollbackCommand,
 		monitorCommand,
 		accountCommand,
@@ -257,6 +259,12 @@ func geth(ctx *cli.Context) error {
 	startNode(ctx, node)
 	node.Wait()
 
+	return nil
+}
+
+func status(ctx *cli.Context) error {
+	node := MakeSystemNode(Version, ctx)
+	glog.V(logger.Info).Info(spew.Sdump(node))
 	return nil
 }
 
