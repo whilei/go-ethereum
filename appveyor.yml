@@ -19,7 +19,7 @@ install:
   - go env
   - go get golang.org/x/sys/windows
 build_script:
-  - go test -v go test -v -tags=\"$(git log -1 --pretty=%B | grep -o "skip:.*" | sed 's/skip\://')\" ./...
+  - go test -v ./...
   - go build -ldflags "-X main.Version=%VERSION%" ./cmd/geth
   - 7z a geth-classic-win64-%VERSION%.zip geth.exe
 artifacts:
