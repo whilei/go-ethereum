@@ -5,6 +5,16 @@
 
 setup() {
 
+	# Optionally skip migration tests.
+	# These depend on curl download various geth versions, which sometimes times out
+	# in the CI env. If changes are made to or around migration-related code, this 
+	# env variable should NOT be set. However, if these tests have run and passed
+	# consistently multiple times in the CI environment, it may be considered safe
+	# to skip them to avoid CI false negatives.
+	if [ "$SKIP_MIGRATION_TESTS" ]; then
+		skip "skipping 3.4 migration change tests for CI environment"
+	fi
+
 	# A temporary place to hold current test datadir.
 	DATA_DIR=`mktemp -d`
 

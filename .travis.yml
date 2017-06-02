@@ -20,7 +20,7 @@ script:
 - sed -E 's/v([[:digit:]]+\.[[:digit:]]+)\.[[:digit:]]-([[:digit:]]+).+/v\1.\2/' version.txt > version-only.txt
 - sed -E 's/v([[:digit:]]+\.[[:digit:]]+)\.[[:digit:]]-([[:digit:]]+).+/v\1.x/' version.txt > version-base.txt
 - go build -ldflags "-X main.Version="`cat version-app.txt` ./cmd/geth
-- bats cmd/geth
+- env SKIP_MIGRATION_TESTS=true bats cmd/geth
 - zip geth-classic-$TRAVIS_OS_NAME-$(cat version-app.txt).zip geth
 - sed -E "s/APPVERSION/$(cat version-base.txt)/" bintray.tpl.json > bintray.json
 
