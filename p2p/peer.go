@@ -49,6 +49,23 @@ const (
 	peersMsg     = 0x05
 )
 
+var discard = Protocol{
+	Name:   "discard",
+	Length: 1,
+	Run: func(p *Peer, rw MsgReadWriter) error {
+		for {
+			msg, err := rw.ReadMsg()
+			if err != nil {
+				return err
+			}
+			fmt.Printf("discarding %d\n", msg.Code)
+			if err = msg.Discard(); err != nil {
+				return err
+			}
+		}
+	},
+}
+
 // protoHandshake is the RLP structure of the protocol handshake.
 type protoHandshake struct {
 	Version    uint64

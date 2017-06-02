@@ -14,7 +14,7 @@ before_install:
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install bats; fi
 
 script:
-- go test -v -short ./...
+- go test -v -tags=\""$(git log -1 --pretty=%B | grep -o "skip:.*" | sed 's/skip\://')"\" ./...
 - git describe --tags --always > version.txt
 - sed -E 's/v([[:digit:]]+\.[[:digit:]]+)\.[[:digit:]]-([[:digit:]]+)-g([a-f0-9]+)/v\1.\2+\3/' version.txt > version-app.txt
 - sed -E 's/v([[:digit:]]+\.[[:digit:]]+)\.[[:digit:]]-([[:digit:]]+).+/v\1.\2/' version.txt > version-only.txt

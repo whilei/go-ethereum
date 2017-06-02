@@ -1,3 +1,5 @@
+// +build !noDownloaderTest
+
 // Copyright 2015 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
@@ -1147,9 +1149,6 @@ func TestMissingHeaderAttack64Fast(t *testing.T)  { testMissingHeaderAttack(t, 6
 func TestMissingHeaderAttack64Light(t *testing.T) { testMissingHeaderAttack(t, 64, LightSync) }
 
 func testMissingHeaderAttack(t *testing.T, protocol int, mode SyncMode) {
-	if testing.Short() {
-		t.Skip("-short: skip randomly failing test")
-	}
 	t.Parallel()
 
 	// Create a small enough block chain to download
@@ -1545,10 +1544,6 @@ func TestFailedSyncProgress64Fast(t *testing.T)  { testFailedSyncProgress(t, 64,
 func TestFailedSyncProgress64Light(t *testing.T) { testFailedSyncProgress(t, 64, LightSync) }
 
 func testFailedSyncProgress(t *testing.T, protocol int, mode SyncMode) {
-
-	if testing.Short() {
-		t.Skip("-short: skip randomly failing test")
-	}
 	t.Parallel()
 
 	// Create a small enough block chain to download
@@ -1629,9 +1624,6 @@ func TestFakedSyncProgress64Fast(t *testing.T)  { testFakedSyncProgress(t, 64, F
 func TestFakedSyncProgress64Light(t *testing.T) { testFakedSyncProgress(t, 64, LightSync) }
 
 func testFakedSyncProgress(t *testing.T, protocol int, mode SyncMode) {
-	if testing.Short() {
-		t.Skip("-short: skip randomly failing test")
-	}
 	t.Parallel()
 
 	// Create a small block chain
@@ -1758,9 +1750,6 @@ func TestFastCriticalRestarts63(t *testing.T) { testFastCriticalRestarts(t, 63) 
 func TestFastCriticalRestarts64(t *testing.T) { testFastCriticalRestarts(t, 64) }
 
 func testFastCriticalRestarts(t *testing.T, protocol int) {
-	if testing.Short() {
-		t.Skip("-short: skip randomly failing test")
-	}
 	t.Parallel()
 
 	// Create a large enough blockchin to actually fast sync on

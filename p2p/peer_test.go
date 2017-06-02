@@ -1,3 +1,5 @@
+// +build !noPeerTest
+
 // Copyright 2014 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
@@ -18,30 +20,12 @@ package p2p
 
 import (
 	"errors"
-	"fmt"
 	"math/rand"
 	"net"
 	"reflect"
 	"testing"
 	"time"
 )
-
-var discard = Protocol{
-	Name:   "discard",
-	Length: 1,
-	Run: func(p *Peer, rw MsgReadWriter) error {
-		for {
-			msg, err := rw.ReadMsg()
-			if err != nil {
-				return err
-			}
-			fmt.Printf("discarding %d\n", msg.Code)
-			if err = msg.Discard(); err != nil {
-				return err
-			}
-		}
-	},
-}
 
 func testPeer(protos []Protocol) (func(), *conn, *Peer, <-chan DiscReason) {
 	fd1, fd2 := net.Pipe()
