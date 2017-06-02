@@ -61,6 +61,9 @@ func testPeer(protos []Protocol) (func(), *conn, *Peer, <-chan DiscReason) {
 }
 
 func TestPeerProtoReadMsg(t *testing.T) {
+	if testing.Short() {
+		t.Skip("-short: skip randomly failing test")
+	}
 	done := make(chan struct{})
 	proto := Protocol{
 		Name:   "a",
