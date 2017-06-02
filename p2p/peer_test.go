@@ -61,7 +61,6 @@ func testPeer(protos []Protocol) (func(), *conn, *Peer, <-chan DiscReason) {
 }
 
 func TestPeerProtoReadMsg(t *testing.T) {
-	done := make(chan struct{})
 	proto := Protocol{
 		Name:   "a",
 		Length: 5,
@@ -75,7 +74,6 @@ func TestPeerProtoReadMsg(t *testing.T) {
 			if err := ExpectMsg(rw, 4, []uint{3}); err != nil {
 				t.Error(err)
 			}
-			close(done)
 			return nil
 		},
 	}
@@ -88,9 +86,10 @@ func TestPeerProtoReadMsg(t *testing.T) {
 	Send(rw, baseProtocolLength+4, []uint{3})
 
 	select {
-	case <-done:
 	case err := <-errc:
-		t.Errorf("peer returned: %v", err)
+		if err != errProtocolReturned {
+			t.Errorf("peer returned error: %v", err)
+		}
 	case <-time.After(2 * time.Second):
 		t.Errorf("receive timeout")
 	}

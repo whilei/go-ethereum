@@ -159,7 +159,8 @@ func (s *PublicEthereumAPI) Hashrate() *rpc.HexNumber {
 // - pulledStates:  number of state entries processed until now
 // - knownStates:   number of known state entries that still need to be pulled
 func (s *PublicEthereumAPI) Syncing() (interface{}, error) {
-	origin, current, height, pulled, known := s.e.Downloader().Progress()
+	prog := s.e.Downloader().Progress()
+	origin, current, height, pulled, known := prog.StartingBlock, prog.CurrentBlock, prog.HighestBlock, prog.PulledStates, prog.KnownStates
 
 	// Return not syncing if the synchronisation already completed
 	if current >= height {

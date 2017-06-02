@@ -278,9 +278,7 @@ func (pm *ProtocolManager) handle(p *peer) error {
 	pm.syncTransactions(p)
 
 	// Drop connections on opposite side of network split
-	var fork *core.Fork
-	for i := range pm.chainConfig.Forks {
-		fork = pm.chainConfig.Forks[i]
+	for _, fork := range pm.chainConfig.Forks {
 		if _, height := p.Head(); height.Cmp(fork.Block) < 0 {
 			break
 		}

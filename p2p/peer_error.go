@@ -18,6 +18,7 @@ package p2p
 
 import (
 	"fmt"
+	"errors"
 )
 
 const (
@@ -50,6 +51,8 @@ func newPeerError(code int, format string, v ...interface{}) *peerError {
 func (self *peerError) Error() string {
 	return self.message
 }
+
+var errProtocolReturned = errors.New("protocol returned")
 
 type DiscReason uint
 
@@ -99,6 +102,9 @@ func (d DiscReason) Error() string {
 func discReasonForError(err error) DiscReason {
 	if reason, ok := err.(DiscReason); ok {
 		return reason
+	}
+	if err == errProtocolReturned {
+		return DiscQuitting
 	}
 	peerError, ok := err.(*peerError)
 	if ok {
