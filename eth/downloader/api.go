@@ -55,7 +55,8 @@ func (api *PublicDownloaderAPI) run() {
 		switch event.Data.(type) {
 		case StartEvent:
 			result := &SyncingResult{Syncing: true}
-			result.Status.Origin, result.Status.Current, result.Status.Height, result.Status.Pulled, result.Status.Known = api.d.Progress()
+			prog := api.d.Progress()
+			result.Status.Origin, result.Status.Current, result.Status.Height, result.Status.Pulled, result.Status.Known = prog.StartingBlock, prog.CurrentBlock, prog.HighestBlock, prog.PulledStates, prog.KnownStates
 			notification = result
 		case DoneEvent, FailedEvent:
 			notification = false

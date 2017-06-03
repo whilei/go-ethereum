@@ -118,3 +118,13 @@ type statePack struct {
 func (p *statePack) PeerId() string { return p.peerId }
 func (p *statePack) Items() int     { return len(p.states) }
 func (p *statePack) Stats() string  { return fmt.Sprintf("%d", len(p.states)) }
+
+// SyncProgress gives progress indications when the node is synchronising with
+// the Ethereum network.
+type SyncProgress struct {
+	StartingBlock uint64 // Block number where sync began
+	CurrentBlock  uint64 // Current block number where sync is at
+	HighestBlock  uint64 // Highest alleged block number in the chain
+	PulledStates  uint64 // Number of state trie entries already downloaded
+	KnownStates   uint64 // Total number os state trie entries known about
+}
