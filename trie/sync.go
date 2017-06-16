@@ -29,6 +29,10 @@ import (
 // node it did not request.
 var ErrNotRequested = errors.New("not requested")
 
+// ErrAlreadyProcessed is returned by the trie sync when it's requested to process a
+// node it already processed previously.
+var ErrAlreadyProcessed = errors.New("already processed")
+
 // request represents a scheduled or already in-flight state retrieval request.
 type request struct {
 	hash   common.Hash // Hash of the node data content to retrieve
@@ -150,6 +154,9 @@ func (s *TrieSync) Process(results []SyncResult) (int, error) {
 		request := s.requests[item.Hash]
 		if request == nil {
 			return i, ErrNotRequested
+		}
+		if request.data != nil {
+			return committed, i, ErrAlreadyProcessed
 		}
 		// If the item is a raw entry request, commit directly
 		if request.object == nil {
