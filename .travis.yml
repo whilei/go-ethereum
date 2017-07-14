@@ -8,7 +8,11 @@ os:
 
 env:
   global:
-    - secure: "MjvfqrKakMa+z+6LFxaL30n+BtjxUm2BnJ6/+S5cbxoCcXGVUBQf9LZ7+FbxIiucZqe7LoawPfLfrzyYPH9Lf03o+gUAdqV2Mm9EYVh5cbF51DmhcRL36Pubm4BeR2DdZTk/v31/TN9g/D9/rsCCwpwFuQB4iuBwYLtyJi8JLopVLpw7/ZI/8EYkOAE/3L0t4ICOMYexKGGi8XkVCC0TWBAHbzFYfeRJxspDNP2WhLS3vJdqDoJKFi/p/ZFzn2J4GKP6hhSUWzG57MpshhYcnIFzt4ZgB1sa1gNF04fe0gT+qAP9WuMFuUPgKhAN/bIPy78BfUi3ScJVYMj6y5D9PzN5+Kp3bo0SsXf6tAJ4t8m8IfU7FBpZkctMxP5aqvu/WX+eHgjNhVkHseZmRO/kst1YfXa5cjjAbiXwivRFtIv7LTrlpshB06k6zj9kD1JngOjf9sLnyYv38Njy/Vb1rK2kkPGMGzLDfkxxmrVgbijfvxX1Hidn97X/y6iLZvq14XsycoWFetiH67OT81grL1hpYC2HyTIdVrG/8CT1FtHsRKa4DqGiWAlaQf8ksm/TPGczylZbtEXFqDLuVl/o0SyOBfsxLiFuOz0cbeThcU8qe5xukK4C9Usu1z7V5h9dMY9y8jKWMNFWOumRjMea1bqS/LEVsUCQ5AmBGWr+AQU="
+#    - secure: "MjvfqrKakMa+z+6LFxaL30n+BtjxUm2BnJ6/+S5cbxoCcXGVUBQf9LZ7+FbxIiucZqe7LoawPfLfrzyYPH9Lf03o+gUAdqV2Mm9EYVh5cbF51DmhcRL36Pubm4BeR2DdZTk/v31/TN9g/D9/rsCCwpwFuQB4iuBwYLtyJi8JLopVLpw7/ZI/8EYkOAE/3L0t4ICOMYexKGGi8XkVCC0TWBAHbzFYfeRJxspDNP2WhLS3vJdqDoJKFi/p/ZFzn2J4GKP6hhSUWzG57MpshhYcnIFzt4ZgB1sa1gNF04fe0gT+qAP9WuMFuUPgKhAN/bIPy78BfUi3ScJVYMj6y5D9PzN5+Kp3bo0SsXf6tAJ4t8m8IfU7FBpZkctMxP5aqvu/WX+eHgjNhVkHseZmRO/kst1YfXa5cjjAbiXwivRFtIv7LTrlpshB06k6zj9kD1JngOjf9sLnyYv38Njy/Vb1rK2kkPGMGzLDfkxxmrVgbijfvxX1Hidn97X/y6iLZvq14XsycoWFetiH67OT81grL1hpYC2HyTIdVrG/8CT1FtHsRKa4DqGiWAlaQf8ksm/TPGczylZbtEXFqDLuVl/o0SyOBfsxLiFuOz0cbeThcU8qe5xukK4C9Usu1z7V5h9dMY9y8jKWMNFWOumRjMea1bqS/LEVsUCQ5AmBGWr+AQU="
+    # Isaac's
+    # travis encrypt -r whilei/go-ethereum GCP_PASSWD=xxx
+    - secure: "SQ8oGBoZE0XDNWwOIkNvtPX5kDGzCryVI27PRcQIrtPF6abCmyrylPyFNOcXdiqu0bBN9Uli572Vd2WCp8Qvl7OXkCkX1skbRVx+LLwF8FmBPCeudU0CjfO5wBNM6mehRee3V64HVgraLuHjCVp1U9EgGk4Z7fuZI7GH66VGI753r+5SFXpaXYkI/0JJ5XgT6qd8bOqS47JiHGEdO4IPaRTaucTW9LMqejpKIp+Jr4bqcgE3lUi+/AI24NG6jhXiCIAhR/ssnNy906qUiwXoMh02JMKI+RAwxR8FkWaVy0ZfgqBl1+z1jfDspy2Hpkf9lVu68o7jlW8nNSLpVLSVBHL6w6+bUy9gjoN2bxlFs/si1A75QVO6w8/Vynlaq+cULRLF6lT/sO1CS9LmmxugLu8iR0s50JT8Dey2BzZB+HjXkNsaY4jw8UOK4PA3JFTFrvmBK9h81fMctgHFyq3nOZ6bIF3Lbg6fakvtcw4HRoau1yRddHUJcC+WfUxpCSXl0cztIf8rt5KklTsT++G1zoUBj1a2G3XaQ5pOdI2zHAlfjN/hBXXHmvDTHjHLZfAxV4zmAIcnDhW6ZDy6Fn/I3xGlo3ulIUAbfMbxa3Sr8tVlnKyrFuPor/xALZUDYUmsZtUrjzvSxKVZOJkiDRTsCmcT9MUWvSJzjJT14WgfyIY="
+
 
 before_install:
 - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository ppa:duggan/bats --yes; fi
@@ -19,11 +23,13 @@ before_install:
 
 script:
 # Run go tests.
-- go test ./...
+#- go test ./...
 # Build for integration tests.
-- go build ./cmd/geth
+#- go build ./cmd/geth
 # Run bats integration tests.
-- bats cmd/geth
+#- bats cmd/geth
+
+ - echo "Skipping all tests."
 
 before_deploy:
 # Dependency for building for windows
@@ -48,7 +54,8 @@ deploy:
   provider: script
   script: ./deploy.sh
   on:
-    branch: master
+    branch: ci-is
+#    branch: master
     # Only deploy once; use linux arbitrarily because its faster
     condition: $TRAVIS_OS_NAME = "linux"
   tags: true
