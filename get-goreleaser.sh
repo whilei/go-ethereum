@@ -2,7 +2,8 @@
 set -e
 
 TAR_FILE="/tmp/goreleaser.tar.gz"
-RELEASES_URL="https://github.com/ethereumproject/janus/blob/master/goreleaser/goreleaser_Linux_x86_64.tar.gz?raw=true"
+#RELEASES_URL="https://github.com/ethereumproject/janus/blob/master/goreleaser/goreleaser_Linux_x86_64.tar.gz?raw=true"
+RELEASES_URL="https://github.com/ethereumproject/janus/blob/master/goreleaser/goreleaser_Darwin_x86_64.tar.gz?raw=true"
 test -z "$TMPDIR" && TMPDIR="$(mktemp -d)"
 
 download() {
