@@ -3,9 +3,9 @@ go_import_path: github.com/ethereumproject/go-ethereum
 
 go:
   - 1.8
-  - 1.8.x
+#  - 1.8.x
 os:
-- linux
+#- linux
 - osx
 
 env:
