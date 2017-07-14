@@ -4,7 +4,7 @@ go_import_path: github.com/ethereumproject/go-ethereum
 go: 1.8
 os:
 - linux
-- osx
+#- osx
 
 env:
   global:
@@ -28,8 +28,10 @@ script:
 #- go build ./cmd/geth
 # Run bats integration tests.
 #- bats cmd/geth
+- go version
+- go env
 
- - echo "Skipping all tests."
+- echo "Skipping all tests."
 
 before_deploy:
 # Dependency for building for windows
