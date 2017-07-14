@@ -6,7 +6,7 @@ builds:
   - freebsd
   goarch:
   - amd64
-  - "386"
+#  - "386"
   main: ./cmd/geth
   binary: geth
   ldflags: -X main.Version={{.Tag}}
