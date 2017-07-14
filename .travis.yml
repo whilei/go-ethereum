@@ -61,5 +61,5 @@ deploy:
     branch: ci-is
 #    branch: master
     # Only deploy once; use linux arbitrarily because its faster
-    condition: $TRAVIS_OS_NAME = "linux"
+#    condition: $TRAVIS_OS_NAME = "linux"
   tags: true
