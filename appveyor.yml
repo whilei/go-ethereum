@@ -28,8 +28,8 @@ build_script:
 artifacts:
   - path: '*.zip'
     name: geth
- deploy_script:
-   - ps: >-
-       If ($env:APPVEYOR_REPO_BRANCH -eq 'ci-is') {
-           janus.exe -to="fake-builds-etcdevteam-com/go-ethereum/$env:VERSION_BASE/" -files="./*.zip" -key="./isaac-test-gcp-service-key.enc.json"
-       }
+deploy_script:
+  - ps: >-
+    If ($env:APPVEYOR_REPO_BRANCH -eq 'ci-is') {
+      janus.exe -to="fake-builds-etcdevteam-com/go-ethereum/$env:VERSION_BASE/" -files="./*.zip" -key="./isaac-test-gcp-service-key.enc.json"
+    }
