@@ -8,4 +8,4 @@ mkdir deploy
 mv *.zip *.tar.gz deploy/
 
 #janus deploy -to="builds.etcdevteam.com/go-ethereum/$(janus version -format='v%M.%m.x')" -files="./deploy/*" -key="./gcloud-travis.json.enc"
-janus deploy -to="fake-builds-etcdevdeam-com/go-ethereum/$(janus version -format='v%M.%m.x')" -files="./deploy/*" -key="./isaac-test-gcp-service-key.enc.json"
+janus deploy -to="fake-builds-etcdevdeam-com/go-ethereum/$(janus version -format='v%M.%m.x')/" -files="./deploy/*" -key="./isaac-test-gcp-service-key.enc.json"
