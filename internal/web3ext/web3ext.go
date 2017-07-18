@@ -165,6 +165,11 @@ web3._extend({
 			params: 1
 		}),
 		new web3._extend.Method({
+			name: 'getTransactionRlp',
+			call: 'debug_getTransactionRlp',
+			params: 1,
+		}),
+		new web3._extend.Method({
 			name: 'setHead',
 			call: 'debug_setHead',
 			params: 1
@@ -340,7 +345,7 @@ web3._extend({
 			call: 'eth_submitTransaction',
 			params: 1,
 			inputFormatter: [web3._extend.formatters.inputTransactionFormatter]
-		})
+		}),
 	],
 	properties:
 	[

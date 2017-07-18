@@ -1670,6 +1670,66 @@ func (api *PublicDebugAPI) SeedHash(number uint64) (string, error) {
 	return fmt.Sprintf("0x%x", hash), nil
 }
 
+// GetTransactionRLP returns just an rlp-encoded version of the transaction.
+// Useful for bunda.
+func (s *PublicDebugAPI) GetTransactionRlp(args SendTxArgs) (string, error) {
+
+	//// SendTxArgs represents the arguments to sumbit a new transaction into the transaction pool.
+	//type SendTxArgs struct {
+	//	From     common.Address  `json:"from"`
+	//	To       *common.Address `json:"to"`
+	//	Gas      *rpc.HexNumber  `json:"gas"`
+	//	GasPrice *rpc.HexNumber  `json:"gasPrice"`
+	//	Value    *rpc.HexNumber  `json:"value"`
+	//	Data     string          `json:"data"`
+	//	Nonce    *rpc.HexNumber  `json:"nonce"`
+	//}
+	if args.Gas == nil {
+		args.Gas = rpc.NewHexNumber(defaultGas)
+	}
+	if args.GasPrice == nil {
+		args.GasPrice = rpc.NewHexNumber(0)
+	}
+	if args.Value == nil {
+		args.Value = rpc.NewHexNumber(0)
+	}
+
+	if args.Nonce == nil {
+		args.Nonce = rpc.NewHexNumber(1)
+	}
+
+	var tx *types.Transaction
+	if args.To == nil {
+		tx = types.NewContractCreation(args.Nonce.Uint64(), args.Value.BigInt(), args.Gas.BigInt(), args.GasPrice.BigInt(), common.FromHex(args.Data))
+	} else {
+		tx = types.NewTransaction(args.Nonce.Uint64(), *args.To, args.Value.BigInt(), args.Gas.BigInt(), args.GasPrice.BigInt(), common.FromHex(args.Data))
+	}
+
+	//signedTx, err := s.sign(args.From, tx)
+	//if err != nil {
+	//	return nil, err
+	//}
+
+	data, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%x", data), nil
+
+	//return &SignTransactionResult{"0x" + common.Bytes2Hex(data), newTx(signedTx)}, nil
+
+	//block := api.eth.BlockChain().GetBlockByNumber(number)
+	//if block == nil {
+	//	return "", fmt.Errorf("block #%d not found", number)
+	//}
+	//encoded, err := rlp.EncodeToBytes(block)
+	//if err != nil {
+	//	return "", err
+	//}
+	//return fmt.Sprintf("%x", encoded), nil
+
+}
+
 // ExecutionResult groups all structured logs emitted by the EVM
 // while replaying a transaction in debug mode as well as the amount of
 // gas used and the return value
