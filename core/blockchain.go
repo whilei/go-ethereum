@@ -603,6 +603,10 @@ func (self *BlockChain) Rollback(chain []common.Hash) {
 // InsertReceiptChain attempts to complete an already existing header chain with
 // transaction and receipt data.
 func (self *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain []types.Receipts) (int, error) {
+
+	self.chainmu.Lock()
+	defer self.chainmu.Unlock()
+
 	self.wg.Add(1)
 	defer self.wg.Done()
 
@@ -747,6 +751,7 @@ func (self *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain
 
 // WriteBlock writes the block to the chain.
 func (self *BlockChain) WriteBlock(block *types.Block) (status WriteStatus, err error) {
+
 	self.wg.Add(1)
 	defer self.wg.Done()
 
@@ -806,11 +811,11 @@ func (self *BlockChain) InsertChain(chain types.Blocks) (chainIndex int, err err
 		}
 	}
 
-	self.wg.Add(1)
-	defer self.wg.Done()
-
 	self.chainmu.Lock()
 	defer self.chainmu.Unlock()
+
+	self.wg.Add(1)
+	defer self.wg.Done()
 
 	// A queued approach to delivering events. This is generally
 	// faster than direct delivery and requires much less mutex
