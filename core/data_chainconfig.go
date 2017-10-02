@@ -105,7 +105,7 @@ var DefaultConfig = &ChainConfig{
 			},
 		},
 		{
-			Name: "Gotham",
+			Name:  "Gotham",
 			Block: big.NewInt(5000000),
 			Features: []*ForkFeature{
 				{
@@ -192,7 +192,7 @@ var TestConfig = &ChainConfig{
 			},
 		},
 		{
-			Name: "Gotham",
+			Name:  "Gotham",
 			Block: big.NewInt(2000000),
 			Features: []*ForkFeature{
 				{

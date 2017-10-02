@@ -101,7 +101,7 @@ type AccountObject interface {
 	Nonce() uint64
 	Balance() *big.Int
 	Address() common.Address
-//	Value() *big.Int
+	//	Value() *big.Int
 	ReturnGas(*big.Int, *big.Int)
 	ForEachStorage(cb func(key, value common.Hash) bool)
 }

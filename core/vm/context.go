@@ -1,4 +1,3 @@
-
 // Copyright 2017 (c) ETCDEV Team
 
 // This file is part of the go-ethereum library.
@@ -22,13 +21,14 @@ import (
 	"math/big"
 	"reflect"
 
+	"errors"
 	"github.com/ethereumproject/go-ethereum/common"
 	"github.com/ethereumproject/go-ethereum/core/state"
-	"errors"
 )
 
 // Type is the VM type
 type Type byte
+
 const (
 	// classic VM
 	ClassicVm Type = iota
@@ -49,11 +49,11 @@ const (
 	RemoteRpcVm
 )
 
-const DefaultVm      = ClassicVm
+const DefaultVm = ClassicVm
 const DefaultVmProto = LocalVm
 const DefaultVmUsage = ManageLocalVm
-const DefaultVmPort  = 30301
-const DefaultVmHost  = "localhost"
+const DefaultVmPort = 30301
+const DefaultVmHost = "localhost"
 
 type GasTable struct {
 	ExtcodeSize *big.Int
@@ -81,15 +81,15 @@ func (g *GasTable) IsEmpty() bool {
 type Status byte
 
 const (
-	ExitedOk Status = iota
-	Inactive	  // vm is inactive
-	Running       // vm is running
-	RequireErr    // vm requires some information
-	TransferErr   // account has insufficient balance and transfer is not possible
-	OutOfGas      // out of gas error occurred
-	BadCode       // bad contract code
-	Terminated    // vm context terminated
-	Broken        // connection with vm is broken or vm is not response
+	ExitedOk    Status = iota
+	Inactive           // vm is inactive
+	Running            // vm is running
+	RequireErr         // vm requires some information
+	TransferErr        // account has insufficient balance and transfer is not possible
+	OutOfGas           // out of gas error occurred
+	BadCode            // bad contract code
+	Terminated         // vm context terminated
+	Broken             // connection with vm is broken or vm is not response
 )
 
 type Fork byte
@@ -116,7 +116,7 @@ const (
 )
 
 type Require struct {
-	ID RequireID
+	ID      RequireID
 	Address common.Address
 	Number  uint64
 }
@@ -127,7 +127,7 @@ type Context interface {
 	CommitAccount(address common.Address, nonce uint64, balance *big.Int) error
 	// Commit a block hash to this VM. This should only be used when
 	// receiving `RequireBlockhashError`.
-	CommitBlockhash(number uint64,hash common.Hash) error
+	CommitBlockhash(number uint64, hash common.Hash) error
 	// Commit a contract code to this VM.
 	CommitCode(address common.Address, hash common.Hash, code []byte) error
 	// Commit a gas rules
@@ -171,5 +171,5 @@ type Machine interface {
 
 var (
 	TerminatedError = errors.New("VM context terminated")
-	BrokenError = errors.New("VM context broken")
+	BrokenError     = errors.New("VM context broken")
 )

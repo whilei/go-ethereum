@@ -18,8 +18,8 @@
 package core
 
 import (
-	"math/big"
 	"errors"
+	"math/big"
 
 	"github.com/ethereumproject/go-ethereum/common"
 	"github.com/ethereumproject/go-ethereum/core/state"
@@ -38,16 +38,16 @@ type VmEnv interface {
 }
 
 type vmEnv struct {
-	coinbase 	common.Address
-	number  	*big.Int
-	difficulty  *big.Int
-	gasLimit	*big.Int
-	time		*big.Int
-	db      	*state.StateDB
-	hashfn		func(n uint64) common.Hash
-	fork		vm.Fork
-	rules       vm.RuleSet
-	machine		vm.Machine
+	coinbase   common.Address
+	number     *big.Int
+	difficulty *big.Int
+	gasLimit   *big.Int
+	time       *big.Int
+	db         *state.StateDB
+	hashfn     func(n uint64) common.Hash
+	fork       vm.Fork
+	rules      vm.RuleSet
+	machine    vm.Machine
 }
 
 func (venv *vmEnv) Coinbase() common.Address {
@@ -66,14 +66,14 @@ func (venv *vmEnv) Db() *state.StateDB {
 	return venv.db
 }
 
-func (venv *vmEnv) do(callOrCreate func(*vmEnv)(vm.Context,error)) ([]byte, common.Address, error) {
+func (venv *vmEnv) do(callOrCreate func(*vmEnv) (vm.Context, error)) ([]byte, common.Address, error) {
 	for {
 		var (
 			context vm.Context
-			err error
-			out []byte
+			err     error
+			out     []byte
 			address common.Address
-			pa *common.Address
+			pa      *common.Address
 		)
 		context, err = callOrCreate(venv)
 		if err == nil {
@@ -93,19 +93,19 @@ func (venv *vmEnv) do(callOrCreate func(*vmEnv)(vm.Context,error)) ([]byte, comm
 }
 
 func (venv *vmEnv) Call(sender common.Address, to common.Address, data []byte, gas, price, value *big.Int) ([]byte, error) {
-	out, _, err := venv.do(func(e *vmEnv)(vm.Context,error){
-		return e.machine.Call(e.number.Uint64(),sender,to,data,gas,price,value)
+	out, _, err := venv.do(func(e *vmEnv) (vm.Context, error) {
+		return e.machine.Call(e.number.Uint64(), sender, to, data, gas, price, value)
 	})
 	return out, err
 }
 
 func (venv *vmEnv) Create(caller state.AccountObject, data []byte, gas, price, value *big.Int) ([]byte, common.Address, error) {
-	return venv.do(func(e *vmEnv)(vm.Context,error){
-		return e.machine.Create(e.number.Uint64(),caller.Address(),data,gas,price,value)
+	return venv.do(func(e *vmEnv) (vm.Context, error) {
+		return e.machine.Create(e.number.Uint64(), caller.Address(), data, gas, price, value)
 	})
 }
 
-func (venv *vmEnv) execute(ctx vm.Context) ([]byte,*common.Address,error) {
+func (venv *vmEnv) execute(ctx vm.Context) ([]byte, *common.Address, error) {
 	for {
 		req := ctx.Fire()
 		if req != nil {
@@ -115,16 +115,16 @@ func (venv *vmEnv) execute(ctx vm.Context) ([]byte,*common.Address,error) {
 				addr := acc.Address()
 				nonce := acc.Nonce()
 				balance := acc.Balance()
-				ctx.CommitAccount(addr,nonce,balance)
+				ctx.CommitAccount(addr, nonce, balance)
 			case vm.RequireCode:
 				addr := req.Address
 				code := venv.db.GetCode(addr)
 				hash := venv.db.GetCodeHash(addr)
-				ctx.CommitCode(addr,hash,code)
+				ctx.CommitCode(addr, hash, code)
 			case vm.RequireHash:
 				number := req.Number
 				hash := venv.hashfn(number)
-				ctx.CommitBlockhash(number,hash)
+				ctx.CommitBlockhash(number, hash)
 			case vm.RequireRules:
 				ctx.CommitRules(venv.rules.GasTable(venv.number), venv.fork, venv.difficulty, venv.gasLimit, venv.time)
 			default:
@@ -168,7 +168,7 @@ func (venv *vmEnv) execute(ctx vm.Context) ([]byte,*common.Address,error) {
 							return nil, nil, err
 						}
 						if code != nil {
-							o.SetCode(hash,code)
+							o.SetCode(hash, code)
 						}
 					}
 					o.SetBalance(v.Balance())
@@ -177,7 +177,7 @@ func (venv *vmEnv) execute(ctx vm.Context) ([]byte,*common.Address,error) {
 				return out, &address, nil
 			case vm.TransferErr:
 				return nil, nil, InvalidTxError(ctx.Err())
-			case vm.Broken, vm.Terminated, vm.BadCode :
+			case vm.Broken, vm.Terminated, vm.BadCode:
 				return nil, nil, ctx.Err()
 			case vm.OutOfGas:
 				return nil, nil, OutOfGasError
@@ -214,7 +214,7 @@ func getFork(number *big.Int, chainConfig *ChainConfig) vm.Fork {
 	return vm.Frontier
 }
 
-func NewEnv(statedb *state.StateDB, chainConfig *ChainConfig, chain *BlockChain, msg Message, header *types.Header) (VmEnv,error) {
+func NewEnv(statedb *state.StateDB, chainConfig *ChainConfig, chain *BlockChain, msg Message, header *types.Header) (VmEnv, error) {
 	var machine vm.Machine = classic.NewMachine()
 	fork := getFork(header.Number, chainConfig)
 	vmenv := &vmEnv{
@@ -233,5 +233,5 @@ func NewEnv(statedb *state.StateDB, chainConfig *ChainConfig, chain *BlockChain,
 }
 
 var (
- 	OutOfGasError			= errors.New("Out of gas")
+	OutOfGasError = errors.New("Out of gas")
 )
