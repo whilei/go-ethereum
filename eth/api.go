@@ -42,11 +42,11 @@ import (
 	"github.com/ethereumproject/go-ethereum/event"
 	"github.com/ethereumproject/go-ethereum/logger"
 	"github.com/ethereumproject/go-ethereum/logger/glog"
+	"github.com/ethereumproject/go-ethereum/metrics"
 	"github.com/ethereumproject/go-ethereum/miner"
 	"github.com/ethereumproject/go-ethereum/p2p"
 	"github.com/ethereumproject/go-ethereum/rlp"
 	"github.com/ethereumproject/go-ethereum/rpc"
-	"github.com/ethereumproject/go-ethereum/metrics"
 )
 
 const defaultGas = uint64(90000)
@@ -1783,7 +1783,7 @@ func (s *PublicDebugAPI) TraceTransaction(txHash common.Hash) (*ExecutionResult,
 	gp := new(core.GasPool).AddGas(tx.Gas())
 	ret, gas, err := core.ApplyMessage(vmenv, msg, gp)
 	return &ExecutionResult{
-		Gas: gas,
+		Gas:         gas,
 		ReturnValue: fmt.Sprintf("%x", ret),
 	}, nil
 }
@@ -1822,12 +1822,12 @@ func (s *PublicDebugAPI) computeTxEnv(blockHash common.Hash, txIndex int) (core.
 		}
 
 		msg := callmsg{
-			from: from,
-			to: tx.To(),
-			gas: tx.Gas(),
+			from:     from,
+			to:       tx.To(),
+			gas:      tx.Gas(),
 			gasPrice: tx.GasPrice(),
-			value: tx.Value(),
-			data: tx.Data(),
+			value:    tx.Value(),
+			data:     tx.Data(),
 		}
 
 		vmenv, err := core.NewEnv(statedb, s.eth.chainConfig, s.eth.BlockChain(), msg, block.Header())
