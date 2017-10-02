@@ -50,23 +50,23 @@ type vmEnv struct {
 	machine		vm.Machine
 }
 
-func (self *vmEnv) Coinbase() common.Address {
-	return self.coinbase
+func (venv *vmEnv) Coinbase() common.Address {
+	return venv.coinbase
 }
 
-func (self *vmEnv) BlockNumber() *big.Int {
-	return self.number
+func (venv *vmEnv) BlockNumber() *big.Int {
+	return venv.number
 }
 
-func (self *vmEnv) RuleSet() vm.RuleSet {
-	return self.rules
+func (venv *vmEnv) RuleSet() vm.RuleSet {
+	return venv.rules
 }
 
-func (self *vmEnv) Db() *state.StateDB {
-	return self.db
+func (venv *vmEnv) Db() *state.StateDB {
+	return venv.db
 }
 
-func (self *vmEnv) do(callOrCreate func(*vmEnv)(vm.Context,error)) ([]byte, common.Address, error) {
+func (venv *vmEnv) do(callOrCreate func(*vmEnv)(vm.Context,error)) ([]byte, common.Address, error) {
 	for {
 		var (
 			context vm.Context
@@ -75,9 +75,9 @@ func (self *vmEnv) do(callOrCreate func(*vmEnv)(vm.Context,error)) ([]byte, comm
 			address common.Address
 			pa *common.Address
 		)
-		context, err = callOrCreate(self)
+		context, err = callOrCreate(venv)
 		if err == nil {
-			out, pa, err = self.execute(context)
+			out, pa, err = venv.execute(context)
 			if pa != nil {
 				address = *pa
 			}
@@ -92,46 +92,46 @@ func (self *vmEnv) do(callOrCreate func(*vmEnv)(vm.Context,error)) ([]byte, comm
 	}
 }
 
-func (self *vmEnv) Call(sender common.Address, to common.Address, data []byte, gas, price, value *big.Int) ([]byte, error) {
-	out, _, err := self.do(func(e *vmEnv)(vm.Context,error){
+func (venv *vmEnv) Call(sender common.Address, to common.Address, data []byte, gas, price, value *big.Int) ([]byte, error) {
+	out, _, err := venv.do(func(e *vmEnv)(vm.Context,error){
 		return e.machine.Call(e.number.Uint64(),sender,to,data,gas,price,value)
 	})
 	return out, err
 }
 
-func (self *vmEnv) Create(caller state.AccountObject, data []byte, gas, price, value *big.Int) ([]byte, common.Address, error) {
-	return self.do(func(e *vmEnv)(vm.Context,error){
+func (venv *vmEnv) Create(caller state.AccountObject, data []byte, gas, price, value *big.Int) ([]byte, common.Address, error) {
+	return venv.do(func(e *vmEnv)(vm.Context,error){
 		return e.machine.Create(e.number.Uint64(),caller.Address(),data,gas,price,value)
 	})
 }
 
-func (self *vmEnv) execute(ctx vm.Context) ([]byte,*common.Address,error) {
+func (venv *vmEnv) execute(ctx vm.Context) ([]byte,*common.Address,error) {
 	for {
 		req := ctx.Fire()
 		if req != nil {
 			switch req.ID {
 			case vm.RequireAccount:
-				acc := self.db.GetAccount(req.Address)
+				acc := venv.db.GetAccount(req.Address)
 				addr := acc.Address()
 				nonce := acc.Nonce()
 				balance := acc.Balance()
 				ctx.CommitAccount(addr,nonce,balance)
 			case vm.RequireCode:
 				addr := req.Address
-				code := self.db.GetCode(addr)
-				hash := self.db.GetCodeHash(addr)
+				code := venv.db.GetCode(addr)
+				hash := venv.db.GetCodeHash(addr)
 				ctx.CommitCode(addr,hash,code)
 			case vm.RequireHash:
 				number := req.Number
-				hash := self.hashfn(number)
+				hash := venv.hashfn(number)
 				ctx.CommitBlockhash(number,hash)
 			case vm.RequireRules:
-				ctx.CommitRules(self.rules.GasTable(self.number),self.fork,self.difficulty,self.gasLimit,self.time)
+				ctx.CommitRules(venv.rules.GasTable(venv.number), venv.fork, venv.difficulty, venv.gasLimit, venv.time)
 			default:
 				if ctx.Status() == vm.RequireErr {
 					// ?? unsupported VM implementaion ??
 					// should we panic or use known VM instead?
-					panic("unsupported VM RequireError occured")
+					panic("unsupported VM RequireError occurred")
 				} else {
 					// ?? incorrect VM implementation ??
 					// Fire or Step can return nil or vm.Require only!
@@ -154,20 +154,20 @@ func (self *vmEnv) execute(ctx vm.Context) ([]byte,*common.Address,error) {
 					return nil, nil, err
 				}
 				// applying state here
-				snapshot := self.db.Snapshot()
+				snapshot := venv.db.Snapshot()
 				for _, v := range accounts {
 					var o state.AccountObject
 					address := v.Address()
-					if self.db.Exist(address) {
-						o = self.db.GetAccount(address)
+					if venv.db.Exist(address) {
+						o = venv.db.GetAccount(address)
 					} else {
-						o = self.db.CreateAccount(address)
+						o = venv.db.CreateAccount(address)
 						hash, code, err := ctx.Code(address)
 						if err != nil {
-							self.db.RevertToSnapshot(snapshot)
+							venv.db.RevertToSnapshot(snapshot)
 							return nil, nil, err
 						}
-						if code {
+						if code != nil {
 							o.SetCode(hash,code)
 						}
 					}

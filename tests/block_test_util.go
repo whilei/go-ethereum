@@ -45,7 +45,7 @@ type BlockTest struct {
 	Json          *btJSON
 	preAccounts   map[string]btAccount
 	postAccounts  map[string]btAccount
-	lastblockhash string
+	lastBlockHash string
 }
 
 type btJSON struct {
@@ -53,7 +53,7 @@ type btJSON struct {
 	GenesisBlockHeader btHeader
 	Pre                map[string]btAccount
 	PostState          map[string]btAccount
-	Lastblockhash      string
+	LastBlockHash      string
 }
 
 type btBlock struct {
@@ -187,10 +187,10 @@ func runBlockTest(homesteadBlock, gasPriceFork *big.Int, test *BlockTest) error 
 		return err
 	}
 
-	lastblockhash := common.HexToHash(test.lastblockhash)
+	lastblockhash := common.HexToHash(test.lastBlockHash)
 	cmlast := chain.LastBlockHash()
 	if lastblockhash != cmlast {
-		return fmt.Errorf("lastblockhash validation mismatch: want: %x, have: %x", lastblockhash, cmlast)
+		return fmt.Errorf("lastBlockHash validation mismatch: want: %x, have: %x", lastblockhash, cmlast)
 	}
 
 	newDB, err := chain.State()
@@ -449,7 +449,7 @@ func convertBlockTest(in *btJSON) (out *BlockTest, err error) {
 			err = fmt.Errorf("%v\n%s", recovered, buf)
 		}
 	}()
-	out = &BlockTest{preAccounts: in.Pre, postAccounts: in.PostState, Json: in, lastblockhash: in.Lastblockhash}
+	out = &BlockTest{preAccounts: in.Pre, postAccounts: in.PostState, Json: in, lastBlockHash: in.LastBlockHash}
 	out.Genesis = mustConvertGenesis(in.GenesisBlockHeader)
 	return out, err
 }

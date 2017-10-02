@@ -127,85 +127,85 @@ func newObject(db *StateDB, address common.Address, data Account, onDirty func(a
 }
 
 // EncodeRLP implements rlp.Encoder.
-func (c *StateObject) EncodeRLP(w io.Writer) error {
-	return rlp.Encode(w, c.data)
+func (sobj *StateObject) EncodeRLP(w io.Writer) error {
+	return rlp.Encode(w, sobj.data)
 }
 
 // setError remembers the first non-nil error it is called with.
-func (self *StateObject) setError(err error) {
-	if self.dbErr == nil {
-		self.dbErr = err
+func (sobj *StateObject) setError(err error) {
+	if sobj.dbErr == nil {
+		sobj.dbErr = err
 	}
 }
 
-func (self *StateObject) markSuicided() {
-	self.suicided = true
-	if self.onDirty != nil {
-		self.onDirty(self.Address())
-		self.onDirty = nil
+func (sobj *StateObject) markSuicided() {
+	sobj.suicided = true
+	if sobj.onDirty != nil {
+		sobj.onDirty(sobj.Address())
+		sobj.onDirty = nil
 	}
 	if glog.V(logger.Core) {
-		glog.Infof("%x: #%d %v X\n", self.Address(), self.Nonce(), self.Balance())
+		glog.Infof("%x: #%d %v X\n", sobj.Address(), sobj.Nonce(), sobj.Balance())
 	}
 }
 
-func (c *StateObject) getTrie(db trie.Database) *trie.SecureTrie {
-	if c.trie == nil {
+func (sobj *StateObject) getTrie(db trie.Database) *trie.SecureTrie {
+	if sobj.trie == nil {
 		var err error
-		c.trie, err = trie.NewSecure(c.data.Root, db, 0)
+		sobj.trie, err = trie.NewSecure(sobj.data.Root, db, 0)
 		if err != nil {
-			c.trie, _ = trie.NewSecure(common.Hash{}, db, 0)
-			c.setError(fmt.Errorf("can't create storage trie: %v", err))
+			sobj.trie, _ = trie.NewSecure(common.Hash{}, db, 0)
+			sobj.setError(fmt.Errorf("can't create storage trie: %v", err))
 		}
 	}
-	return c.trie
+	return sobj.trie
 }
 
 // GetState returns a value in account storage.
-func (self *StateObject) GetState(db trie.Database, key common.Hash) common.Hash {
-	value, exists := self.cachedStorage[key]
+func (sobj *StateObject) GetState(db trie.Database, key common.Hash) common.Hash {
+	value, exists := sobj.cachedStorage[key]
 	if exists {
 		return value
 	}
 	// Load from DB in case it is missing.
-	if enc := self.getTrie(db).Get(key[:]); len(enc) > 0 {
+	if enc := sobj.getTrie(db).Get(key[:]); len(enc) > 0 {
 		_, content, _, err := rlp.Split(enc)
 		if err != nil {
-			self.setError(err)
+			sobj.setError(err)
 		}
 		value.SetBytes(content)
 	}
 	if (value != common.Hash{}) {
-		self.cachedStorage[key] = value
+		sobj.cachedStorage[key] = value
 	}
 	return value
 }
 
 // SetState updates a value in account storage.
-func (self *StateObject) SetState(db trie.Database, key, value common.Hash) {
-	self.db.journal = append(self.db.journal, storageChange{
-		account:  &self.address,
+func (sobj *StateObject) SetState(db trie.Database, key, value common.Hash) {
+	sobj.db.journal = append(sobj.db.journal, storageChange{
+		account:  &sobj.address,
 		key:      key,
-		prevalue: self.GetState(db, key),
+		prevalue: sobj.GetState(db, key),
 	})
-	self.setState(key, value)
+	sobj.setState(key, value)
 }
 
-func (self *StateObject) setState(key, value common.Hash) {
-	self.cachedStorage[key] = value
-	self.dirtyStorage[key] = value
+func (sobj *StateObject) setState(key, value common.Hash) {
+	sobj.cachedStorage[key] = value
+	sobj.dirtyStorage[key] = value
 
-	if self.onDirty != nil {
-		self.onDirty(self.Address())
-		self.onDirty = nil
+	if sobj.onDirty != nil {
+		sobj.onDirty(sobj.Address())
+		sobj.onDirty = nil
 	}
 }
 
 // updateTrie writes cached storage modifications into the object's storage trie.
-func (self *StateObject) updateTrie(db trie.Database) {
-	tr := self.getTrie(db)
-	for key, value := range self.dirtyStorage {
-		delete(self.dirtyStorage, key)
+func (sobj *StateObject) updateTrie(db trie.Database) {
+	tr := sobj.getTrie(db)
+	for key, value := range sobj.dirtyStorage {
+		delete(sobj.dirtyStorage, key)
 		if (value == common.Hash{}) {
 			tr.Delete(key[:])
 			continue
@@ -217,76 +217,76 @@ func (self *StateObject) updateTrie(db trie.Database) {
 }
 
 // UpdateRoot sets the trie root to the current root hash of
-func (self *StateObject) updateRoot(db trie.Database) {
-	self.updateTrie(db)
-	self.data.Root = self.trie.Hash()
+func (sobj *StateObject) updateRoot(db trie.Database) {
+	sobj.updateTrie(db)
+	sobj.data.Root = sobj.trie.Hash()
 }
 
 // CommitTrie the storage trie of the object to dwb.
 // This updates the trie root.
-func (self *StateObject) CommitTrie(db trie.Database, dbw trie.DatabaseWriter) error {
-	self.updateTrie(db)
-	if self.dbErr != nil {
-		return self.dbErr
+func (sobj *StateObject) CommitTrie(db trie.Database, dbw trie.DatabaseWriter) error {
+	sobj.updateTrie(db)
+	if sobj.dbErr != nil {
+		return sobj.dbErr
 	}
-	root, err := self.trie.CommitTo(dbw)
+	root, err := sobj.trie.CommitTo(dbw)
 	if err == nil {
-		self.data.Root = root
+		sobj.data.Root = root
 	}
 	return err
 }
 
-func (c *StateObject) AddBalance(amount *big.Int) {
+func (sobj *StateObject) AddBalance(amount *big.Int) {
 	if amount.Sign() == 0 {
 		return
 	}
-	c.SetBalance(new(big.Int).Add(c.Balance(), amount))
+	sobj.SetBalance(new(big.Int).Add(sobj.Balance(), amount))
 
 	if glog.V(logger.Debug) {
-		glog.Infof("%x: #%d %v (+ %v)\n", c.Address(), c.Nonce(), c.Balance(), amount)
+		glog.Infof("%x: #%d %v (+ %v)\n", sobj.Address(), sobj.Nonce(), sobj.Balance(), amount)
 	}
 }
 
-func (c *StateObject) SubBalance(amount *big.Int) {
+func (sobj *StateObject) SubBalance(amount *big.Int) {
 	if amount.Sign() == 0 {
 		return
 	}
-	c.SetBalance(new(big.Int).Sub(c.Balance(), amount))
+	sobj.SetBalance(new(big.Int).Sub(sobj.Balance(), amount))
 
 	if glog.V(logger.Core) {
-		glog.Infof("%x: #%d %v (- %v)\n", c.Address(), c.Nonce(), c.Balance(), amount)
+		glog.Infof("%x: #%d %v (- %v)\n", sobj.Address(), sobj.Nonce(), sobj.Balance(), amount)
 	}
 }
 
-func (self *StateObject) SetBalance(amount *big.Int) {
-	self.db.journal = append(self.db.journal, balanceChange{
-		account: &self.address,
-		prev:    new(big.Int).Set(self.data.Balance),
+func (sobj *StateObject) SetBalance(amount *big.Int) {
+	sobj.db.journal = append(sobj.db.journal, balanceChange{
+		account: &sobj.address,
+		prev:    new(big.Int).Set(sobj.data.Balance),
 	})
-	self.setBalance(amount)
+	sobj.setBalance(amount)
 }
 
-func (self *StateObject) setBalance(amount *big.Int) {
-	self.data.Balance = amount
-	if self.onDirty != nil {
-		self.onDirty(self.Address())
-		self.onDirty = nil
+func (sobj *StateObject) setBalance(amount *big.Int) {
+	sobj.data.Balance = amount
+	if sobj.onDirty != nil {
+		sobj.onDirty(sobj.Address())
+		sobj.onDirty = nil
 	}
 }
 
 // Return the gas back to the origin. Used by the Virtual machine or Closures
-func (c *StateObject) ReturnGas(gas, price *big.Int) {}
+func (sobj *StateObject) ReturnGas(gas, price *big.Int) {}
 
-func (self *StateObject) deepCopy(db *StateDB, onDirty func(addr common.Address)) *StateObject {
-	stateObject := newObject(db, self.address, self.data, onDirty)
-	stateObject.trie = self.trie
+func (sobj *StateObject) deepCopy(db *StateDB, onDirty func(addr common.Address)) *StateObject {
+	stateObject := newObject(db, sobj.address, sobj.data, onDirty)
+	stateObject.trie = sobj.trie
 	// Modified to use bytecode instead of a copy of the bytecode
-	stateObject.code = self.code
-	stateObject.dirtyStorage = self.dirtyStorage.Copy()
-	stateObject.cachedStorage = self.dirtyStorage.Copy()
-	stateObject.suicided = self.suicided
-	stateObject.dirtyCode = self.dirtyCode
-	stateObject.deleted = self.deleted
+	stateObject.code = sobj.code
+	stateObject.dirtyStorage = sobj.dirtyStorage.Copy()
+	stateObject.cachedStorage = sobj.dirtyStorage.Copy()
+	stateObject.suicided = sobj.suicided
+	stateObject.dirtyCode = sobj.dirtyCode
+	stateObject.deleted = sobj.deleted
 	return stateObject
 }
 
@@ -295,72 +295,72 @@ func (self *StateObject) deepCopy(db *StateDB, onDirty func(addr common.Address)
 //
 
 // Returns the address of the contract/account
-func (c *StateObject) Address() common.Address {
-	return c.address
+func (sobj *StateObject) Address() common.Address {
+	return sobj.address
 }
 
 // Code returns the contract code associated with this object, if any.
-func (self *StateObject) Code(db trie.Database) []byte {
-	if self.code != nil {
-		return self.code
+func (sobj *StateObject) Code(db trie.Database) []byte {
+	if sobj.code != nil {
+		return sobj.code
 	}
-	if bytes.Equal(self.CodeHash(), emptyCodeHash) {
+	if bytes.Equal(sobj.CodeHash(), emptyCodeHash) {
 		return nil
 	}
-	code, err := db.Get(self.CodeHash())
+	code, err := db.Get(sobj.CodeHash())
 	if err != nil {
-		self.setError(fmt.Errorf("can't load code hash %x: %v", self.CodeHash(), err))
+		sobj.setError(fmt.Errorf("can't load code hash %x: %v", sobj.CodeHash(), err))
 	}
-	self.code = code
+	sobj.code = code
 	return code
 }
 
-func (self *StateObject) SetCode(codeHash common.Hash, code []byte) {
-	prevcode := self.Code(self.db.db)
-	self.db.journal = append(self.db.journal, codeChange{
-		account:  &self.address,
-		prevhash: self.CodeHash(),
+func (sobj *StateObject) SetCode(codeHash common.Hash, code []byte) {
+	prevcode := sobj.Code(sobj.db.db)
+	sobj.db.journal = append(sobj.db.journal, codeChange{
+		account:  &sobj.address,
+		prevhash: sobj.CodeHash(),
 		prevcode: prevcode,
 	})
-	self.setCode(codeHash, code)
+	sobj.setCode(codeHash, code)
 }
 
-func (self *StateObject) setCode(codeHash common.Hash, code []byte) {
-	self.code = code
-	self.data.CodeHash = codeHash[:]
-	self.dirtyCode = true
-	if self.onDirty != nil {
-		self.onDirty(self.Address())
-		self.onDirty = nil
+func (sobj *StateObject) setCode(codeHash common.Hash, code []byte) {
+	sobj.code = code
+	sobj.data.CodeHash = codeHash[:]
+	sobj.dirtyCode = true
+	if sobj.onDirty != nil {
+		sobj.onDirty(sobj.Address())
+		sobj.onDirty = nil
 	}
 }
 
-func (self *StateObject) SetNonce(nonce uint64) {
-	self.db.journal = append(self.db.journal, nonceChange{
-		account: &self.address,
-		prev:    self.data.Nonce,
+func (sobj *StateObject) SetNonce(nonce uint64) {
+	sobj.db.journal = append(sobj.db.journal, nonceChange{
+		account: &sobj.address,
+		prev:    sobj.data.Nonce,
 	})
-	self.setNonce(nonce)
+	sobj.setNonce(nonce)
 }
 
-func (self *StateObject) setNonce(nonce uint64) {
-	self.data.Nonce = nonce
-	if self.onDirty != nil {
-		self.onDirty(self.Address())
-		self.onDirty = nil
+func (sobj *StateObject) setNonce(nonce uint64) {
+	sobj.data.Nonce = nonce
+	if sobj.onDirty != nil {
+		sobj.onDirty(sobj.Address())
+		sobj.onDirty = nil
 	}
 }
 
-func (self *StateObject) CodeHash() []byte {
-	return self.data.CodeHash
+func (sobj *StateObject) CodeHash() []byte {
+	return sobj.data.CodeHash
 }
 
-func (self *StateObject) Balance() *big.Int {
-	return self.data.Balance
+func (sobj *StateObject) Balance() *big.Int {
+	return sobj.data.Balance
 }
 
-func (self *StateObject) Nonce() uint64 {
-	return self.data.Nonce
+func (sobj *StateObject) Nonce() uint64 {
+	return sobj.data.Nonce
 }
 
 // Never called, but must be present to allow StateObject to be used
@@ -370,17 +370,17 @@ func (self *StateObject) Nonce() uint64 {
 //	panic("Value on StateObject should never be called")
 //}
 
-func (self *StateObject) ForEachStorage(cb func(key, value common.Hash) bool) {
+func (sobj *StateObject) ForEachStorage(cb func(key, value common.Hash) bool) {
 	// When iterating over the storage check the cache first
-	for h, value := range self.cachedStorage {
+	for h, value := range sobj.cachedStorage {
 		cb(h, value)
 	}
 
-	it := self.getTrie(self.db.db).Iterator()
+	it := sobj.getTrie(sobj.db.db).Iterator()
 	for it.Next() {
 		// ignore cached values
-		key := common.BytesToHash(self.trie.GetKey(it.Key))
-		if _, ok := self.cachedStorage[key]; !ok {
+		key := common.BytesToHash(sobj.trie.GetKey(it.Key))
+		if _, ok := sobj.cachedStorage[key]; !ok {
 			cb(key, common.BytesToHash(it.Value))
 		}
 	}
