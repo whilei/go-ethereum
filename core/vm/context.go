@@ -127,7 +127,7 @@ type Context interface {
 	CommitAccount(address common.Address, nonce uint64, balance *big.Int) error
 	// Commit a block hash to this VM. This should only be used when
 	// receiving `RequireBlockhashError`.
-	CommitBlockhash(number uint64, hash common.Hash) error
+	CommitBlockHash(number uint64, hash common.Hash) error
 	// Commit a contract code to this VM.
 	CommitCode(address common.Address, hash common.Hash, code []byte) error
 	// Commit a gas rules

@@ -124,7 +124,7 @@ func (venv *vmEnv) execute(ctx vm.Context) ([]byte, *common.Address, error) {
 			case vm.RequireHash:
 				number := req.Number
 				hash := venv.hashfn(number)
-				ctx.CommitBlockhash(number, hash)
+				ctx.CommitBlockHash(number, hash)
 			case vm.RequireRules:
 				ctx.CommitRules(venv.rules.GasTable(venv.number), venv.fork, venv.difficulty, venv.gasLimit, venv.time)
 			default:

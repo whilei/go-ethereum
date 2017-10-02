@@ -79,7 +79,7 @@ func (self *Env) Call(me common.Address, addr common.Address, data []byte, gas, 
 				ctx.CommitAccount(acc.Address(),acc.Nonce(),acc.Balance())
 			case vm.RequireHash:
 				hash := common.Hash{}
-				ctx.CommitBlockhash(r.Number,hash)
+				ctx.CommitBlockHash(r.Number,hash)
 			case vm.RequireCode:
 				ctx.CommitCode(r.Address,self.state.GetCodeHash(r.Address),self.state.GetCode(r.Address))
 			case vm.RequireRules:
