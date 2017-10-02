@@ -54,16 +54,16 @@ func lookupAddress(addr common.Address, addresses []common.Address) bool {
 	return false
 }
 
-func (self *StateDB) RawDump(addresses []common.Address) Dump {
+func (sdb *StateDB) RawDump(addresses []common.Address) Dump {
 
 	dump := Dump{
-		Root:     common.Bytes2Hex(self.trie.Root()),
+		Root:     common.Bytes2Hex(sdb.trie.Root()),
 		Accounts: make(map[string]DumpAccount),
 	}
 
-	it := self.trie.Iterator()
+	it := sdb.trie.Iterator()
 	for it.Next() {
-		addr := self.trie.GetKey(it.Key)
+		addr := sdb.trie.GetKey(it.Key)
 		addrA := common.BytesToAddress(addr)
 
 		if addresses != nil && len(addresses) > 0 {
@@ -85,12 +85,12 @@ func (self *StateDB) RawDump(addresses []common.Address) Dump {
 			Nonce:    data.Nonce,
 			Root:     common.Bytes2Hex(data.Root[:]),
 			CodeHash: common.Bytes2Hex(data.CodeHash),
-			Code:     common.Bytes2Hex(obj.Code(self.db)),
+			Code:     common.Bytes2Hex(obj.Code(sdb.db)),
 			Storage:  make(map[string]string),
 		}
-		storageIt := obj.getTrie(self.db).Iterator()
+		storageIt := obj.getTrie(sdb.db).Iterator()
 		for storageIt.Next() {
-			account.Storage[common.Bytes2Hex(self.trie.GetKey(storageIt.Key))] = common.Bytes2Hex(storageIt.Value)
+			account.Storage[common.Bytes2Hex(sdb.trie.GetKey(storageIt.Key))] = common.Bytes2Hex(storageIt.Value)
 		}
 		dump.Accounts[common.Bytes2Hex(addr)] = account
 	}
@@ -241,7 +241,7 @@ func encoder(c chan *AddressedRawAccount, cN chan EncodedAccount, wg *sync.WaitG
 	}
 }
 
-func (self *StateDB) LoadEncodedAccounts(addresses []common.Address) (accounts map[string][]byte, err error) {
+func (sdb *StateDB) LoadEncodedAccounts(addresses []common.Address) (accounts map[string][]byte, err error) {
 
 	accounts = make(map[string][]byte)
 
@@ -255,7 +255,7 @@ func (self *StateDB) LoadEncodedAccounts(addresses []common.Address) (accounts m
 		go compressor(c1, c2, &wg)
 	}
 
-	go iterator(self, addresses, c1)
+	go iterator(sdb, addresses, c1)
 
 	go func() {
 		for {
@@ -368,13 +368,13 @@ func writer(root string, zipped bool, prefix string, indent string, out io.Write
 	}
 }
 
-func (self *StateDB) UnsortedRawDump(addresses []common.Address, fwr func(chan EncodedAccount, chan error)) (err error) {
+func (sdb *StateDB) UnsortedRawDump(addresses []common.Address, fwr func(chan EncodedAccount, chan error)) (err error) {
 
 	var wg sync.WaitGroup
 	c1 := make(chan *AddressedRawAccount, 10)
 	c2 := make(chan EncodedAccount, 10)
 	c3 := make(chan error)
-	go iterator(self, addresses, c1)
+	go iterator(sdb, addresses, c1)
 	for i := 0; i < 2; i++ {
 		wg.Add(1)
 		go encoder(c1, c2, &wg)
@@ -387,16 +387,16 @@ func (self *StateDB) UnsortedRawDump(addresses []common.Address, fwr func(chan E
 
 }
 
-func (self *StateDB) SortedDump(addresses []common.Address, prefix string, indent string, out io.Writer) (err error) {
+func (sdb *StateDB) SortedDump(addresses []common.Address, prefix string, indent string, out io.Writer) (err error) {
 
 	var accounts map[string][]byte
 
-	accounts, err = self.LoadEncodedAccounts(addresses)
+	accounts, err = sdb.LoadEncodedAccounts(addresses)
 	if err != nil {
 		return
 	}
 
-	fwr := writer(common.Bytes2Hex(self.trie.Root()), true, prefix, indent, out)
+	fwr := writer(common.Bytes2Hex(sdb.trie.Root()), true, prefix, indent, out)
 
 	keys := make([]string, 0, len(accounts))
 	for k := range accounts {
@@ -421,14 +421,14 @@ func (self *StateDB) SortedDump(addresses []common.Address, prefix string, inden
 	return
 }
 
-func (self *StateDB) UnsortedDump(addresses []common.Address, prefix string, indent string, out io.Writer) (err error) {
-	fwr := writer(common.Bytes2Hex(self.trie.Root()), false, prefix, indent, out)
-	return self.UnsortedRawDump(addresses, fwr)
+func (sdb *StateDB) UnsortedDump(addresses []common.Address, prefix string, indent string, out io.Writer) (err error) {
+	fwr := writer(common.Bytes2Hex(sdb.trie.Root()), false, prefix, indent, out)
+	return sdb.UnsortedRawDump(addresses, fwr)
 }
 
-func (self *StateDB) Dump(addresses []common.Address) []byte {
+func (sdb *StateDB) Dump(addresses []common.Address) []byte {
 	var bf bytes.Buffer
-	err := self.SortedDump(addresses, "", "    ", &bf)
+	err := sdb.SortedDump(addresses, "", "    ", &bf)
 	if err != nil {
 		return nil
 	}

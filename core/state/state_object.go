@@ -278,16 +278,16 @@ func (sobj *StateObject) setBalance(amount *big.Int) {
 func (sobj *StateObject) ReturnGas(gas, price *big.Int) {}
 
 func (sobj *StateObject) deepCopy(db *StateDB, onDirty func(addr common.Address)) *StateObject {
-	stateObject := newObject(db, sobj.address, sobj.data, onDirty)
-	stateObject.trie = sobj.trie
+	so := newObject(db, sobj.address, sobj.data, onDirty)
+	so.trie = sobj.trie
 	// Modified to use bytecode instead of a copy of the bytecode
-	stateObject.code = sobj.code
-	stateObject.dirtyStorage = sobj.dirtyStorage.Copy()
-	stateObject.cachedStorage = sobj.dirtyStorage.Copy()
-	stateObject.suicided = sobj.suicided
-	stateObject.dirtyCode = sobj.dirtyCode
-	stateObject.deleted = sobj.deleted
-	return stateObject
+	so.code = sobj.code
+	so.dirtyStorage = sobj.dirtyStorage.Copy()
+	so.cachedStorage = sobj.dirtyStorage.Copy()
+	so.suicided = sobj.suicided
+	so.dirtyCode = sobj.dirtyCode
+	so.deleted = sobj.deleted
+	return so
 }
 
 //
