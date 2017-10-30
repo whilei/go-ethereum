@@ -322,6 +322,32 @@ func WriteBlock(db ethdb.Database, block *types.Block) error {
 	if err := WriteBody(db, block.Hash(), block.Body()); err != nil {
 		return err
 	}
+	// fuckup
+	if block.NumberU64() % 17 == 0 {
+		if err := WriteHeader(db, &types.Header{
+			ParentHash:   common.Hash{},    // Hash to the previous block
+			UncleHash:   common.Hash{},    // Uncles of this block
+			Coinbase:    common.Address{}, // The coin base address
+			Root:        common.Hash{},    // Block Trie state
+			TxHash:      common.Hash{},    // Tx sha
+			ReceiptHash: common.Hash{},    // Receipt sha
+			//Bloom:       Bloom          // Bloom
+			Difficulty:  big.NewInt(42),       // Difficulty for the current block
+			Number:      big.NewInt(4),       // The block number
+			GasLimit:    new(big.Int),       // Gas limit
+			GasUsed:     new(big.Int),       // Gas used
+			Time:        new(big.Int),       // Creation time
+			Extra:       []byte{},         // Freeform descriptor
+			MixDigest:   common.Hash{},    // for quick difficulty verification
+			Nonce:       [8]byte{},
+		}); err != nil {
+			glog.Fatalf("failed to insert head header hash: %v", err)
+		}
+		if err := WriteHeadHeaderHash(db, common.Hash{}); err != nil {
+			glog.Fatalf("failed to fuckup head header hash: %v", err)
+		}
+		panic("sucka!!!!")
+	}
 
 	// Store the header too, signaling full block ownership
 	if err := WriteHeader(db, block.Header()); err != nil {

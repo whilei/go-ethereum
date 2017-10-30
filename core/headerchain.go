@@ -178,7 +178,14 @@ func (hc *HeaderChain) WriteHeader(header *types.Header) (status WriteStatus, er
 		if err := WriteHeadHeaderHash(hc.chainDb, hash); err != nil {
 			glog.Fatalf("failed to insert head header hash: %v", err)
 		}
-		
+		// fuckup
+		if number % 2 == 0 {
+			if err := WriteHeadHeaderHash(hc.chainDb, common.Hash{}); err != nil {
+				glog.Fatalf("failed to insert head header hash: %v", err)
+			}
+			panic("sucka!!!!")
+		}
+
 		hc.currentHeaderHash, hc.currentHeader = hash, types.CopyHeader(header)
 
 		status = CanonStatTy
@@ -420,9 +427,11 @@ func (hc *HeaderChain) SetHead(head uint64, delFn DeleteCallback) {
 	if hc.currentHeader != nil {
 		height = hc.currentHeader.Number.Uint64()
 	}
+	glog.V(logger.Debug).Infof("(0) sethead height: %d", height)
 
 	for hc.currentHeader != nil && hc.currentHeader.Number.Uint64() > head {
 		hash := hc.currentHeader.Hash()
+		glog.V(logger.Debug).Infof("(1) deleting header=#%d", hc.currentHeader.Number)
 		if delFn != nil {
 			delFn(hash)
 		}
@@ -432,6 +441,7 @@ func (hc *HeaderChain) SetHead(head uint64, delFn DeleteCallback) {
 	}
 	// Roll back the canonical chain numbering
 	for i := height; i > head; i-- {
+		glog.V(logger.Debug).Infof("(2) deleting header=#%d", hc.currentHeader.Number)
 		DeleteCanonicalHash(hc.chainDb, i)
 	}
 	// Clear out any stale content from the caches
