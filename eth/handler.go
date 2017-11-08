@@ -685,6 +685,12 @@ func (pm *ProtocolManager) BroadcastBlock(block *types.Block, propagate bool) {
 	hash := block.Hash()
 	peers := pm.peers.PeersWithoutBlock(hash)
 
+	timeSinceReceived := time.Since(block.ReceivedAt)
+	// Block was not received; it was mined.
+	if block.ReceivedAt.IsZero() {
+		timeSinceReceived = time.Duration(uint64(time.Now().Nanosecond()) - block.Time().Uint64())
+	}
+
 	// If propagation is requested, send to a subset of the peer
 	if propagate {
 		// Calculate the TD of the block (it's not imported yet, so block.Td is not valid)
@@ -700,14 +706,14 @@ func (pm *ProtocolManager) BroadcastBlock(block *types.Block, propagate bool) {
 		for _, peer := range transfer {
 			peer.SendNewBlock(block, td)
 		}
-		glog.V(logger.Detail).Infof("propagated block %x to %d peers in %v", hash[:4], len(transfer), time.Since(block.ReceivedAt))
+		glog.V(logger.Detail).Infof("propagated block %x to %d peers in %v", hash[:4], len(transfer), timeSinceReceived)
 	}
 	// Otherwise if the block is indeed in our own chain, announce it
 	if pm.blockchain.HasBlock(hash) {
 		for _, peer := range peers {
 			peer.SendNewBlockHashes([]common.Hash{hash}, []uint64{block.NumberU64()})
 		}
-		glog.V(logger.Detail).Infof("announced block %x to %d peers in %v", hash[:4], len(peers), time.Since(block.ReceivedAt))
+		glog.V(logger.Detail).Infof("announced block %x to %d peers in %v", hash[:4], len(peers), timeSinceReceived)
 	}
 }
 
