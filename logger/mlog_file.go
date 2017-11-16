@@ -78,6 +78,9 @@ var (
 	// speed-up checks to avoid performance penalty if mlog is
 	// off.
 	isMlogEnabled bool = true
+
+	// Use true with JSON format
+	withTimeStamp bool
 )
 
 // MLogT defines an mlog LINE
@@ -133,6 +136,15 @@ func SetMlogEnabled(b bool) bool {
 
 func MlogEnabled() bool {
 	return isMlogEnabled
+}
+
+func SetWithTimestampFromFormat(format string) bool {
+	if MLogStringToFormat[format] == MLOGJSON {
+		withTimeStamp = false
+	} else {
+		withTimeStamp = true
+	}
+	return withTimeStamp
 }
 
 // MLogRegisterAvailable is called for each log component variable from a package/mlog.go file

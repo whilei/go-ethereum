@@ -490,13 +490,12 @@ func makeMLogFileLogger(ctx *cli.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// withTs toggles custom timestamp ISO8601 prefix
-	// logger print without timestamp header prefix if json
-	withTs := true
-	if f := ctx.GlobalString(MLogFlag.Name); logger.MLogStringToFormat[f] == logger.MLOGJSON {
-		withTs = false
+
+	if withTs := logger.SetWithTimestampFromFormat(ctx.GlobalString(MLogFlag.Name)); ctx.GlobalString(MLogFlag.Name) == "json" && withTs == true {
+		glog.Fatalf("Could not set JSON mlog format without timestamp")
 	}
-	logger.BuildNewMLogSystem(mlogdir, filename, 1, 0, withTs) // flags: 0 disables automatic log package time prefix
+
+	logger.BuildNewMLogSystem(mlogdir, filename, 1, 0) // flags: 0 disables automatic log package time prefix
 	return filename, nil
 }
 

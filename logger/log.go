@@ -48,7 +48,7 @@ func New(datadir string, logFile string, logLevel int, flags int) LogSystem {
 	return sys
 }
 
-func BuildNewMLogSystem(datadir string, logFile string, logLevel int, flags int, withTimestamp bool) LogSystem {
+func BuildNewMLogSystem(datadir string, logFile string, logLevel int, flags int) LogSystem {
 	var writer io.Writer
 	if logFile == "" {
 		writer = os.Stdout
@@ -57,7 +57,7 @@ func BuildNewMLogSystem(datadir string, logFile string, logLevel int, flags int,
 	}
 
 	var sys LogSystem
-	sys = NewMLogSystem(writer, flags, LogLevel(logLevel), withTimestamp)
+	sys = NewMLogSystem(writer, flags, LogLevel(logLevel))
 	AddLogSystem(sys)
 
 	return sys
