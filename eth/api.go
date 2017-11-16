@@ -1833,9 +1833,16 @@ func (s *PublicBlockChainAPI) TraceCall(args CallArgs, blockNr rpc.BlockNumber) 
 // TraceTransaction returns the amount of gas and execution result of the given transaction.
 func (s *PublicDebugAPI) TraceTransaction(txHash common.Hash) (*ExecutionResult, error) {
 	var result *ExecutionResult
+	txNotFoundErr := fmt.Errorf("tx '%x' not found", txHash)
+
+	receipt := core.GetReceipt(s.eth.ChainDb(), txHash)
+	if receipt == nil {
+		return nil, txNotFoundErr
+	}
+
 	tx, blockHash, _, txIndex := core.GetTransaction(s.eth.ChainDb(), txHash)
 	if tx == nil {
-		return result, fmt.Errorf("tx '%x' not found", txHash)
+		return result, txNotFoundErr
 	}
 
 	msg, vmenv, err := s.computeTxEnv(blockHash, int(txIndex))
@@ -1848,6 +1855,7 @@ func (s *PublicDebugAPI) TraceTransaction(txHash common.Hash) (*ExecutionResult,
 	return &ExecutionResult{
 		Gas:         gas,
 		ReturnValue: fmt.Sprintf("%x", ret),
+		StructLogs: receipt.Logs,
 	}, nil
 }
 
