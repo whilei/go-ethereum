@@ -48,7 +48,6 @@ import (
 	"github.com/ethereumproject/go-ethereum/p2p"
 	"github.com/ethereumproject/go-ethereum/rlp"
 	"github.com/ethereumproject/go-ethereum/rpc"
-	"strings"
 )
 
 const defaultGas = uint64(90000)
@@ -1789,28 +1788,9 @@ func (api *PublicDebugAPI) MLog(input string) (string, error) {
 		return "", err
 	}
 
-	var components []string
-	for k := range logger.MLogRegistryAvailable {
-		components = append(components, string(k))
+	if withTs := logger.SetWithTimestampFromFormat(input); input == "json" && withTs == true {
+		glog.Fatalf("Could not set JSON mlog format without timestamp")
 	}
-	cmpts := strings.Join(components, ",")
-
-	if err := logger.MLogRegisterComponentsFromContext(cmpts); err != nil {
-		return "", err
-	}
-
-	_, filename, err := logger.CreateMLogFile(time.Now())
-	if err != nil {
-		return "", err
-	}
-
-	withTs := true
-	if logger.MLogStringToFormat[input] == logger.MLOGJSON {
-		withTs = false
-	}
-
-	logger.BuildNewMLogSystem(logger.GetMLogDir(), filename, 1, 0, withTs) // flags: 0 disables automatic log package time prefix
-	// TODO: remove old log system if exists
 
 	return input, nil
 }

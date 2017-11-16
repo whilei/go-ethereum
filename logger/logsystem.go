@@ -36,15 +36,14 @@ func NewStdLogSystem(writer io.Writer, flags int, level LogLevel) *StdLogSystem 
 	return &StdLogSystem{logger, uint32(level)}
 }
 
-func NewMLogSystem(writer io.Writer, flags int, level LogLevel, withTimestamp bool) *MLogSystem {
+func NewMLogSystem(writer io.Writer, flags int, level LogLevel) *MLogSystem {
 	logger := log.New(writer, "", flags)
-	return &MLogSystem{logger, uint32(level), withTimestamp}
+	return &MLogSystem{logger, uint32(level)}
 }
 
 type MLogSystem struct {
 	logger        *log.Logger
 	level         uint32
-	withTimestamp bool
 }
 
 type StdLogSystem struct {
@@ -56,7 +55,7 @@ func (m *MLogSystem) LogPrint(msg LogMsg) {
 	stdmsg, ok := msg.(stdMsg)
 	if ok {
 		if m.GetLogLevel() >= stdmsg.Level() {
-			if m.withTimestamp {
+			if withTimeStamp {
 				m.logger.Print(time.Now().UTC().Format(time.RFC3339), " ", stdmsg.String())
 			} else {
 				m.logger.Print(stdmsg.String())
