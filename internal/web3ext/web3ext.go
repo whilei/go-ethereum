@@ -303,6 +303,11 @@ web3._extend({
 			name: 'accountExist',
 			call: 'debug_accountExist',
 			params: 2
+		}),
+		new web3._extend.Method({
+			name: 'mLog',
+			call: 'debug_mLog',
+			params: 1
 		})
 	],
 	properties: []

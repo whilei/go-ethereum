@@ -48,6 +48,7 @@ import (
 	"github.com/ethereumproject/go-ethereum/p2p"
 	"github.com/ethereumproject/go-ethereum/rlp"
 	"github.com/ethereumproject/go-ethereum/rpc"
+	"strings"
 )
 
 const defaultGas = uint64(90000)
@@ -1772,12 +1773,55 @@ func (api *PublicDebugAPI) Vmodule(s string) (string, error) {
 	return glog.GetVModule().String(), err
 }
 
+func (api *PublicDebugAPI) MLog(input string) (string, error) {
+
+	if input == "off" {
+		if !logger.SetMlogEnabled(false) {
+			return input, nil
+		}
+		return "", errors.New("something went wrong")
+	}
+	if !logger.SetMlogEnabled(true) {
+		return "", errors.New("something went wrong")
+	}
+
+	if err := logger.SetMLogFormatFromString(input); err != nil {
+		return "", err
+	}
+
+	var components []string
+	for k := range logger.MLogRegistryAvailable {
+		components = append(components, string(k))
+	}
+	cmpts := strings.Join(components, ",")
+
+	if err := logger.MLogRegisterComponentsFromContext(cmpts); err != nil {
+		return "", err
+	}
+
+	_, filename, err := logger.CreateMLogFile(time.Now())
+	if err != nil {
+		return "", err
+	}
+
+	withTs := true
+	if logger.MLogStringToFormat[input] == logger.MLOGJSON {
+		withTs = false
+	}
+
+	logger.BuildNewMLogSystem(logger.GetMLogDir(), filename, 1, 0, withTs) // flags: 0 disables automatic log package time prefix
+	// TODO: remove old log system if exists
+
+	return input, nil
+}
+
 // ExecutionResult groups all structured logs emitted by the EVM
 // while replaying a transaction in debug mode as well as the amount of
 // gas used and the return value
 type ExecutionResult struct {
 	Gas         *big.Int `json:"gas"`
 	ReturnValue string   `json:"returnValue"`
+	StructLogs vm.Logs `json:"structLogs",omitempty`
 }
 
 // TraceCall executes a call and returns the amount of gas and optionally returned values.

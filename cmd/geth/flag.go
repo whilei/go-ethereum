@@ -480,11 +480,8 @@ func mustMakeMLogDir(ctx *cli.Context) string {
 	return filepath.Join(MustMakeChainDataDir(ctx), "mlogs")
 }
 
-func makeMLogFileLogger(ctx *cli.Context) (string, error) {
+func makeMLogFileLogger(ctx *cli.Context, mlogdir string) (string, error) {
 	now := time.Now()
-
-	mlogdir := mustMakeMLogDir(ctx)
-	logger.SetMLogDir(mlogdir)
 
 	_, filename, err := logger.CreateMLogFile(now)
 	if err != nil {
@@ -500,7 +497,7 @@ func makeMLogFileLogger(ctx *cli.Context) (string, error) {
 	return filename, nil
 }
 
-func mustRegisterMLogsFromContext(ctx *cli.Context) {
+func mustRegisterMLogsFromContext(ctx *cli.Context, mlogdir string) {
 	if e := logger.MLogRegisterComponentsFromContext(ctx.GlobalString(MLogComponentsFlag.Name)); e != nil {
 		// print documentation if user enters unavailable mlog component
 		var components []string
@@ -515,7 +512,7 @@ func mustRegisterMLogsFromContext(ctx *cli.Context) {
 	if e := logger.SetMLogFormatFromString(ctx.GlobalString(MLogFlag.Name)); e != nil {
 		glog.Fatalf("Error setting mlog format: %v, value was: %v", e, ctx.GlobalString(MLogFlag.Name))
 	}
-	fname, e := makeMLogFileLogger(ctx)
+	fname, e := makeMLogFileLogger(ctx, mlogdir)
 	if e != nil {
 		glog.Fatalf("Failed to start machine log: %v", e)
 	}
@@ -582,9 +579,13 @@ func MakeSystemNode(version string, ctx *cli.Context) *node.Node {
 		}
 	}
 
-	// If --mlog enabled, configure and create mlog dir and file
+	// Set mlog file dir from context whether mlog enabled or not
+	mlogdir := mustMakeMLogDir(ctx)
+	logger.SetMLogDir(mlogdir)
+
+	// If mlog enabled, configure and create mlog dir and file
 	if ctx.GlobalString(MLogFlag.Name) != "off" {
-		mustRegisterMLogsFromContext(ctx)
+		mustRegisterMLogsFromContext(ctx, mlogdir)
 	} else {
 		// Just demonstrative code.
 		if b := logger.SetMlogEnabled(false); b == false && logger.MlogEnabled() == false {

@@ -202,6 +202,10 @@ func SetMLogDir(str string) {
 	*mLogDir = str
 }
 
+func GetMLogDir() string {
+	return *mLogDir
+}
+
 func SetMLogFormat(format mlogFormat) {
 	mLogFormat = format
 }
