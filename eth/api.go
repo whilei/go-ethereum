@@ -1778,6 +1778,7 @@ func (api *PublicDebugAPI) Vmodule(s string) (string, error) {
 type ExecutionResult struct {
 	Gas         *big.Int `json:"gas"`
 	ReturnValue string   `json:"returnValue"`
+	StructLogs vm.Logs `json:"structLogs",omitempty"`
 }
 
 // TraceCall executes a call and returns the amount of gas and optionally returned values.
