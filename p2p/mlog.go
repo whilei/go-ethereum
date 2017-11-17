@@ -17,8 +17,7 @@ var mlogServerPeerAdded = logger.MLogT{
 	Details: []logger.MLogDetailT{
 		{"SERVER", "PEER_COUNT", "INT"},
 		{"PEER", "ID", "STRING"},
-		{"PEER", "REMOTE_IP", "STRING"},
-		{"PEER", "REMOTE_PORT", "STRING"},
+		{"PEER", "REMOTE_ADDR", "STRING"},
 		{"PEER", "REMOTE_VERSION", "STRING"},
 	},
 }

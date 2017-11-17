@@ -29,7 +29,6 @@ import (
 	"github.com/ethereumproject/go-ethereum/logger/glog"
 	"github.com/ethereumproject/go-ethereum/p2p/discover"
 	"github.com/ethereumproject/go-ethereum/p2p/nat"
-	"strings"
 )
 
 const (
@@ -670,12 +669,10 @@ func (srv *Server) checkpoint(c *conn, stage chan<- *conn) error {
 // the peer.
 func (srv *Server) runPeer(p *Peer) {
 	if logger.MlogEnabled() {
-		splitRemoteAddr := strings.Split(p.RemoteAddr().String(), ":")
 		mlogServer.Send(mlogServerPeerAdded.SetDetailValues(
 			srv.PeerCount(),
 			p.ID().String(),
-			splitRemoteAddr[0], // ip
-			splitRemoteAddr[1], // port
+			p.RemoteAddr().String(),
 			p.Name(),
 		))
 	}
