@@ -1282,6 +1282,7 @@ func (self *BlockChain) WriteBlock(block *types.Block) (status WriteStatus, err 
 				block.GasUsed(),
 				block.Coinbase().Hex(),
 				block.Time(),
+				block.Difficulty(),
 			))
 		}()
 	}
