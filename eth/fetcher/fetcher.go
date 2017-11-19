@@ -334,6 +334,14 @@ func (f *Fetcher) loop() {
 			// If we have a valid block number, check that it's potentially useful
 			if notification.number > 0 {
 				if dist := int64(notification.number) - int64(f.chainHeight()); dist < -maxUncleDist || dist > maxQueueDist {
+					if logger.MlogEnabled() {
+						mlogFetcher.Send(mlogFetcherDiscardAnnouncement.SetDetailValues(
+							notification.origin,
+							notification.number,
+							notification.hash.Str(),
+							dist,
+						))
+					}
 					glog.V(logger.Debug).Infof("[eth/62] Peer %s: discarded announcement #%d [%x…], distance %d", notification.origin, notification.number, notification.hash[:4], dist)
 					metrics.FetchAnnounceDrops.Mark(1)
 					break
@@ -628,6 +636,14 @@ func (f *Fetcher) enqueue(peer string, block *types.Block) {
 	}
 	// Discard any past or too distant blocks
 	if dist := int64(block.NumberU64()) - int64(f.chainHeight()); dist < -maxUncleDist || dist > maxQueueDist {
+		if logger.MlogEnabled() {
+			mlogFetcher.Send(mlogFetcherDiscardAnnouncement.SetDetailValues(
+				peer,
+				block.NumberU64(),
+				hash.Str(),
+				dist,
+			))
+		}
 		glog.V(logger.Debug).Infof("Peer %s: discarded block #%d [%x…], distance %d", peer, block.NumberU64(), hash.Bytes()[:4], dist)
 		metrics.FetchBroadcastDrops.Mark(1)
 		f.forgetHash(hash)
