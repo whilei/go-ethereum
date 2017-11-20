@@ -665,7 +665,8 @@ func (f *Fetcher) insert(peer string, block *types.Block) {
 		// If the parent's unknown, abort insertion
 		parent := f.getBlock(block.ParentHash())
 		if parent == nil {
-			glog.V(logger.Debug).Infof("Peer %s: parent []%x] of block #%d [%x…] unknown", block.ParentHash().Bytes()[:4], peer, block.NumberU64(), hash[:4])
+			glog.V(logger.Debug).Infof("Peer %s: parent [%x] of block #%d [%x…] unknown", peer, block.ParentHash().Hex(), block.NumberU64(), hash)
+			f.forgetHash(hash) // TODO: TEST
 			return
 		}
 		// Quickly validate the header and propagate the block if it passes
