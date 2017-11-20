@@ -1601,7 +1601,7 @@ func (self *BlockChain) reorg(oldBlock, newBlock *types.Block) error {
 
 	if glog.V(logger.Debug) {
 		commonHash := commonBlock.Hash()
-		glog.Infof("Chain split detected @ %x. Reorganising chain from #%v %x to %x", commonHash[:4], numSplit, oldStart.Hash().Bytes()[:4], newStart.Hash().Bytes()[:4])
+		glog.Infof("Chain split detected @ %x. Reorganising chain from #%v %x to %x", commonHash, numSplit, oldStart.Hash().Bytes(), newStart.Hash().Bytes())
 	}
 
 	var addedTxs types.Transactions
