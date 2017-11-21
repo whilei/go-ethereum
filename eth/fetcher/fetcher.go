@@ -649,6 +649,12 @@ func (f *Fetcher) enqueue(peer string, block *types.Block) {
 		f.forgetHash(hash)
 		return
 	}
+	if f.getBlock(hash) != nil {
+		glog.V(logger.Debug).Infof("Peer %s: discarded block #%d [%v], already have", peer, block.NumberU64(), hash.Hex())
+		metrics.FetchBroadcastDrops.Mark(1)
+		f.forgetHash(hash)
+		return
+	}
 	// Schedule the block for future importing
 	if _, ok := f.queued[hash]; !ok {
 		op := &inject{
@@ -682,7 +688,51 @@ func (f *Fetcher) insert(peer string, block *types.Block) {
 		parent := f.getBlock(block.ParentHash())
 		if parent == nil {
 			glog.V(logger.Debug).Infof("Peer %s: parent [%x] of block #%d [%x…] unknown", peer, block.ParentHash().Hex(), block.NumberU64(), hash)
-			f.forgetHash(hash) // TODO: TEST
+			//f.dropPeer(peer)
+
+			//metrics.FetchBroadcastDrops.Mark(1)
+			//f.forgetHash(hash) // TODO: TEST
+			//f.forgetBlock ?
+
+			//f.forgetBlock()
+
+			//// At least one header's timer ran out, retrieve everything
+			//request := make(map[string][]common.Hash)
+			//
+			//for hash, announces := range f.fetched {
+			//	// Pick a random peer to retrieve from, reset all others
+			//	announce := announces[rand.Intn(len(announces))]
+			//	f.forgetHash(hash)
+			//
+			//	// If the block still didn't arrive, queue for completion
+			//	if f.getBlock(hash) == nil {
+			//		request[announce.origin] = append(request[announce.origin], hash)
+			//		f.completing[hash] = announce
+			//	}
+			//}
+			//// Send out all block body requests
+			//for peer, hashes := range request {
+			//	if glog.V(logger.Detail) && len(hashes) > 0 {
+			//		list := "["
+			//		for _, hash := range hashes {
+			//			list += fmt.Sprintf("%x…, ", hash[:4])
+			//		}
+			//		list = list[:len(list)-2] + "]"
+			//
+			//		glog.V(logger.Detail).Infof("[eth/62] Peer %s: fetching bodies %s", peer, list)
+			//	}
+			//	// Create a closure of the fetch and schedule in on a new thread
+			//	if f.completingHook != nil {
+			//		f.completingHook(hashes)
+			//	}
+			//	metrics.FetchBodies.Mark(int64(len(hashes)))
+			//	go f.completing[hashes[0]].fetchBodies(hashes)
+			//}
+			//
+			//// Schedule the next fetch if blocks are still pending
+			////f.rescheduleComplete(f.completeTimer)
+			//
+
 			return
 		}
 		// Quickly validate the header and propagate the block if it passes
