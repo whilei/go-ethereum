@@ -652,7 +652,7 @@ func (f *Fetcher) enqueue(peer string, block *types.Block) {
 }
 
 // insert spawns a new goroutine to run a block insertion into the chain. If the
-// block's number is at the same height as the current import phase, if updates
+// block's number is at the same height as the current import phase, it updates
 // the phase states accordingly.
 func (f *Fetcher) insert(peer string, block *types.Block) {
 	hash := block.Hash()
@@ -666,7 +666,8 @@ func (f *Fetcher) insert(peer string, block *types.Block) {
 		parent := f.getBlock(block.ParentHash())
 		if parent == nil {
 			glog.V(logger.Debug).Infof("Peer %s: parent [%x] of block #%d [%x…] unknown", peer, block.ParentHash().Hex(), block.NumberU64(), hash)
-			f.forgetHash(hash) // TODO: TEST
+			metrics.FetchBroadcastDrops.Mark(1)
+			f.forgetBlock(hash) // TODO: TEST
 			return
 		}
 		// Quickly validate the header and propagate the block if it passes
