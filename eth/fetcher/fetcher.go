@@ -289,6 +289,11 @@ func (f *Fetcher) loop() {
 		for hash, announce := range f.fetching {
 			if time.Since(announce.time) > fetchTimeout {
 				f.forgetHash(hash)
+
+				if f.getBlock(hash) == nil {
+					f.fetching[hash] = announce
+				}
+				f.rescheduleFetch(fetchTimer)
 			}
 		}
 		// Import any queued blocks that could potentially fit
@@ -674,7 +679,7 @@ func (f *Fetcher) enqueue(peer string, block *types.Block) {
 }
 
 // insert spawns a new goroutine to run a block insertion into the chain. If the
-// block's number is at the same height as the current import phase, if updates
+// block's number is at the same height as the current import phase, it updates
 // the phase states accordingly.
 func (f *Fetcher) insert(peer string, block *types.Block) {
 	hash := block.Hash()
