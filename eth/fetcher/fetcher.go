@@ -289,6 +289,13 @@ func (f *Fetcher) loop() {
 		for hash, announce := range f.fetching {
 			if time.Since(announce.time) > fetchTimeout {
 				f.forgetHash(hash)
+
+				if f.getBlock(hash) == nil {
+					f.inject <- &inject{
+						origin: announce.origin,
+						block: types.NewBlockWithHeader(announce.header),
+					}
+				}
 			}
 		}
 		// Import any queued blocks that could potentially fit
@@ -633,12 +640,6 @@ func (f *Fetcher) enqueue(peer string, block *types.Block) {
 		f.forgetHash(hash)
 		return
 	}
-	if f.getBlock(hash) != nil {
-		glog.V(logger.Debug).Infof("Peer %s: discarded block #%d [%v], already have", peer, block.NumberU64(), hash.Hex())
-		metrics.FetchBroadcastDrops.Mark(1)
-		f.forgetHash(hash)
-		return
-	}
 	// Schedule the block for future importing
 	if _, ok := f.queued[hash]; !ok {
 		op := &inject{
@@ -716,7 +717,7 @@ func (f *Fetcher) insert(peer string, block *types.Block) {
 			//// Schedule the next fetch if blocks are still pending
 			////f.rescheduleComplete(f.completeTimer)
 			//
-			
+
 			return
 		}
 		// Quickly validate the header and propagate the block if it passes
