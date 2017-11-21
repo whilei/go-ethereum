@@ -291,11 +291,9 @@ func (f *Fetcher) loop() {
 				f.forgetHash(hash)
 
 				if f.getBlock(hash) == nil {
-					f.inject <- &inject{
-						origin: announce.origin,
-						block: types.NewBlockWithHeader(announce.header),
-					}
+					f.fetching[hash] = announce
 				}
+				f.rescheduleFetch(fetchTimer)
 			}
 		}
 		// Import any queued blocks that could potentially fit
