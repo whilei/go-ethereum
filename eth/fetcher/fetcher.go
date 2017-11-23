@@ -289,11 +289,6 @@ func (f *Fetcher) loop() {
 		for hash, announce := range f.fetching {
 			if time.Since(announce.time) > fetchTimeout {
 				f.forgetHash(hash)
-
-				if f.getBlock(hash) == nil {
-					f.fetching[hash] = announce
-				}
-				f.rescheduleFetch(fetchTimer)
 			}
 		}
 		// Import any queued blocks that could potentially fit
