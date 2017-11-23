@@ -30,8 +30,6 @@ import (
 	"github.com/ethereumproject/go-ethereum/logger/glog"
 	"github.com/ethereumproject/go-ethereum/metrics"
 	"gopkg.in/karalabe/cookiejar.v2/collections/prque"
-	"github.com/ethereumproject/go-ethereum/eth"
-	"github.com/ethereum/go-ethereum/eth/downloader"
 )
 
 const (
