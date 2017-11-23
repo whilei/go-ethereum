@@ -727,6 +727,7 @@ func (f *Fetcher) insert(peer string, block *types.Block) {
 			OUTER:
 			for _, announces := range f.announced {
 				for _, a := range announces {
+					// Just steal the fetchHeader and fetchBodies func b/c they're peer specific.
 					if a.origin == peer {
 						an.time = time.Now()
 						an.fetchHeader = a.fetchHeader
@@ -735,9 +736,12 @@ func (f *Fetcher) insert(peer string, block *types.Block) {
 					}
 				}
 			}
+			// Somehow there was no peer in the annoucements.
 			if an.fetchHeader != nil {
-				glog.V(logger.Debug).Infof("Peer %s: hack announcing unknown parent [%s]", peer, block.ParentHash().Hex())
+				glog.V(logger.Debug).Infof("Peer %s: HACK announcing unknown parent [%s]", peer, block.ParentHash().Hex())
 				f.notify <- an
+			} else {
+				glog.V(logger.Debug).Infof("Peer %s: not found in existing announcements")
 			}
 
 
