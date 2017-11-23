@@ -1274,6 +1274,11 @@ func (self *BlockChain) WriteBlock(block *types.Block) (status WriteStatus, err 
 			case SplitStatTy:
 				mlogWriteStatus = "SPLIT"
 			}
+			parent := self.GetBlock(block.ParentHash())
+			var parentTimeDiff *big.Int
+			if parent != nil {
+				parentTimeDiff = parentTimeDiff.Sub(block.Time(), parent.Time())
+			}
 			mlogBlockchain.Send(mlogBlockchainWriteBlock.SetDetailValues(
 				mlogWriteStatus,
 				err,
@@ -1287,6 +1292,7 @@ func (self *BlockChain) WriteBlock(block *types.Block) (status WriteStatus, err 
 				block.Difficulty(),
 				len(block.Uncles()),
 				block.ReceivedAt,
+				parentTimeDiff,
 			))
 		}()
 	}

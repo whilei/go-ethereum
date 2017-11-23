@@ -41,6 +41,7 @@ A STATUS of NONE means it was written _without_ any abnormal chain event, such a
 		{"BLOCK", "DIFFICULTY", "BIGINT"},
 		{"BLOCK", "UNCLES", "INT"},
 		{"BLOCK", "RECEIVED_AT", "BIGINT"},
+		{"BLOCK", "DIFF_PARENT_TIME", "BIGINT"},
 	},
 }
 
