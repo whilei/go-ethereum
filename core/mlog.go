@@ -61,6 +61,19 @@ var mlogBlockchainInsertBlocks = logger.MLogT{
 	},
 }
 
+var mlogBlockchainReorgBlocks = logger.MLogT{
+	Description: "Called when a chain split is detected and a subset of blocks are reoganized.",
+	Receiver: "BLOCKCHAIN",
+	Verb: "REORG",
+	Subject: "BLOCKS",
+	Details: []logger.MLogDetailT{
+		{"REORG", "LAST_COMMON_HASH", "STRING"},
+		{"REORG", "SPLIT_NUMBER", "BIGINT"},
+		{"BLOCKS", "OLD_START_HASH", "STRING"},
+		{"BLOCKS", "NEW_START_HASH", "STRING"},
+	},
+}
+
 var mlogTxPoolAddTx = logger.MLogT{
 	Description: `Called once when a valid transaction is added to tx pool.
 $TO.NAME will be the account address hex or '[NEW_CONTRACT]' in case of a contract.`,

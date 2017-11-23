@@ -1613,9 +1613,17 @@ func (self *BlockChain) reorg(oldBlock, newBlock *types.Block) error {
 		}
 	}
 
+	commonHash := commonBlock.Hash()
 	if glog.V(logger.Debug) {
-		commonHash := commonBlock.Hash()
-		glog.Infof("Chain split detected @ [%s]. Reorganising chain from #%v %s to %s", commonHash, numSplit, oldStart.Hash().Hex(), newStart.Hash().Hex())
+		glog.Infof("Chain split detected @ [%s]. Reorganising chain from #%v %s to %s", commonHash.Hex(), numSplit, oldStart.Hash().Hex(), newStart.Hash().Hex())
+	}
+	if logger.MlogEnabled() {
+		mlogBlockchain.Send(mlogBlockchainReorgBlocks.SetDetailValues(
+			commonHash.Hex(),
+			numSplit,
+			oldStart.Hash().Hex(),
+			newStart.Hash().Hex(),
+		))
 	}
 
 	var addedTxs types.Transactions
