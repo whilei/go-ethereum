@@ -1275,9 +1275,9 @@ func (self *BlockChain) WriteBlock(block *types.Block) (status WriteStatus, err 
 				mlogWriteStatus = "SPLIT"
 			}
 			parent := self.GetBlock(block.ParentHash())
-			var parentTimeDiff *big.Int
+			parentTimeDiff := new(big.Int)
 			if parent != nil {
-				parentTimeDiff = parentTimeDiff.Sub(block.Time(), parent.Time())
+				parentTimeDiff = new(big.Int).Sub(block.Time(), parent.Time())
 			}
 			mlogBlockchain.Send(mlogBlockchainWriteBlock.SetDetailValues(
 				mlogWriteStatus,
