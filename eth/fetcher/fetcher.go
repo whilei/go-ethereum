@@ -205,7 +205,7 @@ func (f *Fetcher) Notify(peer string, hash common.Hash, number uint64, time time
 	}
 }
 
-// Enqueue tries to fill gaps the the fetcher's future import queue.
+// Enqueue tries to fill gaps in the fetcher's future import queue.
 func (f *Fetcher) Enqueue(peer string, block *types.Block) error {
 	op := &inject{
 		origin: peer,
@@ -690,7 +690,7 @@ func (f *Fetcher) enqueue(peer string, block *types.Block) {
 			f.queueChangeHook(op.block.Hash(), true)
 		}
 		if glog.V(logger.Debug) {
-			glog.Infof("Peer %s: queued block #%d [%x], total %v", peer, block.NumberU64(), hash.Bytes(), f.queue.Size())
+			glog.Infof("Peer %s: queued block #%d [%s], total %v", peer, block.NumberU64(), hash.Hex(), f.queue.Size())
 		}
 	}
 }
@@ -704,72 +704,21 @@ func (f *Fetcher) insert(peer string, block *types.Block) {
 	// Run the import on a new thread
 	glog.V(logger.Debug).Infof("Peer %s: importing block #%d [%s]", peer, block.NumberU64(), hash.Hex())
 	go func() {
-		defer func() { f.done <- hash }()
 
-		// If the parent's unknown, abort insertion
+		haveParent := true
+
+		defer func() {
+			if haveParent {
+				f.done <- hash
+			}
+		}()
+
+		// If the parent's unknown, abort insertion, and don't forget the hash and block;
+		// use queue gap fill to get unknown parent.
 		parent := f.getBlock(block.ParentHash())
 		if parent == nil {
 			glog.V(logger.Debug).Infof("Peer %s: parent [%s] of block #%d [%s] unknown", peer, block.ParentHash().Hex(), block.NumberU64(), hash.Hex())
-
-			// If missing parent block from hash has not been announced, hack
-			// the fetcher and append a mutilated announcement to the fetcher to try to grab the
-			// missing hash from a random peer.
-
-			// Grab the first peer who announced the block with the parent hash we don't have, if any.
-			an := &announce{
-				hash: block.ParentHash(),
-				number: block.NumberU64()-1,
-				origin: peer,
-
-			}
-			OUTER:
-			for _, announces := range f.announced {
-				for _, a := range announces {
-					// Just steal the fetchHeader and fetchBodies func b/c they're peer specific.
-					if a.origin == peer {
-						an.time = time.Now()
-						an.fetchHeader = a.fetchHeader
-						an.fetchBodies = a.fetchBodies
-						break OUTER
-					}
-				}
-			}
-			// Somehow there was no peer in the annoucements.
-			if an.fetchHeader != nil {
-				glog.V(logger.Debug).Infof("Peer %s: HACK announcing unknown parent [%s]", peer, block.ParentHash().Hex())
-				f.notify <- an
-			} else {
-				glog.V(logger.Debug).Infof("Peer %s: not found in existing announcements")
-			}
-
-
-			// f.notify <- *announce
-			//hash   common.Hash   // Hash of the block being announced
-			//number uint64        // Number of the block being announced (0 = unknown | old protocol)
-			//header *types.Header // Header of the block partially reassembled (new protocol)
-			//time   time.Time     // Timestamp of the announcement
-			//
-			//origin string // Identifier of the peer originating the notification
-
-
-
-			//if f.queue.Size() > maxUncleDist {
-			//	f.dropPeer(peer)
-			//}
-
-			//for hash, announces := range f.announced {
-			//	if time.Since(announces[0].time) > arriveTimeout-gatherSlack {
-			//		// Pick a random peer to retrieve from, reset all others
-			//		announce := announces[rand.Intn(len(announces))]
-			//		f.forgetHash(hash)
-			//
-			//		// If the block still didn't arrive, queue for fetching
-			//		if f.getBlock(hash) == nil {
-			//			request[announce.origin] = append(request[announce.origin], hash)
-			//			f.fetching[hash] = announce
-			//		}
-			//	}
-			//}
+			haveParent = false
 			return
 		}
 		// Quickly validate the header and propagate the block if it passes
