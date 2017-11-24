@@ -1503,7 +1503,16 @@ func (d *Downloader) qosTuner() {
 		atomic.StoreUint64(&d.rttConfidence, conf)
 
 		// Log the new QoS values and sleep until the next RTT
-		glog.V(logger.Debug).Infof("Quality of service: rtt %v, conf %.3f, ttl %v", rtt, float64(conf)/1000000.0, d.requestTTL())
+		ttl := d.requestTTL()
+		if logger.MlogEnabled() {
+			mlogDownloader.Send(mlogDownloaderTuneQOS.SetDetailValues(
+				rtt,
+				float64(conf)/1000000.0,
+				ttl,
+			))
+		}
+		glog.V(logger.Debug).Infof("Quality of service: rtt %v, conf %.3f, ttl %v", rtt, float64(conf)/1000000.0, ttl)
+
 		select {
 		case <-d.quitCh:
 			return
