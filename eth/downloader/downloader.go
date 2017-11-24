@@ -266,8 +266,20 @@ func (d *Downloader) RegisterPeer(id string, version int, currentHead currentHea
 	getRelHeaders relativeHeaderFetcherFn, getAbsHeaders absoluteHeaderFetcherFn, getBlockBodies blockBodyFetcherFn,
 	getReceipts receiptFetcherFn, getNodeData stateFetcherFn) error {
 
+	var err error
+	defer func() {
+		if logger.MlogEnabled() {
+			mlogDownloader.Send(mlogDownloaderRegisterPeer.SetDetailValues(
+				id,
+				version,
+				err,
+			))
+		}
+	}()
+
 	glog.V(logger.Detail).Infoln("Registering peer", id)
-	if err := d.peers.Register(newPeer(id, version, currentHead, getRelHeaders, getAbsHeaders, getBlockBodies, getReceipts, getNodeData)); err != nil {
+	err = d.peers.Register(newPeer(id, version, currentHead, getRelHeaders, getAbsHeaders, getBlockBodies, getReceipts, getNodeData))
+	if err != nil {
 		glog.V(logger.Error).Infoln("Register failed:", err)
 		return err
 	}
@@ -280,9 +292,21 @@ func (d *Downloader) RegisterPeer(id string, version int, currentHead currentHea
 // the specified peer. An effort is also made to return any pending fetches into
 // the queue.
 func (d *Downloader) UnregisterPeer(id string) error {
+
+	var err error
+	defer func() {
+		if logger.MlogEnabled() {
+			mlogDownloader.Send(mlogDownloaderUnregisterPeer.SetDetailValues(
+				id,
+				err,
+			))
+		}
+	}()
+
 	// Unregister the peer from the active peer set and revoke any fetch tasks
 	glog.V(logger.Detail).Infoln("Unregistering peer", id)
-	if err := d.peers.Unregister(id); err != nil {
+	err = d.peers.Unregister(id)
+	if err != nil {
 		glog.V(logger.Error).Infoln("Unregister failed:", err)
 		return err
 	}
