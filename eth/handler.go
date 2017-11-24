@@ -633,7 +633,6 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 		// Mark the peer as owning the block and schedule it for import
 		p.MarkBlock(request.Block.Hash())
 		p.SetHead(request.Block.ParentHash(), request.TD)
-		glog.V(logger.Debug).Infof("eth.handler: pm.fetcher.Enqueue(peer=%s,block.hash=%s", p.id, request.Block.Hash().Hex())
 		pm.fetcher.Enqueue(p.id, request.Block)
 
 		// Assuming the block is importable by the peer, but possibly not yet done so,
@@ -645,27 +644,14 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 		// Update the peers total difficulty if better than the previous
 		if _, td := p.Head(); trueTD.Cmp(td) > 0 {
 			p.SetHead(trueHead, trueTD)
-			glog.V(logger.Debug).Infof("eth.handler: peer=%s: peer.td=%v p.SetHead(trueHead=%s, trueTd=%v)", p.id, td, trueHead.Hex(), trueTD)
+
 			// Schedule a sync if above ours. Note, this will not fire a sync for a gap of
 			// a singe block (as the true TD is below the propagated block), however this
 			// scenario should easily be covered by the fetcher.
-			//
-			// The second clause in the statement ensure that even if the fetcher never receives an annoucement
-			// for the parent block and we're missing the parent block (uncle or canon), grab that from the peer too.
 			currentBlock := pm.blockchain.CurrentBlock()
-			if trueTD.Cmp(pm.blockchain.GetTd(currentBlock.Hash())) > 0 || !pm.blockchain.HasBlock(trueHead) {
-				glog.V(logger.Debug).Infof(`eth.handler: syncronising with peer=%s:
-					'trueTD.Cmp(pm.blockchain.GetTd(currentBlock.Hash())) > 0':%v
-					'!pm.blockchain.HasBlock(trueHead)':%v
-					peer.td=%v trueHead=%s trueTd=%v`,
-						p.id,
-						trueTD.Cmp(pm.blockchain.GetTd(currentBlock.Hash())) > 0,
-						!pm.blockchain.HasBlock(trueHead),
-						td, trueHead.Hex(), trueTD)
+			if trueTD.Cmp(pm.blockchain.GetTd(currentBlock.Hash())) > 0 {
 				go pm.synchronise(p)
 			}
-		} else {
-			glog.V(logger.Debug).Infof("eth.handler: peer=%s (not setting improved peer head)\n  td=%v > trueTD=%v, trueHead=%s", p.id, td, trueTD, trueHead.Hex())
 		}
 
 	case msg.Code == TxMsg:
