@@ -1082,7 +1082,6 @@ type WriteStatus byte
 const (
 	NonStatTy WriteStatus = iota
 	CanonStatTy
-	SplitStatTy
 	SideStatTy
 )
 
@@ -1271,8 +1270,6 @@ func (self *BlockChain) WriteBlock(block *types.Block) (status WriteStatus, err 
 				mlogWriteStatus = "CANON"
 			case SideStatTy:
 				mlogWriteStatus = "SIDE"
-			case SplitStatTy:
-				mlogWriteStatus = "SPLIT"
 			}
 			parent := self.GetBlock(block.ParentHash())
 			parentTimeDiff := new(big.Int)
@@ -1512,9 +1509,6 @@ func (self *BlockChain) InsertChain(chain types.Blocks) (chainIndex int, err err
 				glog.Infof("inserted forked block #%d (TD=%v) (%d TXs %d UNCs) [%s]. Took %v\n", block.Number(), block.Difficulty(), len(block.Transactions()), len(block.Uncles()), block.Hash().Hex(), time.Since(bstart))
 			}
 			events = append(events, ChainSideEvent{block, logs})
-
-		case SplitStatTy:
-			events = append(events, ChainSplitEvent{block, logs})
 		}
 		stats.processed++
 	}
