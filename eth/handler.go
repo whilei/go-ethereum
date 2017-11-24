@@ -642,15 +642,22 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 		)
 		// Update the peers total difficulty if better than the previous
 		if _, td := p.Head(); trueTD.Cmp(td) > 0 {
+			glog.V(logger.Debug).Infof("Peer %s: setting head: tdWas=%v trueTD=%v", p.id, td, trueTD)
 			p.SetHead(trueHead, trueTD)
+
 
 			// Schedule a sync if above ours. Note, this will not fire a sync for a gap of
 			// a singe block (as the true TD is below the propagated block), however this
 			// scenario should easily be covered by the fetcher.
 			currentBlock := pm.blockchain.CurrentBlock()
-			if trueTD.Cmp(pm.blockchain.GetTd(currentBlock.Hash())) > 0 {
+			if localTd := pm.blockchain.GetTd(currentBlock.Hash()); trueTD.Cmp(localTd) > 0 {
+				glog.V(logger.Debug).Infof("Peer %s: localTD=%v (<) peerTrueTD=%v, synchronising", p.id, localTd, trueTD)
 				go pm.synchronise(p)
+			} else {
+				glog.V(logger.Detail).Infof("Peer %s: localTD=%v (>=) peerTrueTD=%v, NOT synchronising", p.id, localTd, trueTD)
 			}
+		} else {
+			glog.V(logger.Detail).Infof("Peer %s: NOT setting head: tdWas=%v trueTD=%v", p.id, td, trueTD)
 		}
 
 	case msg.Code == TxMsg:
