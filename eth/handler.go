@@ -663,6 +663,25 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 						!pm.blockchain.HasBlock(trueHead),
 						td, trueHead.Hex(), trueTD)
 				go pm.synchronise(p)
+			} else {
+				glog.V(logger.Debug).Infof(`eth.handler: NOT syncronising with peer=%s:
+					'trueTD.Cmp(pm.blockchain.GetTd(currentBlock.Hash())) > 0':%v
+					'!pm.blockchain.HasBlock(trueHead)':%v
+					peer.td=%v trueHead=%s trueTd=%v`,
+					p.id,
+					trueTD.Cmp(pm.blockchain.GetTd(currentBlock.Hash())) > 0,
+					!pm.blockchain.HasBlock(trueHead),
+					td, trueHead.Hex(), trueTD)
+				if !pm.blockchain.HasBlock(trueHead) {
+					glog.V(logger.Debug).Infof(`eth.handler: FORCE syncronising with peer=%s (missing trueHead):
+					'trueTD.Cmp(pm.blockchain.GetTd(currentBlock.Hash())) > 0':%v
+					'!pm.blockchain.HasBlock(trueHead)':%v
+					peer.td=%v trueHead=%s trueTd=%v`,
+						p.id,
+						trueTD.Cmp(pm.blockchain.GetTd(currentBlock.Hash())) > 0,
+						!pm.blockchain.HasBlock(trueHead),
+						td, trueHead.Hex(), trueTD)
+				}
 			}
 		} else {
 			glog.V(logger.Debug).Infof("eth.handler: peer=%s (not setting improved peer head)\n  td=%v > trueTD=%v, trueHead=%s", p.id, td, trueTD, trueHead.Hex())
