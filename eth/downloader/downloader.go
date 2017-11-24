@@ -685,10 +685,10 @@ func (d *Downloader) findAncestor(p *peer, height uint64) (uint64, error) {
 	// If the head fetch already found an ancestor, return
 	if !common.EmptyHash(hash) {
 		if int64(number) <= floor {
-			glog.V(logger.Warn).Infof("%v: potential rewrite attack: #%d [%x…] <= #%d limit", p, number, hash[:4], floor)
+			glog.V(logger.Warn).Infof("%v: potential rewrite attack: #%d [%x…] <= #%d limit", p, number, hash, floor)
 			return 0, errInvalidAncestor
 		}
-		glog.V(logger.Debug).Infof("%v: common ancestor: #%d [%x…]", p, number, hash[:4])
+		glog.V(logger.Debug).Infof("%v: common ancestor: #%d [%x…]", p, number, hash)
 		return number, nil
 	}
 	// Ancestor not found, we need to binary search over our chain
