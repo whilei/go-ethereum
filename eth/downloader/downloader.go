@@ -248,7 +248,7 @@ func (d *Downloader) Progress() (uint64, uint64, uint64, uint64, uint64) {
 func (d *Downloader) Qos() (rtt time.Duration, ttl time.Duration, conf float64) {
 	rtt = d.requestRTT()
 	ttl = d.requestTTL()
-	conf = float64(d.rttConfidence)/1000000.0
+	conf = float64(d.rttConfidence) / 1000000.0
 	return
 }
 
@@ -429,9 +429,9 @@ func (d *Downloader) syncWithPeer(p *peer, hash common.Hash, td *big.Int) (err e
 	defer func() {
 		// reset on error
 		if err != nil {
-			d.mux.Post(FailedEvent{err})
+			d.mux.Post(FailedEvent{p, err})
 		} else {
-			d.mux.Post(DoneEvent{})
+			d.mux.Post(DoneEvent{p, hash, td})
 		}
 	}()
 

@@ -1255,6 +1255,12 @@ func (l *loggingT) flushAll() {
 	for s := fatalLog; s >= infoLog; s-- {
 		file := l.file[s]
 		if file != nil {
+			// if e := file.Flush(); e != nil {
+			// 	stdLog.Fatalln(e)
+			// }
+			// if e := file.Sync(); e != nil {
+			// 	stdLog.Fatalln(e)
+			// }
 			file.Flush() // ignore error
 			file.Sync()  // ignore error
 		}
