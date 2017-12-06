@@ -14,8 +14,9 @@ install:
 
   - ps: $env:VERSION_BASE = "$(janus.exe version -format='v%M.%m.x')"
   - ps: $env:VERSION = "$(janus.exe version -format='TAG_OR_NIGHTLY')"
+  - ps: $env:VERSION_HASH = "$(janus.exe version -format='%S')"
 
-  - echo %VERSION_BASE% %VERSION%
+  - echo %VERSION_BASE% %VERSION% %VERSION_HASH%
   - echo %PATH%
   - echo %GOPATH%
   - go version
@@ -24,7 +25,7 @@ install:
 build_script:
   - go test ./...
   - go build -ldflags "-X main.Version=%VERSION%" ./cmd/geth
-  - 7z a geth-classic-win64-%VERSION%.zip geth.exe
+  - 7z a geth-classic-win64-%VERSION%-%VERSION_HASH%.zip geth.exe
 artifacts:
   - path: '*.zip'
     name: geth

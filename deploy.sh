@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-GETH_ARCHIVE_NAME="geth-classic-$TRAVIS_OS_NAME-$(janus version -format='TAG_OR_NIGHTLY')"
+GETH_ARCHIVE_NAME="geth-classic-$TRAVIS_OS_NAME-$(janus version -format='TAG_OR_NIGHTLY')-$(janus version -format='%S'"
 zip "$GETH_ARCHIVE_NAME.zip" geth
 tar -zcf "$GETH_ARCHIVE_NAME.tar.gz" geth
 
