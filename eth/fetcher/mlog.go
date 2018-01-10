@@ -8,7 +8,7 @@ var mLogLines = []logger.MLogT{
 	mlogFetcherDiscardAnnouncement,
 }
 
-var mlogFetcherDiscardAnnouncement = logger.MLogT{
+var mlogFetcherDiscardAnnouncement = &logger.MLogT{
 	Description: "Called when a block announcement is discarded.",
 	Receiver:    "FETCHER",
 	Verb:        "DISCARD",

@@ -226,7 +226,7 @@ func (pool *TxPool) SetLocal(tx *types.Transaction) {
 func (pool *TxPool) validateTx(tx *types.Transaction) (e error) {
 	local := pool.localTx.contains(tx.Hash())
 	defer func() {
-		mlogTxPool.Send(mlogTxPoolValidateTx.SetDetailValues(
+		mlogTxPool.Send(mlogTxPoolValidateTx.AssignDetails(
 			tx.Hash().Hex(),
 			e,
 		))
@@ -319,7 +319,7 @@ func (self *TxPool) add(tx *types.Transaction) error {
 	from := common.Bytes2Hex(f[:4])
 
 	if logger.MlogEnabled() {
-		mlogTxPool.Send(mlogTxPoolAddTx.SetDetailValues(
+		mlogTxPool.Send(mlogTxPoolAddTx.AssignDetails(
 			f.Hex(),
 			toLogName,
 			tx.Value,

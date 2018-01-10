@@ -9,7 +9,7 @@ var mLogLines = []logger.MLogT{
 	mlogServerPeerRemove,
 }
 
-var mlogServerPeerAdded = logger.MLogT{
+var mlogServerPeerAdded = &logger.MLogT{
 	Description: "Called once when a peer is added.",
 	Receiver:    "SERVER",
 	Verb:        "ADD",
@@ -22,7 +22,7 @@ var mlogServerPeerAdded = logger.MLogT{
 	},
 }
 
-var mlogServerPeerRemove = logger.MLogT{
+var mlogServerPeerRemove = &logger.MLogT{
 	Description: "Called once when a peer is removed.",
 	Receiver:    "SERVER",
 	Verb:        "REMOVE",

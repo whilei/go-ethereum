@@ -510,22 +510,22 @@ func (t *udp) send(toaddr *net.UDPAddr, ptype byte, req interface{}) error {
 		switch ptype {
 		// @sorpass: again, performance penalty?
 		case pingPacket:
-			mlogDiscover.Send(mlogPingSendTo.SetDetailValues(
+			mlogDiscover.Send(mlogPingSendTo.AssignDetails(
 				toaddr.String(),
 				len(packet),
 			))
 		case pongPacket:
-			mlogDiscover.Send(mlogPongSendTo.SetDetailValues(
+			mlogDiscover.Send(mlogPongSendTo.AssignDetails(
 				toaddr.String(),
 				len(packet),
 			))
 		case findnodePacket:
-			mlogDiscover.Send(mlogFindNodeSendTo.SetDetailValues(
+			mlogDiscover.Send(mlogFindNodeSendTo.AssignDetails(
 				toaddr.String(),
 				len(packet),
 			))
 		case neighborsPacket:
-			mlogDiscover.Send(mlogNeighborsSendTo.SetDetailValues(
+			mlogDiscover.Send(mlogNeighborsSendTo.AssignDetails(
 				toaddr.String(),
 				len(packet),
 			))
@@ -607,25 +607,25 @@ func (t *udp) handlePacket(from *net.UDPAddr, buf []byte) error {
 		// since packet is an interface with 1 method: handle.
 		switch p := fmt.Sprintf("%T", packet); p {
 		case "*discover.ping":
-			mlogDiscover.Send(mlogPingHandleFrom.SetDetailValues(
+			mlogDiscover.Send(mlogPingHandleFrom.AssignDetails(
 				from.String(),
 				fromID.String(),
 				len(buf),
 			))
 		case "*discover.pong":
-			mlogDiscover.Send(mlogPongHandleFrom.SetDetailValues(
+			mlogDiscover.Send(mlogPongHandleFrom.AssignDetails(
 				from.String(),
 				fromID.String(),
 				len(buf),
 			))
 		case "*discover.findnode":
-			mlogDiscover.Send(mlogFindNodeHandleFrom.SetDetailValues(
+			mlogDiscover.Send(mlogFindNodeHandleFrom.AssignDetails(
 				from.String(),
 				fromID.String(),
 				len(buf),
 			))
 		case "*discover.neighbors":
-			mlogDiscover.Send(mlogNeighborsHandleFrom.SetDetailValues(
+			mlogDiscover.Send(mlogNeighborsHandleFrom.AssignDetails(
 				from.String(),
 				fromID.String(),
 				len(buf),

@@ -1276,7 +1276,7 @@ func (self *BlockChain) WriteBlock(block *types.Block) (status WriteStatus, err 
 			if parent != nil {
 				parentTimeDiff = new(big.Int).Sub(block.Time(), parent.Time())
 			}
-			mlogBlockchain.Send(mlogBlockchainWriteBlock.SetDetailValues(
+			mlogBlockchain.Send(mlogBlockchainWriteBlock.AssignDetails(
 				mlogWriteStatus,
 				err,
 				block.Number(),
@@ -1515,7 +1515,7 @@ func (self *BlockChain) InsertChain(chain types.Blocks) (chainIndex int, err err
 		tend := time.Since(tstart)
 		start, end := chain[0], chain[len(chain)-1]
 		if logger.MlogEnabled() {
-			mlogBlockchain.Send(mlogBlockchainInsertBlocks.SetDetailValues(
+			mlogBlockchain.Send(mlogBlockchainInsertBlocks.AssignDetails(
 				stats.processed,
 				stats.queued,
 				stats.ignored,
@@ -1616,7 +1616,7 @@ func (self *BlockChain) reorg(oldBlock, newBlock *types.Block) error {
 		glog.Infof("Chain split detected @ [%s]. Reorganising chain from #%v %s to %s", commonHash.Hex(), numSplit, oldStart.Hash().Hex(), newStart.Hash().Hex())
 	}
 	if logger.MlogEnabled() {
-		mlogBlockchain.Send(mlogBlockchainReorgBlocks.SetDetailValues(
+		mlogBlockchain.Send(mlogBlockchainReorgBlocks.AssignDetails(
 			commonHash.Hex(),
 			numSplit,
 			oldStart.Hash().Hex(),

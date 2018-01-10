@@ -335,7 +335,7 @@ func (f *Fetcher) loop() {
 			if notification.number > 0 {
 				if dist := int64(notification.number) - int64(f.chainHeight()); dist < -maxUncleDist || dist > maxQueueDist {
 					if logger.MlogEnabled() {
-						mlogFetcher.Send(mlogFetcherDiscardAnnouncement.SetDetailValues(
+						mlogFetcher.Send(mlogFetcherDiscardAnnouncement.AssignDetails(
 							notification.origin,
 							notification.number,
 							notification.hash.Str(),
@@ -636,7 +636,7 @@ func (f *Fetcher) enqueue(peer string, block *types.Block) {
 	}
 	if dist := int64(block.NumberU64()) - int64(f.chainHeight()); dist < -maxUncleDist || dist > maxQueueDist {
 		if logger.MlogEnabled() {
-			mlogFetcher.Send(mlogFetcherDiscardAnnouncement.SetDetailValues(
+			mlogFetcher.Send(mlogFetcherDiscardAnnouncement.AssignDetails(
 				peer,
 				block.NumberU64(),
 				hash.Str(),

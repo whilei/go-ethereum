@@ -22,7 +22,7 @@ var mLogLinesTxPool = []logger.MLogT{
 
 // Collect and document available mlog lines.
 
-var mlogBlockchainWriteBlock = logger.MLogT{
+var mlogBlockchainWriteBlock = &logger.MLogT{
 	Description: `Called when a single block written to the chain database.
 A STATUS of NONE means it was written _without_ any abnormal chain event, such as a split.`,
 	Receiver: "BLOCKCHAIN",
@@ -45,7 +45,7 @@ A STATUS of NONE means it was written _without_ any abnormal chain event, such a
 	},
 }
 
-var mlogBlockchainInsertBlocks = logger.MLogT{
+var mlogBlockchainInsertBlocks = &logger.MLogT{
 	Description: "Called when a chain of blocks is inserted into the chain database.",
 	Receiver:    "BLOCKCHAIN",
 	Verb:        "INSERT",
@@ -62,7 +62,7 @@ var mlogBlockchainInsertBlocks = logger.MLogT{
 	},
 }
 
-var mlogBlockchainReorgBlocks = logger.MLogT{
+var mlogBlockchainReorgBlocks = &logger.MLogT{
 	Description: "Called when a chain split is detected and a subset of blocks are reoganized.",
 	Receiver: "BLOCKCHAIN",
 	Verb: "REORG",
@@ -75,7 +75,7 @@ var mlogBlockchainReorgBlocks = logger.MLogT{
 	},
 }
 
-var mlogTxPoolAddTx = logger.MLogT{
+var mlogTxPoolAddTx = &logger.MLogT{
 	Description: `Called once when a valid transaction is added to tx pool.
 $TO.NAME will be the account address hex or '[NEW_CONTRACT]' in case of a contract.`,
 	Receiver: "TXPOOL",
@@ -89,7 +89,7 @@ $TO.NAME will be the account address hex or '[NEW_CONTRACT]' in case of a contra
 	},
 }
 
-var mlogTxPoolValidateTx = logger.MLogT{
+var mlogTxPoolValidateTx = &logger.MLogT{
 	Description: `Called once when validating a single transaction.
 If transaction is invalid, TX.ERROR will be non-nil, otherwise it will be nil.`,
 	Receiver: "TXPOOL",

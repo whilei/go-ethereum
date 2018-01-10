@@ -5,7 +5,7 @@ import (
 )
 
 // mlogNeighborsHandleFrom is called once for each neighbors request from a node FROM
-var mlogExampleT = MLogT{
+var mlogExampleT = &MLogT{
 	Description: `Struct for testing mlog structs.`,
 	Receiver:    "TESTER",
 	Verb:        "TESTING",
@@ -20,6 +20,6 @@ var mlogExampleT = MLogT{
 func BenchmarkSetDetailValues(b *testing.B) {
 	vals := []interface{}{"hello", "kitty", 42}
 	for i := 0; i < b.N; i++ {
-		mlogExampleT.SetDetailValues(vals...)
+		mlogExampleT.AssignDetails(vals...)
 	}
 }

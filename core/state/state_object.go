@@ -227,7 +227,7 @@ func (c *StateObject) AddBalance(amount *big.Int) {
 	}
 	c.SetBalance(new(big.Int).Add(c.Balance(), amount))
 	if logger.MlogEnabled() {
-		mlogState.Send(mlogStateAddBalanceObject.SetDetailValues(
+		mlogState.Send(mlogStateAddBalanceObject.AssignDetails(
 			c.Address().Hex(),
 			c.Nonce(),
 			c.Balance(),
@@ -245,7 +245,7 @@ func (c *StateObject) SubBalance(amount *big.Int) {
 	}
 	c.SetBalance(new(big.Int).Sub(c.Balance(), amount))
 	if logger.MlogEnabled() {
-		mlogState.Send(mlogStateSubBalanceObject.SetDetailValues(
+		mlogState.Send(mlogStateSubBalanceObject.AssignDetails(
 			c.Address().Hex(),
 			c.Nonce(),
 			c.Balance(),

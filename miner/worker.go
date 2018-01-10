@@ -333,7 +333,7 @@ func (self *worker) wait() {
 				work.localMinedBlocks = newLocalMinedBlock(block.Number().Uint64(), work.localMinedBlocks)
 			}
 			if logger.MlogEnabled() {
-				mlogMiner.Send(mlogMinerMineBlock.SetDetailValues(
+				mlogMiner.Send(mlogMinerMineBlock.AssignDetails(
 					block.Number(),
 					block.Hash().Hex(),
 					staleOrConfirmMsg,
@@ -438,7 +438,7 @@ func (self *worker) logLocalMinedBlocks(current, previous *Work) {
 			inspectBlockNum := checkBlockNum - miningLogAtDepth
 			if self.isBlockLocallyMined(current, inspectBlockNum) {
 				if logger.MlogEnabled() {
-					mlogMiner.Send(mlogMinerConfirmMinedBlock.SetDetailValues(
+					mlogMiner.Send(mlogMinerConfirmMinedBlock.AssignDetails(
 						inspectBlockNum,
 					))
 				}
@@ -566,7 +566,7 @@ func (self *worker) commitNewWork() {
 	if atomic.LoadInt32(&self.mining) == 1 {
 		elapsed := time.Since(tstart)
 		if logger.MlogEnabled() {
-			mlogMiner.Send(mlogMinerCommitWorkBlock.SetDetailValues(
+			mlogMiner.Send(mlogMinerCommitWorkBlock.AssignDetails(
 				work.Block.Number(),
 				work.tcount,
 				len(uncles),
@@ -584,7 +584,7 @@ func (self *worker) commitUncle(work *Work, uncle *types.Header) error {
 	var e error
 	if logger.MlogEnabled() {
 		defer func() {
-			mlogMiner.Send(mlogMinerCommitUncle.SetDetailValues(
+			mlogMiner.Send(mlogMinerCommitUncle.AssignDetails(
 				uncle.Number,
 				hash.Hex(),
 				e,
@@ -696,7 +696,7 @@ func (env *Work) commitTransaction(tx *types.Transaction, bc *core.BlockChain, g
 
 	if logger.MlogEnabled() {
 		defer func() {
-			mlogMiner.Send(mlogMinerCommitTx.SetDetailValues(
+			mlogMiner.Send(mlogMinerCommitTx.AssignDetails(
 				env.header.Number,
 				tx.Hash().Hex(),
 				err,
