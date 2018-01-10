@@ -269,11 +269,11 @@ func (d *Downloader) RegisterPeer(id string, version int, currentHead currentHea
 	var err error
 	defer func() {
 		if logger.MlogEnabled() {
-			mlogDownloader.Send(mlogDownloaderRegisterPeer.AssignDetails(
+			mlogDownloaderRegisterPeer.AssignDetails(
 				id,
 				version,
 				err,
-			))
+			).Send(mlogDownloader)
 		}
 	}()
 
@@ -296,10 +296,10 @@ func (d *Downloader) UnregisterPeer(id string) error {
 	var err error
 	defer func() {
 		if logger.MlogEnabled() {
-			mlogDownloader.Send(mlogDownloaderUnregisterPeer.AssignDetails(
+			mlogDownloaderUnregisterPeer.AssignDetails(
 				id,
 				err,
-			))
+			).Send(mlogDownloader)
 		}
 	}()
 
@@ -1505,11 +1505,11 @@ func (d *Downloader) qosTuner() {
 		// Log the new QoS values and sleep until the next RTT
 		ttl := d.requestTTL()
 		if logger.MlogEnabled() {
-			mlogDownloader.Send(mlogDownloaderTuneQOS.AssignDetails(
+			mlogDownloaderTuneQOS.AssignDetails(
 				rtt,
 				float64(conf)/1000000.0,
 				ttl,
-			))
+			).Send(mlogDownloader)
 		}
 		glog.V(logger.Debug).Infof("Quality of service: rtt %v, conf %.3f, ttl %v", rtt, float64(conf)/1000000.0, ttl)
 

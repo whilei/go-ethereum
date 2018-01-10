@@ -1276,7 +1276,7 @@ func (self *BlockChain) WriteBlock(block *types.Block) (status WriteStatus, err 
 			if parent != nil {
 				parentTimeDiff = new(big.Int).Sub(block.Time(), parent.Time())
 			}
-			mlogBlockchain.Send(mlogBlockchainWriteBlock.AssignDetails(
+			mlogBlockchainWriteBlock.AssignDetails(
 				mlogWriteStatus,
 				err,
 				block.Number(),
@@ -1290,7 +1290,7 @@ func (self *BlockChain) WriteBlock(block *types.Block) (status WriteStatus, err 
 				len(block.Uncles()),
 				block.ReceivedAt,
 				parentTimeDiff,
-			))
+			).Send(mlogBlockchain)
 		}()
 	}
 
@@ -1515,7 +1515,7 @@ func (self *BlockChain) InsertChain(chain types.Blocks) (chainIndex int, err err
 		tend := time.Since(tstart)
 		start, end := chain[0], chain[len(chain)-1]
 		if logger.MlogEnabled() {
-			mlogBlockchain.Send(mlogBlockchainInsertBlocks.AssignDetails(
+			mlogBlockchainInsertBlocks.AssignDetails(
 				stats.processed,
 				stats.queued,
 				stats.ignored,
@@ -1524,7 +1524,7 @@ func (self *BlockChain) InsertChain(chain types.Blocks) (chainIndex int, err err
 				start.Hash().Hex(),
 				end.Hash().Hex(),
 				tend,
-			))
+			).Send(mlogBlockchain)
 		}
 		glog.V(logger.Info).Infof("imported %d block(s) (%d queued %d ignored) including %d txs in %v. #%v [%s / %s]\n",
 			stats.processed,
@@ -1616,12 +1616,12 @@ func (self *BlockChain) reorg(oldBlock, newBlock *types.Block) error {
 		glog.Infof("Chain split detected @ [%s]. Reorganising chain from #%v %s to %s", commonHash.Hex(), numSplit, oldStart.Hash().Hex(), newStart.Hash().Hex())
 	}
 	if logger.MlogEnabled() {
-		mlogBlockchain.Send(mlogBlockchainReorgBlocks.AssignDetails(
+		mlogBlockchainReorgBlocks.AssignDetails(
 			commonHash.Hex(),
 			numSplit,
 			oldStart.Hash().Hex(),
 			newStart.Hash().Hex(),
-		))
+		).Send(mlogBlockchain)
 	}
 
 	var addedTxs types.Transactions

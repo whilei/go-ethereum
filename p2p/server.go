@@ -669,12 +669,12 @@ func (srv *Server) checkpoint(c *conn, stage chan<- *conn) error {
 // the peer.
 func (srv *Server) runPeer(p *Peer) {
 	if logger.MlogEnabled() {
-		mlogServer.Send(mlogServerPeerAdded.AssignDetails(
+		mlogServerPeerAdded.AssignDetails(
 			srv.PeerCount(),
 			p.ID().String(),
 			p.RemoteAddr().String(),
 			p.Name(),
-		))
+		).Send(mlogServer)
 	}
 
 	glog.V(logger.Debug).Infof("Added %v\n", p)
@@ -694,11 +694,11 @@ func (srv *Server) runPeer(p *Peer) {
 	srv.delpeer <- p
 
 	if logger.MlogEnabled() {
-		mlogServer.Send(mlogServerPeerRemove.AssignDetails(
+		mlogServerPeerRemove.AssignDetails(
 			srv.PeerCount(),
 			p.ID().String(),
 			discreason.String(),
-		))
+		).Send(mlogServer)
 	}
 
 	glog.V(logger.Debug).Infof("Removed %v (%v)\n", p, discreason)
