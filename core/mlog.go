@@ -11,13 +11,13 @@ var mlogTxPool = logger.MLogRegisterAvailable("txpool", mLogLinesTxPool)
 // May be used for automatic mlog documentation generator, or
 // for API usage/display/documentation otherwise.
 var mLogLinesBlockchain = []logger.MLogT{
-	mlogBlockchainWriteBlock,
-	mlogBlockchainInsertBlocks,
+	*mlogBlockchainWriteBlock,
+	*mlogBlockchainInsertBlocks,
 }
 
 var mLogLinesTxPool = []logger.MLogT{
-	mlogTxPoolAddTx,
-	mlogTxPoolValidateTx,
+	*mlogTxPoolAddTx,
+	*mlogTxPoolValidateTx,
 }
 
 // Collect and document available mlog lines.

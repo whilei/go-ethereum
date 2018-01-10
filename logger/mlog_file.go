@@ -347,6 +347,8 @@ func (m *MLogT) FormatPlain() (out string) {
 }
 
 func (m *MLogT) MarshalJSON() ([]byte, error) {
+	m.Lock()
+	defer m.Unlock()
 	var obj = make(map[string]interface{})
 	obj["event"] = m.EventName()
 	obj["ts"] = time.Now()

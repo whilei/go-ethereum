@@ -5,13 +5,13 @@ import "github.com/ethereumproject/go-ethereum/logger"
 var mlogMiner = logger.MLogRegisterAvailable("miner", mlogMinerLines)
 
 var mlogMinerLines = []logger.MLogT{
-	mlogMinerStart,
-	mlogMinerStop,
-	mlogMinerCommitWorkBlock,
-	mlogMinerCommitUncle,
-	mlogMinerCommitTx,
-	mlogMinerMineBlock,
-	mlogMinerConfirmMinedBlock,
+	*mlogMinerStart,
+	*mlogMinerStop,
+	*mlogMinerCommitWorkBlock,
+	*mlogMinerCommitUncle,
+	*mlogMinerCommitTx,
+	*mlogMinerMineBlock,
+	*mlogMinerConfirmMinedBlock,
 }
 
 var mlogMinerStart = &logger.MLogT{

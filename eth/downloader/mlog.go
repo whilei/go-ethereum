@@ -5,9 +5,9 @@ import "github.com/ethereumproject/go-ethereum/logger"
 var mlogDownloader = logger.MLogRegisterAvailable("downloader", mLogLines)
 
 var mLogLines = []logger.MLogT{
-	mlogDownloaderRegisterPeer,
-	mlogDownloaderUnregisterPeer,
-	mlogDownloaderTuneQOS,
+	*mlogDownloaderRegisterPeer,
+	*mlogDownloaderUnregisterPeer,
+	*mlogDownloaderTuneQOS,
 }
 
 var mlogDownloaderRegisterPeer = &logger.MLogT{
