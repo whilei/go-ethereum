@@ -763,19 +763,24 @@ func logChainConfiguration(ctx *cli.Context, config *core.SufficientChainConfig)
 	glog.V(logger.Info).Infof("%v blockchain upgrades associated with this configuration:", len(config.ChainConfig.Forks))
 	glog.D(logger.Warn).Infof("Blockchain upgrades configured: %s", logger.ColorGreen(strconv.Itoa(len(config.ChainConfig.Forks))))
 
-	for i := range config.ChainConfig.Forks {
-		f := fmt.Sprintf(" %7v %v", config.ChainConfig.Forks[i].Block, config.ChainConfig.Forks[i].Name)
-		if !config.ChainConfig.Forks[i].RequiredHash.IsEmpty() {
-			f += fmt.Sprintf(" (%v)", config.ChainConfig.Forks[i].RequiredHash.Hex())
-		}
-		glog.V(logger.Info).Infoln(f)
-		glog.D(logger.Warn).Infoln(f)
-		for _, feat := range config.ChainConfig.Forks[i].Features {
-			glog.V(logger.Debug).Infof("    id: %v", feat.ID)
-			for k, v := range feat.Options {
-				glog.V(logger.Debug).Infof("        %v: %v", k, v)
+	if len(config.ChainConfig.Forks) > 0 {
+		for i := range config.ChainConfig.Forks {
+			f := fmt.Sprintf(" %7v %v", config.ChainConfig.Forks[i].Block, config.ChainConfig.Forks[i].Name)
+			if !config.ChainConfig.Forks[i].RequiredHash.IsEmpty() {
+				f += fmt.Sprintf(" (%v)", config.ChainConfig.Forks[i].RequiredHash.Hex())
+			}
+			glog.V(logger.Info).Infoln(f)
+			glog.D(logger.Warn).Infoln(f)
+			for _, feat := range config.ChainConfig.Forks[i].Features {
+				glog.V(logger.Debug).Infof("    id: %v", feat.ID)
+				for k, v := range feat.Options {
+					glog.V(logger.Debug).Infof("        %v: %v", k, v)
+				}
 			}
 		}
+	} else {
+		glog.V(logger.Warn).Warnln("No configured forks")
+		glog.D(logger.Warn).Warnln("No configured forks")
 	}
 
 	if chainIsCustom {

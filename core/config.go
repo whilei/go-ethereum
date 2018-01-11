@@ -195,10 +195,6 @@ func (c *SufficientChainConfig) IsValid() (string, bool) {
 		return "forks", false
 	}
 
-	if cid := c.ChainConfig.GetChainID(); cid.Cmp(new(big.Int)) == 0 {
-		return "diehard chainid", false
-	}
-
 	return "", true
 }
 
@@ -251,6 +247,9 @@ func (c *ChainConfig) SortForks() *ChainConfig {
 func (c *ChainConfig) GetChainID() *big.Int {
 	n := new(big.Int)
 	fork := c.ForkByName("Diehard")
+	if fork == nil {
+		return n
+	}
 	if feat, _, ok := c.GetFeature(fork.Block, "eip155"); ok {
 		if val, ok := feat.GetBigInt("chainID"); ok {
 			n.Set(val)
