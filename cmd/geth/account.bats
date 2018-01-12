@@ -47,6 +47,24 @@ teardown() {
 	[[ "$output" =~ Address:.\{[0-9a-f]{40}\}$ ]]
 }
 
+@test "account create defaultkdf (travis experiment)" {
+    run $GETH_CMD --data-dir $DATA_DIR account new <<< $'secret\nsecret\n'
+    echo "$output"
+
+    [ "$status" -eq 0 ]
+	[[ "$output" =~ Address:.\{[0-9a-f]{40}\}$ ]]
+}
+
+
+@test "account create defaultkdf console" {
+    run $GETH_CMD --data-dir $DATA_DIR --exec="personal.newAccount('foo'); exit;" console
+    echo "$output"
+
+    [ "$status" -eq 0 ]
+	[[ "$output" =~ \{[0-9a-f]{40}\}$ ]]
+
+}
+
 @test "account create pass mismatch" {
 	run $GETH_CMD --datadir $DATA_DIR --lightkdf account new <<< $'secret\nother\n'
 	echo "$output"
