@@ -96,10 +96,23 @@ func checkStateConsistency(db ethdb.Database, root common.Hash) error {
 	if _, err := db.Get(root.Bytes()); err != nil {
 		return nil // Consider a non existent state consistent
 	}
+
+	// This is how you know it is actually pretty fucked up.
+	//_, err := New(root, db)
+	//if err != nil {
+	//	return err
+	//}
+	//return nil
+	////it := NewNodeIterator(state)
+	////for it.Next() {
+	////}
+	////return it.Error // nil
+
 	state, err := New(root, db)
 	if err != nil {
 		return err
 	}
+
 	it := NewNodeIterator(state)
 	for it.Next() {
 	}
@@ -138,8 +151,11 @@ func testIterativeStateSync(t *testing.T, batch int) {
 			}
 			results[i] = trie.SyncResult{Hash: hash, Data: data}
 		}
-		if _, index, err := sched.Process(results); err != nil {
+		if com, index, err := sched.Process(results); err != nil {
 			t.Fatalf("failed to process result #%d: %v", index, err)
+			if !com {
+				t.Fatal("not com")
+			}
 		}
 		if index, err := sched.Commit(dstDb); err != nil {
 			t.Fatalf("failed to commit data #%d: %v", index, err)
