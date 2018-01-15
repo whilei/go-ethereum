@@ -97,17 +97,6 @@ func checkStateConsistency(db ethdb.Database, root common.Hash) error {
 		return nil // Consider a non existent state consistent
 	}
 
-	// This is how you know it is actually pretty fucked up.
-	//_, err := New(root, db)
-	//if err != nil {
-	//	return err
-	//}
-	//return nil
-	////it := NewNodeIterator(state)
-	////for it.Next() {
-	////}
-	////return it.Error // nil
-
 	state, err := New(root, db)
 	if err != nil {
 		return err
