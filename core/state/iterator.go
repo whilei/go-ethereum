@@ -24,6 +24,7 @@ import (
 	"github.com/ethereumproject/go-ethereum/common"
 	"github.com/ethereumproject/go-ethereum/rlp"
 	"github.com/ethereumproject/go-ethereum/trie"
+	"errors"
 )
 
 // NodeIterator is an iterator to traverse the entire state trie post-order,
@@ -62,7 +63,7 @@ func (it *NodeIterator) Next() bool {
 	}
 	// Otherwise step forward with the iterator and report any errors
 	if err := it.step(); err != nil {
-		it.Error = err
+		it.Error = errors.New("iterator step: " + err.Error())
 		return false
 	}
 	return it.retrieve()
@@ -82,7 +83,7 @@ func (it *NodeIterator) step() error {
 	if it.dataIt != nil {
 		if cont := it.dataIt.Next(); !cont {
 			if it.dataIt.Error != nil {
-				return it.dataIt.Error
+				return errors.New("data iterator: " + it.dataIt.Error.Error())
 			}
 			it.dataIt = nil
 		}
@@ -96,7 +97,8 @@ func (it *NodeIterator) step() error {
 	// Step to the next state trie node, terminating if we're out of nodes
 	if cont := it.stateIt.Next(); !cont {
 		if it.stateIt.Error != nil {
-			return it.stateIt.Error
+			//return it.stateIt.Error
+			return errors.New("state iterator: " + it.stateIt.Error.Error())
 		}
 		it.state, it.stateIt = nil, nil
 		return nil

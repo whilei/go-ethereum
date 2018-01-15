@@ -25,6 +25,7 @@ import (
 	"github.com/ethereumproject/go-ethereum/crypto"
 	"github.com/ethereumproject/go-ethereum/ethdb"
 	"github.com/ethereumproject/go-ethereum/trie"
+	"runtime"
 )
 
 // testAccount is the data associated with an account used by the state tests.
@@ -63,10 +64,12 @@ func makeTestState(t *testing.T) (ethdb.Database, common.Hash, []*testAccount) {
 	root, _ := state.Commit()
 
 	// Prove that makeTestState creates a consistent state.
-	//if e := checkStateConsistency(db, root); e != nil {
-	//	panic(e)
-	//}
-	checkStateAccounts(t, db, root, accounts)
+	_, _, line, _ := runtime.Caller(0)
+	checkStateAccounts(t, line, db, root, accounts)
+	if e := checkTrieConsistency(db, root); e != nil {
+		t.Fatal("make test state", e)
+	}
+
 
 	// Return the generated state
 	return db, root, accounts
@@ -74,24 +77,27 @@ func makeTestState(t *testing.T) (ethdb.Database, common.Hash, []*testAccount) {
 
 // checkStateAccounts cross references a reconstructed state with an expected
 // account array.
-func checkStateAccounts(t *testing.T, db ethdb.Database, root common.Hash, accounts []*testAccount) {
+func checkStateAccounts(t *testing.T, callLine int, db ethdb.Database, root common.Hash, accounts []*testAccount) {
 	// Check root availability and state contents
 	state, err := New(root, db)
 	if err != nil {
-		t.Fatalf("failed to create state trie at %x: %v", root, err)
+		t.Fatalf("(line %d) failed to create state trie at %x: %v", callLine, root, err)
+	}
+	if e := checkTrieConsistency(db, root); e != nil {
+		t.Fatalf("(line %d) inconsistent trie at %x: %v", callLine, root, e)
 	}
 	if err := checkStateConsistency(db, root); err != nil {
-		t.Fatalf("inconsistent state trie at %x: %v", root, err)
+		t.Fatalf("(line %d) inconsistent state trie at %x: %v", callLine, root, err)
 	}
 	for i, acc := range accounts {
 		if balance := state.GetBalance(acc.address); balance.Cmp(acc.balance) != 0 {
-			t.Errorf("account %d: balance mismatch: have %v, want %v", i, balance, acc.balance)
+			t.Errorf("(line %d) account %d: balance mismatch: have %v, want %v", callLine, i, balance, acc.balance)
 		}
 		if nonce := state.GetNonce(acc.address); nonce != acc.nonce {
-			t.Errorf("account %d: nonce mismatch: have %v, want %v", i, nonce, acc.nonce)
+			t.Errorf("(line %d) account %d: nonce mismatch: have %v, want %v", callLine, i, nonce, acc.nonce)
 		}
 		if code := state.GetCode(acc.address); bytes.Compare(code, acc.code) != 0 {
-			t.Errorf("account %d: code mismatch: have %x, want %x", i, code, acc.code)
+			t.Errorf("(line %d) account %d: code mismatch: have %x, want %x", callLine, i, code, acc.code)
 		}
 	}
 }
@@ -114,6 +120,20 @@ func checkStateConsistency(db ethdb.Database, root common.Hash) error {
 	return it.Error
 }
 
+// checkTrieConsistency checks that all nodes in a (sub-)trie are indeed present.
+func checkTrieConsistency(db ethdb.Database, root common.Hash) error {
+	if v, _ := db.Get(root[:]); v == nil {
+		return nil // Consider a non existent state consistent.
+	}
+	tr, err := trie.New(root, db)
+	if err != nil {
+		return err
+	}
+	it := trie.NewIterator(tr)
+	for it.Next() {}
+	return it.Error
+}
+
 // Tests that an empty state is not scheduled for syncing.
 func TestEmptyStateSync(t *testing.T) {
 	empty := common.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
@@ -132,12 +152,23 @@ func testIterativeStateSync(t *testing.T, batch int) {
 	// Create a random state to copy
 	srcDb, srcRoot, srcAccounts := makeTestState(t)
 
+	if e := checkTrieConsistency(srcDb, srcRoot); e != nil {
+		t.Fatal(e)
+	}
+
 	// Create a destination state and sync with the scheduler
 	dstDb, e := ethdb.NewMemDatabase()
 	if e != nil {
 		t.Fatal(e)
 	}
+
+	if e := checkStateConsistency(srcDb, srcRoot); e != nil {
+		t.Fatal(e)
+	}
 	sched := NewStateSync(srcRoot, dstDb)
+	if e := checkStateConsistency(dstDb, srcRoot); e != nil {
+		t.Fatal(e)
+	}
 
 	queue := append([]common.Hash{}, sched.Missing(batch)...)
 	for len(queue) > 0 {
@@ -161,7 +192,8 @@ func testIterativeStateSync(t *testing.T, batch int) {
 		queue = append(queue[:0], sched.Missing(batch)...)
 	}
 	// Cross check that the two states are in sync
-	checkStateAccounts(t, dstDb, srcRoot, srcAccounts)
+	_, _, line, _ := runtime.Caller(0)
+	checkStateAccounts(t, line, dstDb, srcRoot, srcAccounts)
 }
 
 // Tests that the trie scheduler can correctly reconstruct the state even if only
@@ -194,7 +226,8 @@ func TestIterativeDelayedStateSync(t *testing.T) {
 		queue = append(queue[len(results):], sched.Missing(0)...)
 	}
 	// Cross check that the two states are in sync
-	checkStateAccounts(t, dstDb, srcRoot, srcAccounts)
+	_, _, line, _ := runtime.Caller(0)
+	checkStateAccounts(t, line, dstDb, srcRoot, srcAccounts)
 }
 
 // Tests that given a root hash, a trie can sync iteratively on a single thread,
@@ -238,7 +271,8 @@ func testIterativeRandomStateSync(t *testing.T, batch int) {
 		}
 	}
 	// Cross check that the two states are in sync
-	checkStateAccounts(t, dstDb, srcRoot, srcAccounts)
+	_, _, line, _ := runtime.Caller(0)
+	checkStateAccounts(t, line, dstDb, srcRoot, srcAccounts)
 }
 
 // Tests that the trie scheduler can correctly reconstruct the state even if only
@@ -283,7 +317,8 @@ func TestIterativeRandomDelayedStateSync(t *testing.T) {
 		}
 	}
 	// Cross check that the two states are in sync
-	checkStateAccounts(t, dstDb, srcRoot, srcAccounts)
+	_, _, line, _ := runtime.Caller(0)
+	checkStateAccounts(t, line, dstDb, srcRoot, srcAccounts)
 }
 
 // Tests that at any point in time during a sync, only complete sub-tries are in

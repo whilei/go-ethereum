@@ -28,6 +28,8 @@ type Iterator struct {
 
 	Key   []byte // Current data key on which the iterator is positioned on
 	Value []byte // Current data value on which the iterator is positioned on
+
+	Error error // hold error, if any
 }
 
 // NewIterator creates a new key-value iterator.
