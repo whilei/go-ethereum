@@ -165,12 +165,13 @@ func testIterativeStateSync(t *testing.T, batch int) {
 	if e := checkStateConsistency(srcDb, srcRoot); e != nil {
 		t.Fatal(e)
 	}
-	sched := NewStateSync(srcRoot, dstDb)
+	syncer := NewStateSync(srcRoot, dstDb)
 	if e := checkStateConsistency(dstDb, srcRoot); e != nil {
 		t.Fatal(e)
 	}
 
-	queue := append([]common.Hash{}, sched.Missing(batch)...)
+	queue := append([]common.Hash{}, syncer.Missing(batch)...)
+	t.Logf("Syncing %d queue / %d accounts", len(queue), len(srcAccounts))
 	for len(queue) > 0 {
 		results := make([]trie.SyncResult, len(queue))
 		for i, hash := range queue {
@@ -180,16 +181,15 @@ func testIterativeStateSync(t *testing.T, batch int) {
 			}
 			results[i] = trie.SyncResult{Hash: hash, Data: data}
 		}
-		if com, index, err := sched.Process(results); err != nil {
+		if _, index, err := syncer.Process(results); err != nil {
 			t.Fatalf("failed to process result #%d: %v", index, err)
-			if !com {
-				t.Fatal("not com")
-			}
 		}
-		if index, err := sched.Commit(dstDb); err != nil {
-			t.Fatalf("failed to commit data #%d: %v", index, err)
+		if n, err := syncer.Commit(dstDb); err != nil {
+			t.Fatalf("failed to commit data #%d: %v", n, err)
+		} else {
+			t.Log("Committed items n=", n)
 		}
-		queue = append(queue[:0], sched.Missing(batch)...)
+		queue = append(queue[:0], syncer.Missing(batch)...)
 	}
 	// Cross check that the two states are in sync
 	_, _, line, _ := runtime.Caller(0)
