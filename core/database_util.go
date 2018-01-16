@@ -160,12 +160,12 @@ func GetTxaList(db ethdb.Database, address common.Hash) *types.TxHashList {
 
 func AddTxA(db ethdb.Database, address common.Hash, txhash common.Hash) error {
 	list := GetTxaList(db, address)
-	var l types.TxHashList
-	copy(l, *list)
-	if !types.Has(l, address) {
-		l = append(l, txhash)
+	if list == nil {
+		list = &types.TxHashList{txhash}
+	} else if !types.Has(*list, address) {
+		*list = append(*list, txhash)
 	}
-	if err := WriteTxAList(db, address, &l); err != nil {
+	if err := WriteTxAList(db, address, list); err != nil {
 		return err
 	}
 	return nil

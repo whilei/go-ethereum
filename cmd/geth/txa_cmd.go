@@ -23,22 +23,40 @@ func buildTxAIndex(ctx *cli.Context) error {
 		return errors.New("invalid flag usage")
 	}
 
+	glog.D(logger.Error).Infoln("number", blockIndex)
+
 	bc, chainDB := MakeChain(ctx)
+	if bc == nil || chainDB == nil {
+		panic("bc or cdb is nil")
+	}
 	defer chainDB.Close()
 
-
 	indexDb := MakeIndexDatabase(ctx)
+	if indexDb == nil {
+		panic("indexdb is nil")
+	}
+	defer indexDb.Close()
 
 	var block *types.Block
 	block = bc.GetBlockByNumber(blockIndex)
+	if block == nil {
+		panic("init block is nil")
+	}
 
 	for block != nil {
-		for _, tx := range block.Transactions() {
+		//glog.D(logger.Error).Infoln("got here")
+		txs := block.Transactions()
+		if txs == nil {
+			panic("txs were nil")
+		}
+		for _, tx := range txs {
+			//glog.D(logger.Error).Infoln("got here2")
 			var err error
 			from, err := tx.From()
 			if err != nil {
 				return err
 			}
+			//glog.D(logger.Error).Infoln("got here3")
 			err = core.AddTxA(indexDb, from.Hash(), tx.Hash())
 			if err != nil {
 				return err
@@ -52,8 +70,12 @@ func buildTxAIndex(ctx *cli.Context) error {
 			if err != nil {
 				return err
 			}
+
 		}
-		glog.V(logger.Error).Infoln("Store tx/addr indexes for block %d/%d with %d txs", block.NumberU64(), bc.CurrentBlock().NumberU64(), block.Transactions().Len())
+		glog.D(logger.Error).Infoln("Store tx/addr indexes for block %d/%d with %d txs", block.NumberU64(), bc.CurrentBlock().NumberU64(), block.Transactions().Len())
+
+		blockIndex++
+		block = bc.GetBlockByNumber(blockIndex)
 	}
 	return nil
 }

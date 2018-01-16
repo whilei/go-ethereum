@@ -817,6 +817,7 @@ func MakeIndexDatabase(ctx *cli.Context) ethdb.Database {
 		cache    = ctx.GlobalInt(aliasableName(CacheFlag.Name, ctx))
 		handles  = MakeDatabaseHandles()
 	)
+
 	indexesDb, err := ethdb.NewLDBDatabase(filepath.Join(chaindir, "indexes"), cache, handles)
 	if err != nil {
 		glog.Fatal("Could not open database: ", err)
