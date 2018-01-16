@@ -162,9 +162,12 @@ func AddTxA(db ethdb.Database, address common.Hash, txhash common.Hash) error {
 	list := GetTxaList(db, address)
 	if list == nil {
 		list = &types.TxHashList{txhash}
-	} else if !types.Has(*list, address) {
+	} else {
 		*list = append(*list, txhash)
 	}
+	//else if !types.Has(*list, address) {
+	//	*list = append(*list, txhash)
+	//}
 	if err := WriteTxAList(db, address, list); err != nil {
 		return err
 	}

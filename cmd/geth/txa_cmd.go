@@ -43,7 +43,8 @@ func buildTxAIndex(ctx *cli.Context) error {
 	if block == nil {
 		panic("init block is nil")
 	}
-	bar := pb.StartNew(int(bc.CurrentBlock().NumberU64())-int(blockIndex))
+	// FIXME: able to differentiate a fast sync from full chain
+	bar := pb.StartNew(int(bc.CurrentBlock().NumberU64()))
 	for block != nil {
 		//glog.D(logger.Error).Infoln("got here")
 		txs := block.Transactions()

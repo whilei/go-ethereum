@@ -154,6 +154,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 		return nil, err
 	}
 
+	// FIXME: these db initializers should be called in their own functions, per configuration, especially the indexes one
 	indexesDb, err := ctx.OpenDatabase("indexes", config.DatabaseCache, config.DatabaseHandles)
 	if err != nil {
 		return nil, err
