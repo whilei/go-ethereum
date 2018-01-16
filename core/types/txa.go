@@ -1,7 +1,6 @@
 package types
 
 import (
-	""
 	"github.com/ethereumproject/go-ethereum/common"
 )
 
