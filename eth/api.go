@@ -1620,12 +1620,9 @@ func NewPublicDebugAPI(eth *Ethereum) *PublicDebugAPI {
 }
 
 // AddressTransactions gets address txs
-func (api *PublicDebugAPI) AddressTransactions(address common.Address) ([]common.Hash, error) {
-	list := core.GetTxaList(api.eth.indexesDb, address.Hash())
-	var hlist []common.Hash
-	for _, l := range *list {
-		hlist = append(hlist, l)
-	}
+func (api *PublicDebugAPI) AddressTransactions(address common.Address, blockStartN uint64) ([]common.Hash, error) {
+	list := core.GetTxaList(api.eth.indexesDb, address.Hash(), blockStartN)
+	hlist := ([]common.Hash)(*list)
 	return hlist, nil
 }
 

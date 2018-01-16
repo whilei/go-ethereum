@@ -1,16 +1,8 @@
 package types
 
-import (
-	"github.com/ethereumproject/go-ethereum/common"
-)
+import "github.com/ethereumproject/go-ethereum/common"
 
-type TxHashList []common.Hash
+type AddrTxIndexKey []byte
+type AddrTxIndexVal []byte
 
-func Has(list TxHashList, hash common.Hash) bool {
-	for _, h := range list {
-		if h == hash {
-			return true
-		}
-	}
-	return false
-}
+type AddrTxHashList []common.Hash

@@ -140,36 +140,51 @@ func GetBody(db ethdb.Database, hash common.Hash) *types.Body {
 	return body
 }
 
-func GetTxaListRLP(db ethdb.Database, hash common.Hash) rlp.RawValue {
-	data, _ := db.Get(append(txAddressIndexPrefix, hash.Bytes()...))
-	return data
-}
-
-func GetTxaList(db ethdb.Database, address common.Hash) *types.TxHashList {
-	data := GetTxaListRLP(db, address)
-	if len(data) == 0 {
+// TODO: can expose remaining concatenated value like to/from, maybe a block end number
+func GetTxaList(db ethdb.Database, address common.Hash, blockStartN uint64) *types.AddrTxHashList {
+	ldb, ok := db.(*ethdb.LDBDatabase)
+	if !ok {
 		return nil
 	}
-	list := new(types.TxHashList)
-	if err := rlp.Decode(bytes.NewReader(data), list); err != nil {
-		glog.V(logger.Error).Infof("invalid tx address list RLP for address %x: %v", address, err)
-		return nil
+
+	var buf bytes.Buffer
+	buf.Write(txAddressIndexPrefix)
+	buf.Write(address.Bytes())
+	defer buf.Reset()
+
+	prefix := ldb.NewBytesPrefix(buf.Bytes())
+	it := ldb.NewIteratorRange(prefix)
+
+	var hashes = &types.AddrTxHashList{}
+	for it.Next() {
+		k := it.Key()
+		k = bytes.TrimPrefix(k, buf.Bytes()) // blockNBytes + f/tBytes + 0xTxhashbytes
+		li := bytes.LastIndex(k, []byte("0x"))
+		k = k[li+2:]
+		*hashes = append(*hashes, common.BytesToHash(k))
 	}
-	return list
+
+	return hashes
 }
 
-func AddTxA(db ethdb.Database, address common.Hash, txhash common.Hash) error {
-	list := GetTxaList(db, address)
-	if list == nil {
-		list = &types.TxHashList{txhash}
-	} else {
-		*list = append(*list, txhash)
+// if isTo is false, then the address is the sender in the tx (from), t/f
+func PutAddrTxIdx(db ethdb.Database, block *types.Block, isTo bool, address common.Hash, txhash common.Hash) error {
+
+	var tOrF= []byte{0}
+	if isTo {
+		tOrF = []byte{1}
 	}
-	//else if !types.Has(*list, address) {
-	//	*list = append(*list, txhash)
-	//}
-	if err := WriteTxAList(db, address, list); err != nil {
-		return err
+
+	var buf bytes.Buffer
+	buf.Write(txAddressIndexPrefix)
+	buf.Write(address.Bytes())
+	buf.Write(block.Number().Bytes())
+	buf.Write(tOrF)
+	buf.Write([]byte(txhash.Hex()))
+	defer buf.Reset()
+
+	if err := db.Put(buf.Bytes(), nil); err != nil {
+		glog.Fatalf("failed to store addrtxidx into database: %v", err)
 	}
 	return nil
 }
@@ -334,19 +349,6 @@ func WriteBody(db ethdb.Database, hash common.Hash, body *types.Body) error {
 		return err
 	}
 	glog.V(logger.Detail).Infof("stored block body [%x…]", hash.Bytes()[:4])
-	return nil
-}
-
-func WriteTxAList(db ethdb.Database, hash common.Hash, list *types.TxHashList) error {
-	data, err := rlp.EncodeToBytes(list)
-	if err != nil {
-		return err
-	}
-	key := append(txAddressIndexPrefix, hash.Bytes()...)
-	if err := db.Put(key, data); err != nil {
-		glog.Fatalf("failed to store txlist into database: %v", err)
-	}
-	glog.V(logger.Detail).Infof("stored txlist [%x...]", hash.Bytes()[:4])
 	return nil
 }
 
