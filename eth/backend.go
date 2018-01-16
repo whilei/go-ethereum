@@ -98,8 +98,9 @@ type Ethereum struct {
 	shutdownChan chan bool
 
 	// DB interfaces
-	chainDb ethdb.Database // Block chain database
-	dappDb  ethdb.Database // Dapp database
+	chainDb   ethdb.Database // Block chain database
+	dappDb    ethdb.Database // Dapp database
+	indexesDb ethdb.Database // Indexes database (optional -- eg. tx-addr indexes)
 
 	// Handlers
 	txPool          *core.TxPool
@@ -153,6 +154,11 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 		return nil, err
 	}
 
+	indexesDb, err := ctx.OpenDatabase("indexes", config.DatabaseCache, config.DatabaseHandles)
+	if err != nil {
+		return nil, err
+	}
+
 	glog.V(logger.Info).Infof("Protocol Versions: %v, Network Id: %v, Chain Id: %v", ProtocolVersions, config.NetworkId, config.ChainConfig.GetChainID())
 	glog.D(logger.Warn).Infof("Protocol Versions: %v, Network Id: %v, Chain Id: %v", logger.ColorGreen(fmt.Sprintf("%v", ProtocolVersions)), logger.ColorGreen(strconv.Itoa(config.NetworkId)), logger.ColorGreen(config.ChainConfig.GetChainID().String()))
 
@@ -188,6 +194,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 		shutdownChan:            make(chan bool),
 		chainDb:                 chainDb,
 		dappDb:                  dappDb,
+		indexesDb:               indexesDb,
 		eventMux:                ctx.EventMux,
 		accountManager:          config.AccountManager,
 		etherbase:               config.Etherbase,
@@ -295,7 +302,7 @@ func (s *Ethereum) APIs() []rpc.API {
 		}, {
 			Namespace: "eth",
 			Version:   "1.0",
-			Service:   NewPublicBlockChainAPI(s.chainConfig, s.blockchain, s.miner, s.chainDb, s.gpo, s.eventMux, s.accountManager),
+			Service:   NewPublicBlockChainAPI(s.chainConfig, s.blockchain, s.miner, s.chainDb, s.indexesDb, s.gpo, s.eventMux, s.accountManager),
 			Public:    true,
 		}, {
 			Namespace: "eth",

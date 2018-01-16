@@ -46,6 +46,8 @@ var (
 	receiptsPrefix      = []byte("receipts-")
 	blockReceiptsPrefix = []byte("receipts-block-")
 
+	txAddressIndexPrefix = []byte("txa-")
+
 	mipmapPre    = []byte("mipmap-log-bloom-")
 	MIPMapLevels = []uint64{1000000, 500000, 100000, 50000, 1000}
 
@@ -136,6 +138,37 @@ func GetBody(db ethdb.Database, hash common.Hash) *types.Body {
 		return nil
 	}
 	return body
+}
+
+func GetTxaListRLP(db ethdb.Database, hash common.Hash) rlp.RawValue {
+	data, _ := db.Get(append(txAddressIndexPrefix, hash.Bytes()...))
+	return data
+}
+
+func GetTxaList(db ethdb.Database, address common.Hash) *types.TxHashList {
+	data := GetTxaListRLP(db, address)
+	if len(data) == 0 {
+		return nil
+	}
+	list := new(types.TxHashList)
+	if err := rlp.Decode(bytes.NewReader(data), list); err != nil {
+		glog.V(logger.Error).Infof("invalid tx address list RLP for address %x: %v", address, err)
+		return nil
+	}
+	return list
+}
+
+func AddTxA(db ethdb.Database, address common.Hash, txhash common.Hash) error {
+	list := GetTxaList(db, address)
+	var l types.TxHashList
+	copy(l, *list)
+	if !types.Has(l, address) {
+		l = append(l, txhash)
+	}
+	if err := WriteTxAList(db, address, &l); err != nil {
+		return err
+	}
+	return nil
 }
 
 // GetTd retrieves a block's total difficulty corresponding to the hash, nil if
@@ -298,6 +331,19 @@ func WriteBody(db ethdb.Database, hash common.Hash, body *types.Body) error {
 		return err
 	}
 	glog.V(logger.Detail).Infof("stored block body [%x…]", hash.Bytes()[:4])
+	return nil
+}
+
+func WriteTxAList(db ethdb.Database, hash common.Hash, list *types.TxHashList) error {
+	data, err := rlp.EncodeToBytes(list)
+	if err != nil {
+		return err
+	}
+	key := append(txAddressIndexPrefix, hash.Bytes()...)
+	if err := db.Put(key, data); err != nil {
+		glog.Fatalf("failed to store txlist into database: %v", err)
+	}
+	glog.V(logger.Detail).Infof("stored txlist [%x...]", hash.Bytes()[:4])
 	return nil
 }
 

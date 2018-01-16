@@ -99,6 +99,15 @@ func makeCLIApp() (app *cli.App) {
 	The output of this command is supposed to be machine-readable.
 			`,
 		},
+		//buildTxAIndex
+		{
+			Action: buildTxAIndex,
+			Name:   "build-txa",
+			Usage:  "Generate tx/address index",
+			Description: `
+	TODO
+			`,
+		},
 		{
 			Action: makeMLogDocumentation,
 			Name:   "mdoc",

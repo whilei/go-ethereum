@@ -206,6 +206,11 @@ web3._extend({
 			name: 'accountExist',
 			call: 'debug_accountExist',
 			params: 2
+		}),
+		new web3._extend.Method({
+			name: 'addressTransactions',
+			call: 'debug_addressTransactions',
+			params: 1
 		})
 	],
 	properties: []

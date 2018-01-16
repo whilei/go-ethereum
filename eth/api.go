@@ -520,6 +520,7 @@ type PublicBlockChainAPI struct {
 	config                  *core.ChainConfig
 	bc                      *core.BlockChain
 	chainDb                 ethdb.Database
+	indexesDb ethdb.Database
 	eventMux                *event.TypeMux
 	muNewBlockSubscriptions sync.Mutex                             // protects newBlocksSubscriptions
 	newBlockSubscriptions   map[string]func(core.ChainEvent) error // callbacks for new block subscriptions
@@ -529,12 +530,13 @@ type PublicBlockChainAPI struct {
 }
 
 // NewPublicBlockChainAPI creates a new Etheruem blockchain API.
-func NewPublicBlockChainAPI(config *core.ChainConfig, bc *core.BlockChain, m *miner.Miner, chainDb ethdb.Database, gpo *GasPriceOracle, eventMux *event.TypeMux, am *accounts.Manager) *PublicBlockChainAPI {
+func NewPublicBlockChainAPI(config *core.ChainConfig, bc *core.BlockChain, m *miner.Miner, chainDb ethdb.Database, indexesDb ethdb.Database, gpo *GasPriceOracle, eventMux *event.TypeMux, am *accounts.Manager) *PublicBlockChainAPI {
 	api := &PublicBlockChainAPI{
 		config:   config,
 		bc:       bc,
 		miner:    m,
 		chainDb:  chainDb,
+		indexesDb: indexesDb,
 		eventMux: eventMux,
 		am:       am,
 		newBlockSubscriptions: make(map[string]func(core.ChainEvent) error),
@@ -1616,6 +1618,16 @@ type PublicDebugAPI struct {
 // of the Ethereum service.
 func NewPublicDebugAPI(eth *Ethereum) *PublicDebugAPI {
 	return &PublicDebugAPI{eth: eth}
+}
+
+// AddressTransactions gets address txs
+func (api *PublicDebugAPI) AddressTransactions(address common.Address) ([]common.Hash, error) {
+	list := core.GetTxaList(api.eth.indexesDb, address.Hash())
+	var hlist []common.Hash
+	for _, l := range *list {
+		hlist = append(hlist, l)
+	}
+	return hlist, nil
 }
 
 // DumpBlock retrieves the entire state of the database at a given block.

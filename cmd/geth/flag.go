@@ -799,16 +799,29 @@ func MustMakeChainConfigFromDefaults(ctx *cli.Context) *core.ChainConfig {
 // MakeChainDatabase open an LevelDB using the flags passed to the client and will hard crash if it fails.
 func MakeChainDatabase(ctx *cli.Context) ethdb.Database {
 	var (
-		datadir = MustMakeChainDataDir(ctx)
-		cache   = ctx.GlobalInt(aliasableName(CacheFlag.Name, ctx))
-		handles = MakeDatabaseHandles()
+		chaindir = MustMakeChainDataDir(ctx)
+		cache    = ctx.GlobalInt(aliasableName(CacheFlag.Name, ctx))
+		handles  = MakeDatabaseHandles()
 	)
 
-	chainDb, err := ethdb.NewLDBDatabase(filepath.Join(datadir, "chaindata"), cache, handles)
+	chainDb, err := ethdb.NewLDBDatabase(filepath.Join(chaindir, "chaindata"), cache, handles)
 	if err != nil {
 		glog.Fatal("Could not open database: ", err)
 	}
 	return chainDb
+}
+
+func MakeIndexDatabase(ctx *cli.Context) ethdb.Database {
+	var (
+		chaindir = MustMakeChainDataDir(ctx)
+		cache    = ctx.GlobalInt(aliasableName(CacheFlag.Name, ctx))
+		handles  = MakeDatabaseHandles()
+	)
+	indexesDb, err := ethdb.NewLDBDatabase(filepath.Join(chaindir, "indexes"), cache, handles)
+	if err != nil {
+		glog.Fatal("Could not open database: ", err)
+	}
+	return indexesDb
 }
 
 // MakeChain creates a chain manager from set command line flags.
