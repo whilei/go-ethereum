@@ -8,6 +8,7 @@ import (
 	"github.com/ethereumproject/go-ethereum/core/types"
 	"github.com/ethereumproject/go-ethereum/core"
 	"github.com/ethereumproject/go-ethereum/logger"
+	"github.com/cheggaaa/pb"
 )
 
 func buildTxAIndex(ctx *cli.Context) error {
@@ -42,7 +43,7 @@ func buildTxAIndex(ctx *cli.Context) error {
 	if block == nil {
 		panic("init block is nil")
 	}
-
+	bar := pb.StartNew(int(bc.CurrentBlock().NumberU64())-int(blockIndex))
 	for block != nil {
 		//glog.D(logger.Error).Infoln("got here")
 		txs := block.Transactions()
@@ -72,11 +73,11 @@ func buildTxAIndex(ctx *cli.Context) error {
 			}
 
 		}
-		glog.D(logger.Error).Infoln("Store tx/addr indexes for block %d/%d with %d txs", block.NumberU64(), bc.CurrentBlock().NumberU64(), block.Transactions().Len())
-
+		bar.Set(int(block.NumberU64()))
 		blockIndex++
 		block = bc.GetBlockByNumber(blockIndex)
 	}
+	bar.Finish()
 	return nil
 }
 
