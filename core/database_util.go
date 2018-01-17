@@ -140,8 +140,7 @@ func GetBody(db ethdb.Database, hash common.Hash) *types.Body {
 	return body
 }
 
-// TODO: can expose remaining concatenated value like to/from, maybe a block end number
-func GetTxaList(db ethdb.Database, address common.Hash, blockStartN uint64, blockEndN uint64, toFromOrBoth string) []string {
+func GetAddTxs(db ethdb.Database, address common.Hash, blockStartN uint64, blockEndN uint64, toFromOrBoth string) []string {
 	if toFromOrBoth != "to" && toFromOrBoth != "from" && toFromOrBoth != "both" && toFromOrBoth != "" {
 		glog.Fatal("Address transactions list signature requires 'to', 'from', or 'both' or '' (=both)")
 	}
@@ -158,47 +157,53 @@ func GetTxaList(db ethdb.Database, address common.Hash, blockStartN uint64, bloc
 	prefix := ldb.NewBytesPrefix(k)
 	it := ldb.NewIteratorRange(prefix)
 
-	var hashes = []string{}
+	var hashes []string
 
 	compIStart := new(big.Int).SetUint64(blockStartN)
 	compIEnd := new(big.Int).SetUint64(blockEndN)
-	nPrefix := "n-"
+
+	bytesValBetween := func(bs []byte, prefix, suffix string) []byte {
+		i1 := bytes.Index(bs, []byte(prefix))
+		i2 := bytes.Index(bs, []byte(suffix))
+		return bs[i1+len(prefix):i2]
+	}
 
 	for it.Next() {
 		key := it.Key()
 
-		key = bytes.TrimPrefix(key, k) // blockNBytes + f/tBytes + 0xTxhashbytes
-		li := bytes.LastIndex(key, []byte("0x"))
-
+		key = bytes.TrimPrefix(key, k) // n-<blockNBytes>-ntf-<f/tBytes>-tfh-<0xabc1234txhashbytes>-h
 		if blockStartN > 0 {
-			nb := bytes.Index(key, []byte(nPrefix))
-			endb := bytes.Index(key, []byte("tf-"))
-			txaI := new(big.Int).SetBytes(key[nb+3:endb])
+			nBytes := bytesValBetween(key, "n-", "-n")
+			txaI := new(big.Int).SetBytes(nBytes)
+			//glog.D(logger.Error).Infoln("here 2")
 			if txaI.Cmp(compIStart) < 0 {
 				continue
 			}
 		}
 		if blockEndN > 0 {
-			nb := bytes.Index(key, []byte(nPrefix))
-			endb := bytes.Index(key, []byte("tf-"))
-			txaI := new(big.Int).SetBytes(key[nb+3:endb])
+			nBytes := bytesValBetween(key, "n-", "-n")
+			txaI := new(big.Int).SetBytes(nBytes)
+			//glog.D(logger.Error).Infoln("here 3")
 			if txaI.Cmp(compIEnd) > 0 {
 				continue
 			}
 		}
 		if toFromOrBoth == "to" {
-			tfStart := bytes.Index(key, []byte("tf-"))
-			if string(key[tfStart+3:li]) != "t" {
+			tfBytes := bytesValBetween(key, "tf-", "-tf")
+			//glog.D(logger.Error).Infoln("here 4")
+			if string(tfBytes) != "t" {
 				continue
 			}
 		} else if toFromOrBoth == "from" {
-			tfStart := bytes.Index(key, []byte("tf-"))
-			if string(key[tfStart+3:li]) != "f" {
+			tfBytes := bytesValBetween(key, "tf-", "-tf")
+			//glog.D(logger.Error).Infoln("here 5")
+			if string(tfBytes) != "f" {
 				continue
 			}
 		}
-		key = key[li:]
-		hashes = append(hashes, string(key))
+		txhashbytes := bytesValBetween(key, "h-", "-h")
+		tx := "0x" + common.Bytes2Hex(txhashbytes)
+		hashes = append(hashes, tx)
 	}
 	it.Release()
 	if it.Error() != nil {
@@ -220,11 +225,18 @@ func PutAddrTxIdx(db ethdb.Database, block *types.Block, isTo bool, address comm
 
 	k = append(k, txAddressIndexPrefix...)
 	k = append(k, address.Bytes()...)
+
 	k = append(k, []byte("n-")...) // prefix number for easy lookup without messing around with byte array lengths
 	k = append(k, block.Number().Bytes()...)
+	k = append(k, []byte("-n")...)
+
 	k = append(k, []byte("tf-")...) // another placeholder
 	k = append(k, tOrF...)
+	k = append(k, []byte("-tf")...)
+
+	k = append(k, []byte("h-")...)
 	k = append(k, txhash.Bytes()...)
+	k = append(k, []byte("-h")...)
 
 	if err := db.Put(k, nil); err != nil {
 		glog.Fatalf("failed to store addrtxidx into database: %v", err)

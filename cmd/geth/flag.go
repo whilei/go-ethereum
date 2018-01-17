@@ -601,6 +601,7 @@ func mustMakeEthConf(ctx *cli.Context, sconf *core.SufficientChainConfig) *eth.C
 	ethConf := &eth.Config{
 		ChainConfig:             sconf.ChainConfig,
 		Genesis:                 sconf.Genesis,
+		AddTxIndex:              ctx.GlobalBool(aliasableName(AddrTxIndexFlag.Name, ctx)),
 		FastSync:                ctx.GlobalBool(aliasableName(FastSyncFlag.Name, ctx)),
 		BlockChainVersion:       ctx.GlobalInt(aliasableName(BlockchainVersionFlag.Name, ctx)),
 		DatabaseCache:           ctx.GlobalInt(aliasableName(CacheFlag.Name, ctx)),

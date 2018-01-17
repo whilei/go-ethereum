@@ -81,6 +81,8 @@ type Config struct {
 	MinerThreads   int
 	SolcPath       string
 
+	AddTxIndex bool
+
 	GpoMinGasPrice          *big.Int
 	GpoMaxGasPrice          *big.Int
 	GpoFullBlockRatio       int
@@ -100,7 +102,7 @@ type Ethereum struct {
 	// DB interfaces
 	chainDb   ethdb.Database // Block chain database
 	dappDb    ethdb.Database // Dapp database
-	indexesDb ethdb.Database // Indexes database (optional -- eg. tx-addr indexes)
+	indexesDb ethdb.Database // Indexes database (optional -- eg. add-tx indexes)
 
 	// Handlers
 	txPool          *core.TxPool
@@ -154,12 +156,6 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 		return nil, err
 	}
 
-	// FIXME: these db initializers should be called in their own functions, per configuration, especially the indexes one
-	indexesDb, err := ctx.OpenDatabase("indexes", config.DatabaseCache, config.DatabaseHandles)
-	if err != nil {
-		return nil, err
-	}
-
 	glog.V(logger.Info).Infof("Protocol Versions: %v, Network Id: %v, Chain Id: %v", ProtocolVersions, config.NetworkId, config.ChainConfig.GetChainID())
 	glog.D(logger.Warn).Infof("Protocol Versions: %v, Network Id: %v, Chain Id: %v", logger.ColorGreen(fmt.Sprintf("%v", ProtocolVersions)), logger.ColorGreen(strconv.Itoa(config.NetworkId)), logger.ColorGreen(config.ChainConfig.GetChainID().String()))
 
@@ -195,7 +191,6 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 		shutdownChan:            make(chan bool),
 		chainDb:                 chainDb,
 		dappDb:                  dappDb,
-		indexesDb:               indexesDb,
 		eventMux:                ctx.EventMux,
 		accountManager:          config.AccountManager,
 		etherbase:               config.Etherbase,
@@ -227,6 +222,19 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 	default:
 		eth.pow = ethash.New()
 	}
+
+	// FIXME: these db initializers should be called in their own functions, per configuration, especially the indexes one
+	var indexesDb ethdb.Database
+	if config.AddTxIndex {
+		indexesDb, err = ctx.OpenDatabase("indexes", config.DatabaseCache, config.DatabaseHandles)
+		if err != nil {
+			return nil, err
+		}
+		eth.indexesDb = indexesDb
+		glog.V(logger.Info).Infof("Opened add-tx index db")
+		glog.D(logger.Warn).Infof("Opened add-tx index db")
+	}
+
 
 	// load the genesis block or write a new one if no genesis
 	// block is present in the database.
@@ -265,6 +273,10 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 		}
 		return nil, err
 	}
+	if config.AddTxIndex {
+		eth.blockchain.SetAddTxIndex(eth.indexesDb, true)
+	}
+
 	eth.gpo = NewGasPriceOracle(eth)
 
 	newPool := core.NewTxPool(eth.chainConfig, eth.EventMux(), eth.blockchain.State, eth.blockchain.GasLimit)

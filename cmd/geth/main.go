@@ -102,10 +102,11 @@ func makeCLIApp() (app *cli.App) {
 		//buildTxAIndex
 		{
 			Action: buildTxAIndex,
-			Name:   "build-txa",
+			Name:   "atxi-build",
 			Usage:  "Generate tx/address index",
 			Description: `
 	TODO
+	It is idempotent.
 			`,
 		},
 		{
@@ -141,6 +142,7 @@ func makeCLIApp() (app *cli.App) {
 		ChainIdentityFlag,
 		BlockchainVersionFlag,
 		FastSyncFlag,
+		AddrTxIndexFlag,
 		CacheFlag,
 		LightKDFFlag,
 		JSpathFlag,

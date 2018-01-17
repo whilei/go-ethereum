@@ -1621,7 +1621,7 @@ func NewPublicDebugAPI(eth *Ethereum) *PublicDebugAPI {
 
 // AddressTransactions gets address txs
 func (api *PublicDebugAPI) AddressTransactions(address common.Address, blockStartN uint64, blockEndN uint64, toOrFrom string) ([]string, error) {
-	list := core.GetTxaList(api.eth.indexesDb, address.Hash(), blockStartN, blockEndN, toOrFrom)
+	list := core.GetAddTxs(api.eth.indexesDb, address.Hash(), blockStartN, blockEndN, toOrFrom)
 	return list, nil
 }
 
