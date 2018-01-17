@@ -141,7 +141,7 @@ func GetBody(db ethdb.Database, hash common.Hash) *types.Body {
 }
 
 // TODO: can expose remaining concatenated value like to/from, maybe a block end number
-func GetTxaList(db ethdb.Database, address common.Hash, blockStartN uint64, blockEndN uint64, toFromOrBoth string) *types.AddrTxHashList {
+func GetTxaList(db ethdb.Database, address common.Hash, blockStartN uint64, blockEndN uint64, toFromOrBoth string) []string {
 	if toFromOrBoth != "to" && toFromOrBoth != "from" && toFromOrBoth != "both" && toFromOrBoth != "" {
 		glog.Fatal("Address transactions list signature requires 'to', 'from', or 'both' or '' (=both)")
 	}
@@ -158,7 +158,7 @@ func GetTxaList(db ethdb.Database, address common.Hash, blockStartN uint64, bloc
 	prefix := ldb.NewBytesPrefix(k)
 	it := ldb.NewIteratorRange(prefix)
 
-	var hashes = &types.AddrTxHashList{}
+	var hashes = []string{}
 
 	compIStart := new(big.Int).SetUint64(blockStartN)
 	compIEnd := new(big.Int).SetUint64(blockEndN)
@@ -166,6 +166,7 @@ func GetTxaList(db ethdb.Database, address common.Hash, blockStartN uint64, bloc
 
 	for it.Next() {
 		key := it.Key()
+		glog.D(logger.Error).Infoln("key addrtxindex: ", string(key))
 
 		key = bytes.TrimPrefix(key, k) // blockNBytes + f/tBytes + 0xTxhashbytes
 		li := bytes.LastIndex(key, []byte("0x"))
@@ -197,12 +198,17 @@ func GetTxaList(db ethdb.Database, address common.Hash, blockStartN uint64, bloc
 				continue
 			}
 		}
-		key = key[li+2:]
-		*hashes = append(*hashes, common.BytesToHash(key))
+		key = key[li:]
+		hashes = append(hashes, string(key))
+		//*hashes = append(*hashes, common.BytesToHash(key))
 	}
 	it.Release()
 	if it.Error() != nil {
 		panic(it.Error())
+	}
+
+	for _, h := range hashes {
+		glog.D(logger.Error).Infoln("GetTxaList -> ", h)
 	}
 
 	return hashes
@@ -224,11 +230,12 @@ func PutAddrTxIdx(db ethdb.Database, block *types.Block, isTo bool, address comm
 	k = append(k, block.Number().Bytes()...)
 	k = append(k, []byte("tf-")...) // another placeholder
 	k = append(k, tOrF...)
-	k = append(k, []byte(txhash.Hex())...)
+	k = append(k, txhash.Bytes()...)
 
 	if err := db.Put(k, nil); err != nil {
 		glog.Fatalf("failed to store addrtxidx into database: %v", err)
 	}
+	glog.D(logger.Error).Infoln("wrote addrtxindex: ", string(k))
 	return nil
 }
 
