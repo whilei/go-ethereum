@@ -7,7 +7,6 @@ import (
 	"errors"
 	"github.com/ethereumproject/go-ethereum/core/types"
 	"github.com/ethereumproject/go-ethereum/core"
-	"github.com/ethereumproject/go-ethereum/logger"
 	"github.com/cheggaaa/pb"
 	"os"
 	"path/filepath"
