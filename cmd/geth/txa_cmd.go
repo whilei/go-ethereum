@@ -9,13 +9,21 @@ import (
 	"github.com/ethereumproject/go-ethereum/core"
 	"github.com/ethereumproject/go-ethereum/logger"
 	"github.com/cheggaaa/pb"
+	"os"
+	"path/filepath"
+	"io/ioutil"
 )
 
 func buildTxAIndex(ctx *cli.Context) error {
 	index := ctx.Args().First()
+	filename := filepath.Join(MustMakeChainDataDir(ctx), "index.at")
 	if len(index) == 0 {
-		glog.Fatal("FIXME: this message is wrong > missing argument: use `build-txa 12345` to specify required block number to roll back to")
-		return errors.New("invalid flag usage")
+		bs, err := ioutil.ReadFile(filename)
+		if err != nil {
+			glog.Fatal("FIXME: this message is wrong > missing argument: use `build-txa 12345` to specify required block number to roll back to")
+			return errors.New("invalid flag usage")
+		}
+		index = string(bs)
 	}
 
 	blockIndex, err := strconv.ParseUint(index, 10, 64)
@@ -43,6 +51,7 @@ func buildTxAIndex(ctx *cli.Context) error {
 	if block == nil {
 		panic("init block is nil")
 	}
+
 	// FIXME: able to differentiate a fast sync from full chain
 	bar := pb.StartNew(int(bc.CurrentBlock().NumberU64()))
 	for block != nil {
@@ -76,6 +85,9 @@ func buildTxAIndex(ctx *cli.Context) error {
 		}
 		bar.Set(int(block.NumberU64()))
 		blockIndex++
+		if blockIndex % 1000 == 0 {
+			ioutil.WriteFile(filename, []byte(strconv.Itoa(int(blockIndex))), os.ModePerm)
+		}
 		block = bc.GetBlockByNumber(blockIndex)
 	}
 	bar.Finish()
