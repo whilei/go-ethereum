@@ -210,7 +210,7 @@ web3._extend({
 		new web3._extend.Method({
 			name: 'addressTransactions',
 			call: 'debug_addressTransactions',
-			params: 2
+			params: 4
 		})
 	],
 	properties: []
