@@ -15,18 +15,21 @@ import (
 )
 
 func buildTxAIndex(ctx *cli.Context) error {
-	index := ctx.Args().First()
-	filename := filepath.Join(MustMakeChainDataDir(ctx), "index.at")
-	if len(index) == 0 {
+	startIndex := ctx.Args().First()
+	var stopIndex string
+	filename := filepath.Join(MustMakeChainDataDir(ctx), "startIndex.at")
+	if len(startIndex) == 0 {
 		bs, err := ioutil.ReadFile(filename)
 		if err != nil { // ignore errors for now
-			index = "0"
+			startIndex = "0"
 		} else {
-			index = string(bs)
+			startIndex = string(bs)
 		}
+	} else {
+		stopIndex = ctx.Args()[1]
 	}
 
-	blockIndex, err := strconv.ParseUint(index, 10, 64)
+	blockIndex, err := strconv.ParseUint(startIndex, 10, 64)
 	if err != nil {
 		glog.Fatalf("FIXME: this message is wrong > invalid argument: use `build-txa 12345`, were '12345' is a required number specifying which block number to roll back to")
 		return errors.New("invalid flag usage")
@@ -39,6 +42,14 @@ func buildTxAIndex(ctx *cli.Context) error {
 		panic("bc or cdb is nil")
 	}
 	defer chainDB.Close()
+
+	var stopIndexI uint64
+	// If no argument for stop index given ($2), then use bc header height
+	if len(stopIndex) == 0 {
+		stopIndexI = bc.CurrentHeader().Number.Uint64()
+	} else {
+		stopIndexI, _ = strconv.ParseUint(stopIndex, 10, 64)
+	}
 
 	indexDb := MakeIndexDatabase(ctx)
 	if indexDb == nil {
@@ -53,9 +64,8 @@ func buildTxAIndex(ctx *cli.Context) error {
 	}
 
 	// FIXME: able to differentiate a fast sync from full chain
-	bar := pb.StartNew(int(bc.CurrentBlock().NumberU64()))
-	for block != nil {
-		//glog.D(logger.Error).Infoln("got here")
+	bar := pb.StartNew(int(stopIndexI))
+	for block.NumberU64() <= stopIndexI {
 		txs := block.Transactions()
 		if txs == nil {
 			panic("txs were nil")
