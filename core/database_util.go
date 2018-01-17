@@ -166,7 +166,6 @@ func GetTxaList(db ethdb.Database, address common.Hash, blockStartN uint64, bloc
 
 	for it.Next() {
 		key := it.Key()
-		glog.D(logger.Error).Infoln("key addrtxindex: ", string(key))
 
 		key = bytes.TrimPrefix(key, k) // blockNBytes + f/tBytes + 0xTxhashbytes
 		li := bytes.LastIndex(key, []byte("0x"))
@@ -200,15 +199,10 @@ func GetTxaList(db ethdb.Database, address common.Hash, blockStartN uint64, bloc
 		}
 		key = key[li:]
 		hashes = append(hashes, string(key))
-		//*hashes = append(*hashes, common.BytesToHash(key))
 	}
 	it.Release()
 	if it.Error() != nil {
 		panic(it.Error())
-	}
-
-	for _, h := range hashes {
-		glog.D(logger.Error).Infoln("GetTxaList -> ", h)
 	}
 
 	return hashes
@@ -235,7 +229,6 @@ func PutAddrTxIdx(db ethdb.Database, block *types.Block, isTo bool, address comm
 	if err := db.Put(k, nil); err != nil {
 		glog.Fatalf("failed to store addrtxidx into database: %v", err)
 	}
-	glog.D(logger.Error).Infoln("wrote addrtxindex: ", string(k))
 	return nil
 }
 
