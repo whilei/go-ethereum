@@ -60,12 +60,12 @@ func buildTxAIndex(ctx *cli.Context) error {
 	var block *types.Block
 	block = bc.GetBlockByNumber(blockIndex)
 	if block == nil {
-		panic("init block is nil")
+		glog.Fatal("block is nil")
 	}
 
 	// FIXME: able to differentiate a fast sync from full chain
 	bar := pb.StartNew(int(stopIndexI))
-	for block.NumberU64() <= stopIndexI {
+	for block != nil && block.NumberU64() <= stopIndexI {
 		txs := block.Transactions()
 		if txs == nil {
 			panic("txs were nil")
