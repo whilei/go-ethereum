@@ -26,7 +26,9 @@ func buildTxAIndex(ctx *cli.Context) error {
 			startIndex = string(bs)
 		}
 	} else {
-		stopIndex = ctx.Args()[1]
+		if len(ctx.Args()) > 1 {
+			stopIndex = ctx.Args()[1]
+		}
 	}
 
 	blockIndex, err := strconv.ParseUint(startIndex, 10, 64)
@@ -34,9 +36,7 @@ func buildTxAIndex(ctx *cli.Context) error {
 		glog.Fatalf("FIXME: this message is wrong > invalid argument: use `build-txa 12345`, were '12345' is a required number specifying which block number to roll back to")
 		return errors.New("invalid flag usage")
 	}
-
-	glog.D(logger.Error).Infoln("number", blockIndex)
-
+	
 	bc, chainDB := MakeChain(ctx)
 	if bc == nil || chainDB == nil {
 		panic("bc or cdb is nil")
