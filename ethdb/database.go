@@ -115,7 +115,7 @@ func (self *LDBDatabase) NewIteratorRange(slice *ldbutil.Range) iterator.Iterato
 	return self.db.NewIterator(slice, nil)
 }
 
-func (self *LDBDatabase) NewBytesPrefix(prefix []byte) *ldbutil.Range {
+func NewBytesPrefix(prefix []byte) *ldbutil.Range {
 	return ldbutil.BytesPrefix(prefix)
 }
 

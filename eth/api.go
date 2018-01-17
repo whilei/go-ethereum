@@ -1623,7 +1623,7 @@ func NewPublicDebugAPI(eth *Ethereum) *PublicDebugAPI {
 // Optional values include start and stop block numbers, and to/from/both value for tx/address relation.
 // Returns a slice of strings of transactions hashes.
 func (api *PublicDebugAPI) GetAddressTransactions(address common.Address, blockStartN uint64, blockEndN uint64, toOrFrom string) ([]string, error) {
-	list := core.GetAddTxs(api.eth.indexesDb, address.Hash(), blockStartN, blockEndN, toOrFrom)
+	list := core.GetAddrTxs(api.eth.indexesDb, address.Hash(), blockStartN, blockEndN, toOrFrom)
 	return list, nil
 }
 

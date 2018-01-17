@@ -77,7 +77,7 @@ func buildTxAIndex(ctx *cli.Context) error {
 				return err
 			}
 			//glog.D(logger.Error).Infoln("got here3")
-			err = core.PutAddrTxIdx(indexDb, block, false, from.Hash(), tx.Hash())
+			err = core.PutAddrTxs(indexDb, block, false, from.Hash(), tx.Hash())
 			if err != nil {
 				return err
 			}
@@ -86,7 +86,7 @@ func buildTxAIndex(ctx *cli.Context) error {
 			if to == nil {
 				continue
 			}
-			err = core.PutAddrTxIdx(indexDb, block,true, to.Hash(), tx.Hash())
+			err = core.PutAddrTxs(indexDb, block,true, to.Hash(), tx.Hash())
 			if err != nil {
 				return err
 			}

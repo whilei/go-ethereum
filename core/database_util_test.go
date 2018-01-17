@@ -298,6 +298,12 @@ func TestTdStorage(t *testing.T) {
 	}
 }
 
+func TestAddrTxStorage(t *testing.T) {
+	db, _ := ethdb.NewMemDatabase()
+
+	// key = bytes.TrimPrefix(key, k) // n-<blockNBytes>-ntf-<f/tBytes>-tfh-<0xabc1234txhashbytes>-h
+}
+
 // Tests that canonical numbers can be mapped to hashes and retrieved.
 func TestCanonicalMappingStorage(t *testing.T) {
 	db, _ := ethdb.NewMemDatabase()

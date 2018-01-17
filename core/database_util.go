@@ -141,7 +141,7 @@ func GetBody(db ethdb.Database, hash common.Hash) *types.Body {
 	return body
 }
 
-func GetAddTxs(db ethdb.Database, address common.Hash, blockStartN uint64, blockEndN uint64, toFromOrBoth string) []string {
+func GetAddrTxs(db ethdb.Database, address common.Hash, blockStartN uint64, blockEndN uint64, toFromOrBoth string) []string {
 	if toFromOrBoth != "to" && toFromOrBoth != "from" && toFromOrBoth != "both" && toFromOrBoth != "" {
 		glog.Fatal("Address transactions list signature requires 'to', 'from', or 'both' or '' (=both)")
 	}
@@ -155,7 +155,7 @@ func GetAddTxs(db ethdb.Database, address common.Hash, blockStartN uint64, block
 	k = append(k, txAddressIndexPrefix...)
 	k = append(k, address.Bytes()...)
 
-	prefix := ldb.NewBytesPrefix(k)
+	prefix := ethdb.NewBytesPrefix(k)
 	it := ldb.NewIteratorRange(prefix)
 
 	var hashes []string
@@ -179,7 +179,6 @@ func GetAddTxs(db ethdb.Database, address common.Hash, blockStartN uint64, block
 	for it.Next() {
 		key := it.Key()
 
-		//key = bytes.TrimPrefix(key, k) // n-<blockNBytes>-ntf-<f/tBytes>-tfh-<0xabc1234txhashbytes>-h
 		if blockStartN > 0 {
 			nBytes, err := bytesValBetween(key, "n^", "$n")
 			if err != nil {
@@ -236,30 +235,33 @@ func GetAddTxs(db ethdb.Database, address common.Hash, blockStartN uint64, block
 	return hashes
 }
 
+func formatAddrTxBytes(address, blockNumber, toOrFrom, txhash []byte) (key []byte) {
+	key = append(key, txAddressIndexPrefix...)
+	key = append(key, address...)
+
+	key = append(key, []byte("n^")...) // prefix number for easy lookup without messing around with byte array lengths
+	key = append(key, blockNumber...)
+	key = append(key, []byte("$n")...)
+
+	key = append(key, []byte("tf^")...) // another placeholder
+	key = append(key, toOrFrom...)
+	key = append(key, []byte("$tf")...)
+
+	key = append(key, []byte("h^")...)
+	key = append(key, txhash...)
+	key = append(key, []byte("$h")...)
+	return
+}
+
 // if isTo is false, then the address is the sender in the tx (from), t/f
-func PutAddrTxIdx(db ethdb.Database, block *types.Block, isTo bool, address common.Hash, txhash common.Hash) error {
+func PutAddrTxs(db ethdb.Database, block *types.Block, isTo bool, address common.Hash, txhash common.Hash) error {
 
 	var tOrF = []byte("f")
 	if isTo {
 		tOrF = []byte("t")
 	}
 
-	var k []byte
-
-	k = append(k, txAddressIndexPrefix...)
-	k = append(k, address.Bytes()...)
-
-	k = append(k, []byte("n^")...) // prefix number for easy lookup without messing around with byte array lengths
-	k = append(k, block.Number().Bytes()...)
-	k = append(k, []byte("$n")...)
-
-	k = append(k, []byte("tf^")...) // another placeholder
-	k = append(k, tOrF...)
-	k = append(k, []byte("$tf")...)
-
-	k = append(k, []byte("h^")...)
-	k = append(k, txhash.Bytes()...)
-	k = append(k, []byte("$h")...)
+	k := formatAddrTxBytes(address.Bytes(), block.Number().Bytes(), tOrF, txhash.Bytes())
 
 	if err := db.Put(k, nil); err != nil {
 		glog.Fatalf("failed to store addrtxidx into database: %v", err)

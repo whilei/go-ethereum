@@ -1296,7 +1296,7 @@ func WriteBlockAddTxIndexes(indexDb ethdb.Database, block *types.Block) error {
 		if err != nil {
 			return err
 		}
-		err = PutAddrTxIdx(indexDb, block, false, from.Hash(), tx.Hash())
+		err = PutAddrTxs(indexDb, block, false, from.Hash(), tx.Hash())
 		if err != nil {
 			return err
 		}
@@ -1305,7 +1305,7 @@ func WriteBlockAddTxIndexes(indexDb ethdb.Database, block *types.Block) error {
 		if to == nil {
 			continue
 		}
-		err = PutAddrTxIdx(indexDb, block, true, to.Hash(), tx.Hash())
+		err = PutAddrTxs(indexDb, block, true, to.Hash(), tx.Hash())
 		if err != nil {
 			return err
 		}
