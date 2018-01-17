@@ -19,11 +19,11 @@ func buildTxAIndex(ctx *cli.Context) error {
 	filename := filepath.Join(MustMakeChainDataDir(ctx), "index.at")
 	if len(index) == 0 {
 		bs, err := ioutil.ReadFile(filename)
-		if err != nil {
-			glog.Fatal("FIXME: this message is wrong > missing argument: use `build-txa 12345` to specify required block number to roll back to")
-			return errors.New("invalid flag usage")
+		if err != nil { // ignore errors for now
+			index = "0"
+		} else {
+			index = string(bs)
 		}
-		index = string(bs)
 	}
 
 	blockIndex, err := strconv.ParseUint(index, 10, 64)
