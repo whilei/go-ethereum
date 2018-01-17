@@ -28,6 +28,7 @@ import (
 	"github.com/ethereumproject/go-ethereum/logger"
 	"github.com/ethereumproject/go-ethereum/logger/glog"
 	"github.com/ethereumproject/go-ethereum/rlp"
+	"errors"
 )
 
 var (
@@ -162,18 +163,28 @@ func GetAddTxs(db ethdb.Database, address common.Hash, blockStartN uint64, block
 	compIStart := new(big.Int).SetUint64(blockStartN)
 	compIEnd := new(big.Int).SetUint64(blockEndN)
 
-	bytesValBetween := func(bs []byte, prefix, suffix string) []byte {
-		i1 := bytes.Index(bs, []byte(prefix))
+	// errors get ignored, essentially
+	bytesValBetween := func(bs []byte, prefix, suffix string) ([]byte, error) {
+		i1 := bytes.Index(bs, []byte(prefix))+len(prefix)
 		i2 := bytes.Index(bs, []byte(suffix))
-		return bs[i1+len(prefix):i2]
+		//glog.D(logger.Error).Errorln("i1 i2", i1, i2)
+		if i1 < 0 || i2 < 0 || i1 > i2 || i1 == i2 {
+			glog.V(logger.Error).Errorln("slice bound out of range", i1, i2, prefix, string(bs), len(bs), bs)
+			glog.D(logger.Error).Errorln("slice bound out of range", i1, i2, prefix, string(bs), len(bs), bs)
+			return nil, errors.New("sloob") // slice out of bounds
+		}
+		return bs[i1:i2], nil
 	}
 
 	for it.Next() {
 		key := it.Key()
 
-		key = bytes.TrimPrefix(key, k) // n-<blockNBytes>-ntf-<f/tBytes>-tfh-<0xabc1234txhashbytes>-h
+		//key = bytes.TrimPrefix(key, k) // n-<blockNBytes>-ntf-<f/tBytes>-tfh-<0xabc1234txhashbytes>-h
 		if blockStartN > 0 {
-			nBytes := bytesValBetween(key, "n-", "-n")
+			nBytes, err := bytesValBetween(key, "n^", "$n")
+			if err != nil {
+				continue
+			}
 			txaI := new(big.Int).SetBytes(nBytes)
 			//glog.D(logger.Error).Infoln("here 2")
 			if txaI.Cmp(compIStart) < 0 {
@@ -181,7 +192,10 @@ func GetAddTxs(db ethdb.Database, address common.Hash, blockStartN uint64, block
 			}
 		}
 		if blockEndN > 0 {
-			nBytes := bytesValBetween(key, "n-", "-n")
+			nBytes, err := bytesValBetween(key, "n^", "$n")
+			if err != nil {
+				continue
+			}
 			txaI := new(big.Int).SetBytes(nBytes)
 			//glog.D(logger.Error).Infoln("here 3")
 			if txaI.Cmp(compIEnd) > 0 {
@@ -189,19 +203,28 @@ func GetAddTxs(db ethdb.Database, address common.Hash, blockStartN uint64, block
 			}
 		}
 		if toFromOrBoth == "to" {
-			tfBytes := bytesValBetween(key, "tf-", "-tf")
+			tfBytes, err := bytesValBetween(key, "tf^", "$tf")
+			if err != nil {
+				continue
+			}
 			//glog.D(logger.Error).Infoln("here 4")
 			if string(tfBytes) != "t" {
 				continue
 			}
 		} else if toFromOrBoth == "from" {
-			tfBytes := bytesValBetween(key, "tf-", "-tf")
+			tfBytes, err := bytesValBetween(key, "tf^", "$tf")
+			if err != nil {
+				continue
+			}
 			//glog.D(logger.Error).Infoln("here 5")
 			if string(tfBytes) != "f" {
 				continue
 			}
 		}
-		txhashbytes := bytesValBetween(key, "h-", "-h")
+		txhashbytes, err := bytesValBetween(key, "h^", "$h")
+		if err != nil {
+			continue
+		}
 		tx := "0x" + common.Bytes2Hex(txhashbytes)
 		hashes = append(hashes, tx)
 	}
@@ -226,17 +249,17 @@ func PutAddrTxIdx(db ethdb.Database, block *types.Block, isTo bool, address comm
 	k = append(k, txAddressIndexPrefix...)
 	k = append(k, address.Bytes()...)
 
-	k = append(k, []byte("n-")...) // prefix number for easy lookup without messing around with byte array lengths
+	k = append(k, []byte("n^")...) // prefix number for easy lookup without messing around with byte array lengths
 	k = append(k, block.Number().Bytes()...)
-	k = append(k, []byte("-n")...)
+	k = append(k, []byte("$n")...)
 
-	k = append(k, []byte("tf-")...) // another placeholder
+	k = append(k, []byte("tf^")...) // another placeholder
 	k = append(k, tOrF...)
-	k = append(k, []byte("-tf")...)
+	k = append(k, []byte("$tf")...)
 
-	k = append(k, []byte("h-")...)
+	k = append(k, []byte("h^")...)
 	k = append(k, txhash.Bytes()...)
-	k = append(k, []byte("-h")...)
+	k = append(k, []byte("$h")...)
 
 	if err := db.Put(k, nil); err != nil {
 		glog.Fatalf("failed to store addrtxidx into database: %v", err)
