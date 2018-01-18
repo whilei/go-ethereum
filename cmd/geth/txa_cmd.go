@@ -4,7 +4,6 @@ import (
 	"gopkg.in/urfave/cli.v1"
 	"strconv"
 	"github.com/ethereumproject/go-ethereum/logger/glog"
-	"errors"
 	"github.com/ethereumproject/go-ethereum/core/types"
 	"github.com/ethereumproject/go-ethereum/core"
 	"github.com/cheggaaa/pb"
@@ -14,40 +13,31 @@ import (
 )
 
 func buildTxAIndex(ctx *cli.Context) error {
-	startIndex := ctx.Args().First()
-	var stopIndex string
-	filename := filepath.Join(MustMakeChainDataDir(ctx), "index.at")
-	if len(startIndex) == 0 {
-		bs, err := ioutil.ReadFile(filename)
-		if err != nil { // ignore errors for now
-			startIndex = "0"
-		} else {
-			startIndex = string(bs)
-		}
-	} else {
-		if len(ctx.Args()) > 1 {
-			stopIndex = ctx.Args()[1]
+	startIndex := uint64(ctx.Int("start"))
+	var stopIndex uint64
+
+	// Use persistent placeholder in case start not spec'd
+	placeholderFilename := filepath.Join(MustMakeChainDataDir(ctx), "index.at")
+	if !ctx.IsSet("start") {
+		bs, err := ioutil.ReadFile(placeholderFilename)
+		if err == nil { // ignore errors for now
+			startIndex, _ = strconv.ParseUint(string(bs), 10, 64)
 		}
 	}
 
-	blockIndex, err := strconv.ParseUint(startIndex, 10, 64)
-	if err != nil {
-		glog.Fatalf("FIXME: this message is wrong > invalid argument: use `build-txa 12345`, were '12345' is a required number specifying which block number to roll back to")
-		return errors.New("invalid flag usage")
-	}
-	
 	bc, chainDB := MakeChain(ctx)
 	if bc == nil || chainDB == nil {
 		panic("bc or cdb is nil")
 	}
 	defer chainDB.Close()
 
-	var stopIndexI uint64
-	// If no argument for stop index given ($2), then use bc header height
-	if len(stopIndex) == 0 {
-		stopIndexI = bc.CurrentHeader().Number.Uint64()
-	} else {
-		stopIndexI, _ = strconv.ParseUint(stopIndex, 10, 64)
+	stopIndex = uint64(ctx.Int("stop"))
+	if stopIndex == 0 {
+		stopIndex = bc.CurrentHeader().Number.Uint64()
+	}
+
+	if stopIndex < startIndex {
+		glog.Fatal("start must be prior to (smaller than) or equal to stop, got start=", startIndex, "stop=", stopIndex)
 	}
 
 	indexDb := MakeIndexDatabase(ctx)
@@ -57,14 +47,14 @@ func buildTxAIndex(ctx *cli.Context) error {
 	defer indexDb.Close()
 
 	var block *types.Block
+	blockIndex := startIndex
 	block = bc.GetBlockByNumber(blockIndex)
 	if block == nil {
-		glog.Fatal("block is nil")
+		glog.Fatal(blockIndex, "block is nil")
 	}
 
-	// FIXME: able to differentiate a fast sync from full chain
-	bar := pb.StartNew(int(stopIndexI))
-	for block != nil && block.NumberU64() <= stopIndexI {
+	bar := pb.StartNew(int(stopIndex)) // progress bar
+	for block != nil && block.NumberU64() <= stopIndex {
 		txs := block.Transactions()
 		if txs == nil {
 			panic("txs were nil")
@@ -93,7 +83,7 @@ func buildTxAIndex(ctx *cli.Context) error {
 		bar.Set(int(block.NumberU64()))
 		blockIndex++
 		if blockIndex % 1000 == 0 {
-			ioutil.WriteFile(filename, []byte(strconv.Itoa(int(blockIndex))), os.ModePerm)
+			ioutil.WriteFile(placeholderFilename, []byte(strconv.Itoa(int(blockIndex))), os.ModePerm)
 		}
 		block = bc.GetBlockByNumber(blockIndex)
 	}

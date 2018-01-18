@@ -99,15 +99,30 @@ func makeCLIApp() (app *cli.App) {
 	The output of this command is supposed to be machine-readable.
 			`,
 		},
-		//buildTxAIndex
 		{
 			Action: buildTxAIndex,
 			Name:   "atxi-build",
 			Usage:  "Generate tx/address index",
 			Description: `
-	TODO
-	It is idempotent.
+	Builds an index for transactions by address. 
+	The command is idempotent; it will not hurt to run multiple times on the same range.
+
+	If run without --start flag, the command makes use of a persistent placeholder, so you can
+	run 'geth build-atxi' on multiple occasions and pick up indexing progress where the last session
+	left off.
+
+	To enable address-transaction indexing during block sync and import, use the '--atxi' flag.
 			`,
+			Flags: []cli.Flag{
+				cli.IntFlag{
+					Name:  "start",
+					Usage: "Block number at which to begin building index",
+				},
+				cli.IntFlag{
+					Name:  "stop",
+					Usage: "Block number at which to stop building index",
+				},
+			},
 		},
 		{
 			Action: makeMLogDocumentation,
