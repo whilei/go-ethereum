@@ -16,7 +16,7 @@ import (
 func buildTxAIndex(ctx *cli.Context) error {
 	startIndex := ctx.Args().First()
 	var stopIndex string
-	filename := filepath.Join(MustMakeChainDataDir(ctx), "startIndex.at")
+	filename := filepath.Join(MustMakeChainDataDir(ctx), "index.at")
 	if len(startIndex) == 0 {
 		bs, err := ioutil.ReadFile(filename)
 		if err != nil { // ignore errors for now
