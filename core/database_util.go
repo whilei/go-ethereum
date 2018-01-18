@@ -140,7 +140,13 @@ func GetBody(db ethdb.Database, hash common.Hash) *types.Body {
 	return body
 }
 
-func GetAddrTxs(db ethdb.Database, address common.Hash, blockStartN uint64, blockEndN uint64, toFromOrBoth string) []string {
+func formatAddrTxIterator(address common.Address) (iteratorPrefix []byte) {
+	iteratorPrefix = append(iteratorPrefix, txAddressIndexPrefix...)
+	iteratorPrefix = append(iteratorPrefix, address.Bytes()...)
+	return
+}
+
+func GetAddrTxs(db ethdb.Database, address common.Address, blockStartN uint64, blockEndN uint64, toFromOrBoth string) []string {
 	if toFromOrBoth != "to" && toFromOrBoth != "from" && toFromOrBoth != "both" && toFromOrBoth != "" {
 		glog.Fatal("Address transactions list signature requires 'to', 'from', or 'both' or '' (=both)")
 	}
@@ -152,11 +158,7 @@ func GetAddrTxs(db ethdb.Database, address common.Hash, blockStartN uint64, bloc
 	}
 
 	// Create address prefix for iteration.
-	var k []byte
-	k = append(k, txAddressIndexPrefix...)
-	k = append(k, address.Bytes()...)
-
-	prefix := ethdb.NewBytesPrefix(k)
+	prefix := ethdb.NewBytesPrefix(formatAddrTxIterator(address))
 	it := ldb.NewIteratorRange(prefix)
 
 	// This will be the returnable.
@@ -168,16 +170,17 @@ func GetAddrTxs(db ethdb.Database, address common.Hash, blockStartN uint64, bloc
 
 	for it.Next() {
 		key := it.Key()
+
 		_, blockNum, torf, txh := resolveAddrTxBytes(key)
 
 		if blockStartN > 0 {
-			txaI := new(big.Int).SetBytes(blockNum)
+			txaI := new(big.Int).SetUint64(binary.LittleEndian.Uint64(blockNum))
 			if txaI.Cmp(wantStart) < 0 {
 				continue
 			}
 		}
 		if blockEndN > 0 {
-			txaI := new(big.Int).SetBytes(blockNum)
+			txaI := new(big.Int).SetUint64(binary.LittleEndian.Uint64(blockNum))
 			if txaI.Cmp(wantEnd) > 0 {
 				continue
 			}
@@ -203,43 +206,33 @@ func GetAddrTxs(db ethdb.Database, address common.Hash, blockStartN uint64, bloc
 }
 
 func formatAddrTxBytes(address, blockNumber, toOrFrom, txhash []byte) (key []byte) {
-	key = append(key, txAddressIndexPrefix...)
+	key = txAddressIndexPrefix
 	key = append(key, address...)
-
-	key = append(key, []byte("/")...) // prefix number for easy lookup without messing around with byte array lengths
 	key = append(key, blockNumber...)
-	key = append(key, []byte("/")...)
-
-	key = append(key, []byte("/")...) // another placeholder
 	key = append(key, toOrFrom...)
-	key = append(key, []byte("/")...)
-
-	key = append(key, []byte("/")...)
 	key = append(key, txhash...)
 	return
 }
 
 func resolveAddrTxBytes(key []byte) (address, blockNumber, toOrFrom, txhash []byte) {
-	// txa-0xabcdef123456/4124127/t/0xasdfasdf
-	byteSet := bytes.Split(key, []byte("/"))
-	if len(byteSet) < 4 {
-		glog.Fatal("unexpected key len", len(byteSet), byteSet, string(key))
-	}
-	address = bytes.TrimPrefix(byteSet[0], txAddressIndexPrefix)
-	blockNumber = byteSet[1]
-	toOrFrom = byteSet[2]
-	txhash = byteSet[3]
+	// prefix = key[:4]
+	address = key[4:24] // common.AddressLength = 20
+	blockNumber = key[24:32]
+	toOrFrom = key[32:33] // == key[32] (1 byte)
+	txhash = key[33:]
 	return
 }
 
 // if isTo is false, then the address is the sender in the tx (from), t/f
-func PutAddrTxs(db ethdb.Database, block *types.Block, isTo bool, address common.Hash, txhash common.Hash) error {
+func PutAddrTxs(db ethdb.Database, block *types.Block, isTo bool, address common.Address, txhash common.Hash) error {
 	var tOrF = []byte("f")
 	if isTo {
 		tOrF = []byte("t")
 	}
 
-	k := formatAddrTxBytes(address.Bytes(), block.Number().Bytes(), tOrF, txhash.Bytes())
+	bk := make([]byte, 8)
+	binary.LittleEndian.PutUint64(bk, block.NumberU64())
+	k := formatAddrTxBytes(address.Bytes(), bk, tOrF, txhash.Bytes())
 
 	if err := db.Put(k, nil); err != nil {
 		glog.Fatalf("failed to store addrtxidx into database: %v", err)
