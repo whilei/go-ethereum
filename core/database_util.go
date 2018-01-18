@@ -28,7 +28,6 @@ import (
 	"github.com/ethereumproject/go-ethereum/logger"
 	"github.com/ethereumproject/go-ethereum/logger/glog"
 	"github.com/ethereumproject/go-ethereum/rlp"
-	"errors"
 )
 
 var (
@@ -146,11 +145,13 @@ func GetAddrTxs(db ethdb.Database, address common.Hash, blockStartN uint64, bloc
 		glog.Fatal("Address transactions list signature requires 'to', 'from', or 'both' or '' (=both)")
 	}
 
+	// Have to cast to LevelDB to use iterator. Yuck.
 	ldb, ok := db.(*ethdb.LDBDatabase)
 	if !ok {
 		return nil
 	}
 
+	// Create address prefix for iteration.
 	var k []byte
 	k = append(k, txAddressIndexPrefix...)
 	k = append(k, address.Bytes()...)
@@ -158,73 +159,39 @@ func GetAddrTxs(db ethdb.Database, address common.Hash, blockStartN uint64, bloc
 	prefix := ethdb.NewBytesPrefix(k)
 	it := ldb.NewIteratorRange(prefix)
 
+	// This will be the returnable.
 	var hashes []string
 
-	compIStart := new(big.Int).SetUint64(blockStartN)
-	compIEnd := new(big.Int).SetUint64(blockEndN)
-
-	// errors get ignored, essentially
-	bytesValBetween := func(bs []byte, prefix, suffix string) ([]byte, error) {
-		i1 := bytes.Index(bs, []byte(prefix))+len(prefix)
-		i2 := bytes.Index(bs, []byte(suffix))
-		//glog.D(logger.Error).Errorln("i1 i2", i1, i2)
-		if i1 < 0 || i2 < 0 || i1 > i2 || i1 == i2 {
-			glog.V(logger.Error).Errorln("slice bound out of range", i1, i2, prefix, string(bs), len(bs), bs)
-			glog.D(logger.Error).Errorln("slice bound out of range", i1, i2, prefix, string(bs), len(bs), bs)
-			return nil, errors.New("sloob") // slice out of bounds
-		}
-		return bs[i1:i2], nil
-	}
+	// Convert start/stop block number to *big for easier comparison.
+	wantStart := new(big.Int).SetUint64(blockStartN)
+	wantEnd := new(big.Int).SetUint64(blockEndN)
 
 	for it.Next() {
 		key := it.Key()
+		_, blockNum, torf, txh := resolveAddrTxBytes(key)
 
 		if blockStartN > 0 {
-			nBytes, err := bytesValBetween(key, "n^", "$n")
-			if err != nil {
-				continue
-			}
-			txaI := new(big.Int).SetBytes(nBytes)
-			//glog.D(logger.Error).Infoln("here 2")
-			if txaI.Cmp(compIStart) < 0 {
+			txaI := new(big.Int).SetBytes(blockNum)
+			if txaI.Cmp(wantStart) < 0 {
 				continue
 			}
 		}
 		if blockEndN > 0 {
-			nBytes, err := bytesValBetween(key, "n^", "$n")
-			if err != nil {
-				continue
-			}
-			txaI := new(big.Int).SetBytes(nBytes)
-			//glog.D(logger.Error).Infoln("here 3")
-			if txaI.Cmp(compIEnd) > 0 {
+			txaI := new(big.Int).SetBytes(blockNum)
+			if txaI.Cmp(wantEnd) > 0 {
 				continue
 			}
 		}
 		if toFromOrBoth == "to" {
-			tfBytes, err := bytesValBetween(key, "tf^", "$tf")
-			if err != nil {
-				continue
-			}
-			//glog.D(logger.Error).Infoln("here 4")
-			if string(tfBytes) != "t" {
+			if string(torf) != "t" {
 				continue
 			}
 		} else if toFromOrBoth == "from" {
-			tfBytes, err := bytesValBetween(key, "tf^", "$tf")
-			if err != nil {
-				continue
-			}
-			//glog.D(logger.Error).Infoln("here 5")
-			if string(tfBytes) != "f" {
+			if string(torf) != "f" {
 				continue
 			}
 		}
-		txhashbytes, err := bytesValBetween(key, "h^", "$h")
-		if err != nil {
-			continue
-		}
-		tx := "0x" + common.Bytes2Hex(txhashbytes)
+		tx := common.ToHex(txh)
 		hashes = append(hashes, tx)
 	}
 	it.Release()
@@ -239,23 +206,34 @@ func formatAddrTxBytes(address, blockNumber, toOrFrom, txhash []byte) (key []byt
 	key = append(key, txAddressIndexPrefix...)
 	key = append(key, address...)
 
-	key = append(key, []byte("n^")...) // prefix number for easy lookup without messing around with byte array lengths
+	key = append(key, []byte("/")...) // prefix number for easy lookup without messing around with byte array lengths
 	key = append(key, blockNumber...)
-	key = append(key, []byte("$n")...)
+	key = append(key, []byte("/")...)
 
-	key = append(key, []byte("tf^")...) // another placeholder
+	key = append(key, []byte("/")...) // another placeholder
 	key = append(key, toOrFrom...)
-	key = append(key, []byte("$tf")...)
+	key = append(key, []byte("/")...)
 
-	key = append(key, []byte("h^")...)
+	key = append(key, []byte("/")...)
 	key = append(key, txhash...)
-	key = append(key, []byte("$h")...)
+	return
+}
+
+func resolveAddrTxBytes(key []byte) (address, blockNumber, toOrFrom, txhash []byte) {
+	// txa-0xabcdef123456/4124127/t/0xasdfasdf
+	byteSet := bytes.Split(key, []byte("/"))
+	if len(byteSet) < 4 {
+		glog.Fatal("unexpected key len", len(byteSet), byteSet, string(key))
+	}
+	address = bytes.TrimPrefix(byteSet[0], txAddressIndexPrefix)
+	blockNumber = byteSet[1]
+	toOrFrom = byteSet[2]
+	txhash = byteSet[3]
 	return
 }
 
 // if isTo is false, then the address is the sender in the tx (from), t/f
 func PutAddrTxs(db ethdb.Database, block *types.Block, isTo bool, address common.Hash, txhash common.Hash) error {
-
 	var tOrF = []byte("f")
 	if isTo {
 		tOrF = []byte("t")
