@@ -81,8 +81,11 @@ var (
 )
 
 // Timeouts
-const (
+var (
 	respTimeout = 500 * time.Millisecond
+)
+
+const (
 	expiration  = 20 * time.Second
 
 	ntpFailureThreshold = 32               // Continuous timeouts after which to check NTP
@@ -462,8 +465,12 @@ func (t *udp) loop() {
 					ntpWarnTime = time.Now()
 					go checkClockDrift()
 				}
+				respTimeout = respTimeout + (respTimeout * 1/2)
+				glog.D(logger.Warn).Warnf("%d timeouts > %d, new resp timeout = %v", contTimeouts, ntpFailureThreshold, respTimeout)
+				glog.V(logger.Warn).Warnf("%d timeouts > %d, new resp timeout = %v", contTimeouts, ntpFailureThreshold, respTimeout)
 				contTimeouts = 0
 			}
+
 		}
 	}
 }
