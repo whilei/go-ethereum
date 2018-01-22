@@ -83,11 +83,15 @@ var (
 // Timeouts
 var (
 	respTimeout = 500 * time.Millisecond
+	respTimeoutMax = 2 * time.Second
 )
+
+func respTimeoutIncrement(to time.Duration) time.Duration {
+	return to * 3/2
+}
 
 const (
 	expiration  = 20 * time.Second
-
 	ntpFailureThreshold = 32               // Continuous timeouts after which to check NTP
 	ntpWarningCooldown  = 10 * time.Minute // Minimum amount of time to pass before repeating NTP warning
 	driftThreshold      = 10 * time.Second // Allowed clock drift before warning user
@@ -465,9 +469,12 @@ func (t *udp) loop() {
 					ntpWarnTime = time.Now()
 					go checkClockDrift()
 				}
-				respTimeout = respTimeout + (respTimeout * 1/2)
-				glog.D(logger.Warn).Warnf("%d timeouts > %d, new resp timeout = %v", contTimeouts, ntpFailureThreshold, respTimeout)
-				glog.V(logger.Warn).Warnf("%d timeouts > %d, new resp timeout = %v", contTimeouts, ntpFailureThreshold, respTimeout)
+				if respTimeout < respTimeoutMax {
+					// at respTimeout = 500ms, effectively sets max timeout to 1.6875s
+					respTimeout = respTimeoutIncrement(respTimeout)
+					glog.D(logger.Warn).Warnf("%d timeouts > %d, new resp timeout = %v", contTimeouts, ntpFailureThreshold, respTimeout)
+					glog.V(logger.Warn).Warnf("%d timeouts > %d, new resp timeout = %v", contTimeouts, ntpFailureThreshold, respTimeout)
+				}
 				contTimeouts = 0
 			}
 
