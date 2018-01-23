@@ -1524,7 +1524,7 @@ func (d *Downloader) deliver(id string, destCh chan dataPack, packet dataPack, m
 // peer latency statistics and updates the estimated request round trip time.
 func (d *Downloader) qosTuner() {
 	for {
-		// Retrieve the current median RTT and integrate into the previoust target RTT
+		// Retrieve the current median RTT and integrate into the previous target RTT
 		// https://en.wikipedia.org/wiki/Round-trip_delay_time
 		rtt := time.Duration(float64(1-qosTuningImpact)*float64(atomic.LoadUint64(&d.rttEstimate)) + qosTuningImpact*float64(d.peers.medianRTT()))
 		atomic.StoreUint64(&d.rttEstimate, uint64(rtt))
