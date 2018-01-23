@@ -37,6 +37,7 @@ import (
 	"github.com/ethereumproject/go-ethereum/common"
 	"github.com/ethereumproject/go-ethereum/crypto"
 	"github.com/ethereumproject/go-ethereum/rlp"
+	"sort"
 )
 
 func init() {
@@ -187,6 +188,43 @@ func TestUDP_pingTimeout(t *testing.T) {
 	toid := NodeID{1, 2, 3, 4}
 	if err := test.udp.ping(toid, toaddr); err != errTimeout {
 		t.Error("expected timeout error, got", err)
+	}
+}
+
+func TestUDP_ResponseTimeoutAdjustment(t *testing.T) {
+	t.Parallel()
+	var (
+		to                = 500 * time.Millisecond
+		overages          sort.IntSlice
+		testResponseTimes  = []int64{1000, 501, 502, 503, 504, 505}
+	)
+
+	for _, o := range testResponseTimes {
+		x := time.Millisecond / time.Nanosecond
+		v := time.Duration(o) * x // get in ms
+		d := v - to
+		overages = append(overages, int(d.Nanoseconds()/1000))
+	}
+
+	overages.Sort()
+
+	// Using median instead of mean helps to avoid over-weighting outliers
+	l := len(overages)
+	var medianDiffInt int
+	if l%2 == 0 {
+		medianDiffInt = overages[(l/2)-1] // FIXME maybe: inexact, not handling rounding...
+	} else {
+		medianDiffInt = overages[(l-1)/2] // FIXME maybe: inexact, not handling rounding...
+	}
+	ton := to + time.Duration(int64(medianDiffInt)*1000)
+
+	now := time.Now()
+	if !now.Add(ton).After(now.Add(to)) {
+		t.Errorf("timeout should have increased, got: %v", ton)
+	}
+	expected := time.Duration(503 * time.Millisecond)
+	if ton !=  expected {
+		t.Errorf("want: %v, got: %v", expected, ton)
 	}
 }
 
