@@ -31,6 +31,7 @@ import (
 	"github.com/ethereumproject/go-ethereum/p2p/nat"
 	"github.com/ethereumproject/go-ethereum/rlp"
 	"sort"
+	"sync"
 )
 
 const Version = 4
@@ -83,15 +84,18 @@ var (
 
 // Timeouts
 var (
-	defaultRespTimeout = 500 * time.Millisecond
+	defaultRespTimeout    = time.Duration(500 * time.Millisecond).Nanoseconds()
+	respTimeoutFloor      = time.Duration(300 * time.Millisecond).Nanoseconds()
+	respTimeoutCeiling    = time.Duration(2 * time.Second).Nanoseconds()
 )
 
 const (
-	respTimeoutMax = 2 * time.Second
-	expiration  = 20 * time.Second
-	ntpFailureThreshold = 32               // Continuous timeouts after which to check NTP
-	ntpWarningCooldown  = 10 * time.Minute // Minimum amount of time to pass before repeating NTP warning
-	driftThreshold      = 10 * time.Second // Allowed clock drift before warning user
+	rttAlpha              = 0.125
+	respTimeoutHistoryLen = 32 // How much history to store for timeout return rates
+	expiration            = 20 * time.Second
+	ntpFailureThreshold   = 32               // Continuous timeouts after which to check NTP
+	ntpWarningCooldown    = 10 * time.Minute // Minimum amount of time to pass before repeating NTP warning
+	driftThreshold        = 10 * time.Second // Allowed clock drift before warning user
 )
 
 // RPC packet types
@@ -197,6 +201,9 @@ type udp struct {
 	closing chan struct{}
 
 	respTimeout time.Duration
+	respTimes sort.IntSlice
+
+	mu *sync.Mutex
 
 	*Table
 }
@@ -264,7 +271,8 @@ func newUDP(priv *ecdsa.PrivateKey, c conn, natm nat.Interface, nodeDBPath strin
 		closing:     make(chan struct{}),
 		gotreply:    make(chan reply),
 		addpending:  make(chan *pending),
-		respTimeout: defaultRespTimeout,
+		respTimeout: time.Duration(defaultRespTimeout),
+		mu:          new(sync.Mutex),
 	}
 	realaddr := c.LocalAddr().(*net.UDPAddr)
 	if natm != nil {
@@ -295,10 +303,53 @@ func (t *udp) close() {
 	// TODO: wait for the loops to end.
 }
 
+func (t *udp) tuneRespTimeoutPush(sample time.Duration) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	// store the values as milliseconds because we don't need the extra detail
+	t.respTimes = append(t.respTimes, int(sample.Nanoseconds()/1000000))
+	if t.respTimes.Len() < respTimeoutHistoryLen {
+		return
+	}
+	t.respTimes.Sort()
+
+	// Get median.
+	var medianSample int
+	l := t.respTimes.Len()
+	if l%2 == 0 {
+		medianSample = t.respTimes[(l/2)-1]
+	} else {
+		medianSample = t.respTimes[(l-1)/2]
+	}
+	medianSampleD := time.Duration(int64(medianSample)*1000000)
+
+	// Retrieve the current median RTT and integrate into the previous target RTT
+	// https://en.wikipedia.org/wiki/Round-trip_delay_time
+	rtt := time.Duration(float64(1-rttAlpha)*float64(t.respTimeout.Nanoseconds()) + rttAlpha*float64(medianSampleD.Nanoseconds()))
+
+	if rtt.Nanoseconds() < respTimeoutFloor {
+		rtt = time.Duration(respTimeoutFloor)
+	} else if rtt.Nanoseconds() > respTimeoutCeiling {
+		rtt = time.Duration(respTimeoutCeiling)
+	}
+
+	t.respTimeout = rtt
+	t.respTimes = sort.IntSlice{} // reset
+
+	// (debug) visualize what's happening
+	//glog.D(logger.Warn).Warnf("Adjusted resp timeout = %v rtt=%v md=%v", t.respTimeout, rtt, medianSampleD)
+	//glog.V(logger.Warn).Warnf("Adjusted resp timeout = %v rtt=%v md=%v", t.respTimeout, rtt, medianSampleD)
+}
+
 // ping sends a ping message to the given node and waits for a reply.
 func (t *udp) ping(toid NodeID, toaddr *net.UDPAddr) error {
 	// TODO: maybe check for ReplyTo field in callback to measure RTT
-	errc := t.pending(toid, pongPacket, func(interface{}) bool { return true })
+	n := time.Now()
+	errc := t.pending(toid, pongPacket, func(r interface{}) bool {
+		go t.tuneRespTimeoutPush(time.Now().Sub(n))
+		return true
+	})
 	t.send(toaddr, pingPacket, ping{
 		Version:    Version,
 		From:       t.ourEndpoint,
@@ -390,7 +441,6 @@ func (t *udp) loop() {
 		timeout                = time.NewTimer(0)
 		nextTimeout      *pending      // head of plist when timeout was last reset
 		contTimeouts      = 0          // number of continuous timeouts to do NTP checks
-		respTimeoutDiffs sort.IntSlice // in milliseconds, the +diff for timeout responses
 		ntpWarnTime        = time.Unix(0, 0)
 	)
 	<-timeout.C // ignore first timeout
@@ -404,7 +454,7 @@ func (t *udp) loop() {
 		now := time.Now()
 		for el := plist.Front(); el != nil; el = el.Next() {
 			nextTimeout = el.Value.(*pending)
-			if dist := nextTimeout.deadline.Sub(now); dist < 2*defaultRespTimeout {
+			if dist := nextTimeout.deadline.Sub(now); dist < 2*time.Duration(defaultRespTimeout) {
 				timeout.Reset(dist)
 				return
 			}
@@ -429,24 +479,24 @@ func (t *udp) loop() {
 			return
 
 		case p := <-t.addpending:
-			p.deadline = time.Now().Add(defaultRespTimeout)
+			p.deadline = time.Now().Add(t.respTimeout)
 			plist.PushBack(p)
 
 		case r := <-t.gotreply:
 			var matched bool
 			for el := plist.Front(); el != nil; el = el.Next() {
 				p := el.Value.(*pending)
+				// Remove the matcher if its callback indicates
+				// that all replies have been received. This is
+				// required for packet types that expect multiple
+				// reply packets.
+				// Reset the continuous timeout counter (time drift detection)
 				if p.from == r.from && p.ptype == r.ptype {
 					matched = true
-					// Remove the matcher if its callback indicates
-					// that all replies have been received. This is
-					// required for packet types that expect multiple
-					// reply packets.
 					if p.callback(r.data) {
 						p.errc <- nil
 						plist.Remove(el)
 					}
-					// Reset the continuous timeout counter (time drift detection)
 					contTimeouts = 0
 				}
 			}
@@ -459,10 +509,6 @@ func (t *udp) loop() {
 			for el := plist.Front(); el != nil; el = el.Next() {
 				p := el.Value.(*pending)
 				if now.After(p.deadline) || now.Equal(p.deadline) {
-
-					timeoutDiff := time.Since(p.deadline)
-					respTimeoutDiffs = append(respTimeoutDiffs, int(timeoutDiff.Nanoseconds()/1000))
-
 					p.errc <- errTimeout
 					plist.Remove(el)
 					contTimeouts++
@@ -473,27 +519,6 @@ func (t *udp) loop() {
 				if time.Since(ntpWarnTime) >= ntpWarningCooldown {
 					ntpWarnTime = time.Now()
 					go checkClockDrift()
-				}
-				if defaultRespTimeout < respTimeoutMax {
-					respTimeoutDiffs.Sort()
-
-					// Using median instead of mean avoids over-weighting outliers
-					var medianDiffInt int
-					l := len(respTimeoutDiffs)
-					if l%2 == 0 {
-						medianDiffInt = respTimeoutDiffs[(l/2)-1]
-					} else {
-						medianDiffInt = respTimeoutDiffs[(l-1)/2]
-					}
-					defaultRespTimeout += time.Duration(int64(medianDiffInt)*1000)
-
-					// Reset historical diffs because now they're accounted for
-					// If we were instead to limit the len of the slice, continuously appending new diff vals, we
-					// we would "double-count" historical values
-					respTimeoutDiffs = sort.IntSlice{}
-
-					glog.D(logger.Warn).Warnf("Adjusted resp timeout = %v", defaultRespTimeout)
-					glog.V(logger.Warn).Warnf("Adjusted resp timeout = %v", defaultRespTimeout)
 				}
 				contTimeouts = 0
 			}
