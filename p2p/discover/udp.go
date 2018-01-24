@@ -338,8 +338,8 @@ func (t *udp) tuneRespTimeoutPush(sample time.Duration) {
 	t.respTimes = sort.IntSlice{} // reset
 
 	// (debug) visualize what's happening
-	//glog.D(logger.Warn).Warnf("Adjusted resp timeout = %v rtt=%v md=%v", t.respTimeout, rtt, medianSampleD)
-	//glog.V(logger.Warn).Warnf("Adjusted resp timeout = %v rtt=%v md=%v", t.respTimeout, rtt, medianSampleD)
+	glog.D(logger.Warn).Warnf("Adjusted resp timeout = %v rtt=%v md=%v", t.respTimeout, rtt, medianSampleD)
+	glog.V(logger.Warn).Warnf("Adjusted resp timeout = %v rtt=%v md=%v", t.respTimeout, rtt, medianSampleD)
 }
 
 // ping sends a ping message to the given node and waits for a reply.
