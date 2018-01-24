@@ -326,8 +326,8 @@ func (t *udp) tuneRespTimeoutPush(sample time.Duration) {
 
 	// Retrieve the current median RTT and integrate into the previous target RTT
 	// https://en.wikipedia.org/wiki/Round-trip_delay_time
-	rtt := time.Duration(float64(1-rttAlpha)*float64(t.respTimeout.Nanoseconds()) + rttAlpha*float64(medianSampleD.Nanoseconds()))
-
+	rttO := time.Duration(float64(1-rttAlpha)*float64(t.respTimeout.Nanoseconds()) + rttAlpha*float64(medianSampleD.Nanoseconds()))
+	rtt := rttO
 	if rtt.Nanoseconds() < respTimeoutFloor {
 		rtt = time.Duration(respTimeoutFloor)
 	} else if rtt.Nanoseconds() > respTimeoutCeiling {
@@ -338,8 +338,8 @@ func (t *udp) tuneRespTimeoutPush(sample time.Duration) {
 	t.respTimes = sort.IntSlice{} // reset
 
 	// (debug) visualize what's happening
-	glog.D(logger.Warn).Warnf("Adjusted resp timeout = %v rtt=%v md=%v", t.respTimeout, rtt, medianSampleD)
-	glog.V(logger.Warn).Warnf("Adjusted resp timeout = %v rtt=%v md=%v", t.respTimeout, rtt, medianSampleD)
+	glog.D(logger.Warn).Warnf("Adjusted resp timeout = %v rtt=%v md=%v", t.respTimeout, rttO, medianSampleD)
+	glog.V(logger.Warn).Warnf("Adjusted resp timeout = %v rtt=%v md=%v", t.respTimeout, rttO, medianSampleD)
 }
 
 // ping sends a ping message to the given node and waits for a reply.
