@@ -14,51 +14,36 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package runtime provides a basic execution model for executing EVM code.
 package runtime
 
 import (
+	"math"
 	"math/big"
 	"time"
 
-	"github.com/ethereumproject/go-ethereum/common"
-	"github.com/ethereumproject/go-ethereum/core/state"
-	"github.com/ethereumproject/go-ethereum/core/vm"
-	"github.com/ethereumproject/go-ethereum/crypto"
-	"github.com/ethereumproject/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/state"
+	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/params"
 )
-
-// The default, always homestead, rule set for the vm env
-type ruleSet struct{}
-
-func (ruleSet) IsHomestead(*big.Int) bool { return true }
-func (ruleSet) GasTable(*big.Int) *vm.GasTable {
-	return &vm.GasTable{
-		ExtcodeSize:     big.NewInt(700),
-		ExtcodeCopy:     big.NewInt(700),
-		Balance:         big.NewInt(400),
-		SLoad:           big.NewInt(200),
-		Calls:           big.NewInt(700),
-		Suicide:         big.NewInt(5000),
-		ExpByte:         big.NewInt(10),
-		CreateBySuicide: big.NewInt(25000),
-	}
-}
 
 // Config is a basic type specifying certain configuration flags for running
 // the EVM.
 type Config struct {
-	RuleSet     vm.RuleSet
+	ChainConfig *params.ChainConfig
 	Difficulty  *big.Int
 	Origin      common.Address
 	Coinbase    common.Address
 	BlockNumber *big.Int
 	Time        *big.Int
-	GasLimit    *big.Int
+	GasLimit    uint64
 	GasPrice    *big.Int
 	Value       *big.Int
 	DisableJit  bool // "disable" so it's enabled by default
 	Debug       bool
+	EVMConfig   vm.Config
 
 	State     *state.StateDB
 	GetHashFn func(n uint64) common.Hash
@@ -66,8 +51,16 @@ type Config struct {
 
 // sets defaults on the config
 func setDefaults(cfg *Config) {
-	if cfg.RuleSet == nil {
-		cfg.RuleSet = ruleSet{}
+	if cfg.ChainConfig == nil {
+		cfg.ChainConfig = &params.ChainConfig{
+			ChainId:        big.NewInt(1),
+			HomesteadBlock: new(big.Int),
+			DAOForkBlock:   new(big.Int),
+			DAOForkSupport: false,
+			EIP150Block:    new(big.Int),
+			EIP155Block:    new(big.Int),
+			EIP158Block:    new(big.Int),
+		}
 	}
 
 	if cfg.Difficulty == nil {
@@ -76,8 +69,8 @@ func setDefaults(cfg *Config) {
 	if cfg.Time == nil {
 		cfg.Time = big.NewInt(time.Now().Unix())
 	}
-	if cfg.GasLimit == nil {
-		cfg.GasLimit = new(big.Int).Set(common.MaxBig)
+	if cfg.GasLimit == 0 {
+		cfg.GasLimit = math.MaxUint64
 	}
 	if cfg.GasPrice == nil {
 		cfg.GasPrice = new(big.Int)

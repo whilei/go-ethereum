@@ -39,12 +39,12 @@ func TestBloom(t *testing.T) {
 	}
 
 	for _, data := range positive {
-		if !BloomLookup(bloom, []byte(data)) {
+		if !bloom.TestBytes([]byte(data)) {
 			t.Error("expected", data, "to test true")
 		}
 	}
 	for _, data := range negative {
-		if BloomLookup(bloom, []byte(data)) {
+		if bloom.TestBytes([]byte(data)) {
 			t.Error("did not expect", data, "to test true")
 		}
 	}
@@ -54,7 +54,7 @@ func TestBloom(t *testing.T) {
 import (
 	"testing"
 
-	"github.com/ethereumproject/go-ethereum/core/state"
+	"github.com/ethereum/go-ethereum/core/state"
 )
 
 func TestBloom9(t *testing.T) {

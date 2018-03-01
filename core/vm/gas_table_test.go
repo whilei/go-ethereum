@@ -1,4 +1,4 @@
-// Copyright 2015 The go-ethereum Authors
+// Copyright 2017 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -14,30 +14,23 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package runtime
+package vm
 
-import (
-	"math/big"
+import "testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/vm"
-)
-
-func NewEnv(cfg *Config) *vm.EVM {
-	context := vm.Context{
-		CanTransfer: core.CanTransfer,
-		Transfer:    core.Transfer,
-		GetHash:     func(uint64) common.Hash { return common.Hash{} },
-
-		Origin:      cfg.Origin,
-		Coinbase:    cfg.Coinbase,
-		BlockNumber: cfg.BlockNumber,
-		Time:        cfg.Time,
-		Difficulty:  cfg.Difficulty,
-		GasLimit:    new(big.Int).SetUint64(cfg.GasLimit),
-		GasPrice:    cfg.GasPrice,
+func TestMemoryGasCost(t *testing.T) {
+	//size := uint64(math.MaxUint64 - 64)
+	size := uint64(0xffffffffe0)
+	v, err := memoryGasCost(&Memory{}, size)
+	if err != nil {
+		t.Error("didn't expect error:", err)
+	}
+	if v != 36028899963961341 {
+		t.Errorf("Expected: 36028899963961341, got %d", v)
 	}
 
-	return vm.NewEVM(context, cfg.State, cfg.ChainConfig, cfg.EVMConfig)
+	_, err = memoryGasCost(&Memory{}, size+1)
+	if err == nil {
+		t.Error("expected error")
+	}
 }

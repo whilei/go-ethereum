@@ -20,41 +20,75 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereumproject/go-ethereum/common"
-	"github.com/ethereumproject/go-ethereum/core/vm"
 	"github.com/ethereumproject/go-ethereum/crypto"
+	"github.com/ethereumproject/go-ethereum/common/hexutil"
 )
 
-const bloomLength = 256
+type bytesBacked interface {
+	Bytes() []byte
+}
 
-type Bloom [bloomLength]byte
+const (
+	// BloomByteLength represents the number of bytes used in a header log bloom.
+	BloomByteLength = 256
 
+	// BloomBitLength represents the number of bits used in a header log bloom.
+	BloomBitLength = 8 * BloomByteLength
+)
+
+// Bloom represents a 2048 bit bloom filter.
+type Bloom [BloomByteLength]byte
+
+// BytesToBloom converts a byte slice to a bloom filter.
+// It panics if b is not of suitable size.
 func BytesToBloom(b []byte) Bloom {
 	var bloom Bloom
 	bloom.SetBytes(b)
 	return bloom
 }
 
+// SetBytes sets the content of b to the given bytes.
+// It panics if d is not of suitable size.
 func (b *Bloom) SetBytes(d []byte) {
 	if len(b) < len(d) {
 		panic(fmt.Sprintf("bloom bytes too big %d %d", len(b), len(d)))
 	}
-
-	copy(b[bloomLength-len(d):], d)
+	copy(b[BloomByteLength-len(d):], d)
 }
 
+// Add adds d to the filter. Future calls of Test(d) will return true.
 func (b *Bloom) Add(d *big.Int) {
 	bin := new(big.Int).SetBytes(b[:])
 	bin.Or(bin, bloom9(d.Bytes()))
 	b.SetBytes(bin.Bytes())
 }
 
+// Big converts b to a big integer.
+func (b Bloom) Big() *big.Int {
+	return new(big.Int).SetBytes(b[:])
+}
+
 func (b Bloom) Bytes() []byte {
 	return b[:]
 }
 
-func (b Bloom) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf(`"%#x"`, b.Bytes())), nil
+func (b Bloom) Test(test *big.Int) bool {
+	return BloomLookup(b, test)
+}
+
+func (b Bloom) TestBytes(test []byte) bool {
+	return b.Test(new(big.Int).SetBytes(test))
+
+}
+
+// MarshalText encodes b as a hex string with 0x prefix.
+func (b Bloom) MarshalText() ([]byte, error) {
+	return hexutil.Bytes(b[:]).MarshalText()
+}
+
+// UnmarshalText b as a hex string with 0x prefix.
+func (b *Bloom) UnmarshalText(input []byte) error {
+	return hexutil.UnmarshalFixedText("Bloom", input, b[:])
 }
 
 func CreateBloom(receipts Receipts) Bloom {
@@ -66,17 +100,11 @@ func CreateBloom(receipts Receipts) Bloom {
 	return BytesToBloom(bin.Bytes())
 }
 
-func LogsBloom(logs vm.Logs) *big.Int {
+func LogsBloom(logs []*Log) *big.Int {
 	bin := new(big.Int)
 	for _, log := range logs {
-		data := make([]common.Hash, len(log.Topics))
 		bin.Or(bin, bloom9(log.Address.Bytes()))
-
-		for i, topic := range log.Topics {
-			data[i] = topic
-		}
-
-		for _, b := range data {
+		for _, b := range log.Topics {
 			bin.Or(bin, bloom9(b[:]))
 		}
 	}
@@ -100,8 +128,9 @@ func bloom9(b []byte) *big.Int {
 
 var Bloom9 = bloom9
 
-func BloomLookup(bin Bloom, topic []byte) bool {
-	bloom := new(big.Int).SetBytes(bin[:])
-	cmp := bloom9(topic)
+func BloomLookup(bin Bloom, topic bytesBacked) bool {
+	bloom := bin.Big()
+	cmp := bloom9(topic.Bytes()[:])
+
 	return bloom.And(bloom, cmp).Cmp(cmp) == 0
 }

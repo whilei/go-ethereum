@@ -1,4 +1,4 @@
-// Copyright 2015 The go-ethereum Authors
+// Copyright 2017 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -14,30 +14,31 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package runtime
+package vm
 
 import (
-	"math/big"
+	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/params"
 )
 
-func NewEnv(cfg *Config) *vm.EVM {
-	context := vm.Context{
-		CanTransfer: core.CanTransfer,
-		Transfer:    core.Transfer,
-		GetHash:     func(uint64) common.Hash { return common.Hash{} },
+func makeStackFunc(pop, push int) stackValidationFunc {
+	return func(stack *Stack) error {
+		if err := stack.require(pop); err != nil {
+			return err
+		}
 
-		Origin:      cfg.Origin,
-		Coinbase:    cfg.Coinbase,
-		BlockNumber: cfg.BlockNumber,
-		Time:        cfg.Time,
-		Difficulty:  cfg.Difficulty,
-		GasLimit:    new(big.Int).SetUint64(cfg.GasLimit),
-		GasPrice:    cfg.GasPrice,
+		if stack.len()+push-pop > int(params.StackLimit) {
+			return fmt.Errorf("stack limit reached %d (%d)", stack.len(), params.StackLimit)
+		}
+		return nil
 	}
+}
 
-	return vm.NewEVM(context, cfg.State, cfg.ChainConfig, cfg.EVMConfig)
+func makeDupStackFunc(n int) stackValidationFunc {
+	return makeStackFunc(n, n+1)
+}
+
+func makeSwapStackFunc(n int) stackValidationFunc {
+	return makeStackFunc(n, n)
 }
