@@ -109,27 +109,52 @@ func Execute(code, input []byte, cfg *Config) ([]byte, *state.StateDB, error) {
 
 	if cfg.State == nil {
 		db, _ := ethdb.NewMemDatabase()
-		cfg.State, _ = state.New(common.Hash{}, db)
+		cfg.State, _ = state.New(common.Hash{}, state.NewDatabase(db))
 	}
 	var (
-		vmenv    = NewEnv(cfg, cfg.State)
-		sender   = cfg.State.CreateAccount(cfg.Origin)
-		receiver = cfg.State.CreateAccount(common.StringToAddress("contract"))
+		address = common.StringToAddress("contract")
+		vmenv   = NewEnv(cfg)
+		sender  = vm.AccountRef(cfg.Origin)
 	)
+	cfg.State.CreateAccount(address)
 	// set the receiver's (the executing contract) code for execution.
-	receiver.SetCode(crypto.Keccak256Hash(code), code)
-
+	cfg.State.SetCode(address, code)
 	// Call the code with the given configuration.
-	ret, err := vmenv.Call(
+	ret, _, err := vmenv.Call(
 		sender,
-		receiver.Address(),
+		common.StringToAddress("contract"),
 		input,
 		cfg.GasLimit,
-		cfg.GasPrice,
 		cfg.Value,
 	)
 
 	return ret, cfg.State, err
+}
+
+// Create executes the code using the EVM create method
+func Create(input []byte, cfg *Config) ([]byte, common.Address, uint64, error) {
+	if cfg == nil {
+		cfg = new(Config)
+	}
+	setDefaults(cfg)
+
+	if cfg.State == nil {
+		db, _ := ethdb.NewMemDatabase()
+		cfg.State, _ = state.New(common.Hash{}, state.NewDatabase(db))
+	}
+	var (
+		vmenv  = NewEnv(cfg)
+		sender = vm.AccountRef(cfg.Origin)
+	)
+
+	// Call the code with the given configuration.
+	code, address, leftOverGas, err := vmenv.Create(
+		sender,
+		input,
+		cfg.GasLimit,
+		cfg.Value,
+	)
+	return code, address, leftOverGas, err
 }
 
 // Call executes the code given by the contract's address. It will return the
@@ -137,21 +162,20 @@ func Execute(code, input []byte, cfg *Config) ([]byte, *state.StateDB, error) {
 //
 // Call, unlike Execute, requires a config and also requires the State field to
 // be set.
-func Call(address common.Address, input []byte, cfg *Config) ([]byte, error) {
+func Call(address common.Address, input []byte, cfg *Config) ([]byte, uint64, error) {
 	setDefaults(cfg)
 
-	vmenv := NewEnv(cfg, cfg.State)
+	vmenv := NewEnv(cfg)
 
 	sender := cfg.State.GetOrNewStateObject(cfg.Origin)
 	// Call the code with the given configuration.
-	ret, err := vmenv.Call(
+	ret, leftOverGas, err := vmenv.Call(
 		sender,
 		address,
 		input,
 		cfg.GasLimit,
-		cfg.GasPrice,
 		cfg.Value,
 	)
 
-	return ret, err
+	return ret, leftOverGas, err
 }
