@@ -1375,6 +1375,79 @@ func (self *BlockChain) WriteBlock(block *types.Block) (status WriteStatus, err 
 	return
 }
 
+// WriteBlock writes the block to the chain.
+func (bc *BlockChain) WriteBlockAndState(block *types.Block, receipts []*types.Receipt, state *state.StateDB) (status WriteStatus, err error) {
+	bc.wg.Add(1)
+	defer bc.wg.Done()
+
+	// Calculate the total difficulty of the block
+	ptd := bc.GetTd(block.ParentHash())
+	if ptd == nil {
+		return NonStatTy, ParentError(block.ParentHash())
+	}
+	// Make sure no inconsistent state is leaked during insertion
+	bc.mu.Lock()
+	defer bc.mu.Unlock()
+
+	localTd := bc.GetTd(bc.currentBlock.Hash())
+	externTd := new(big.Int).Add(block.Difficulty(), ptd)
+
+	// Irrelevant of the canonical status, write the block itself to the database
+	if err := bc.hc.WriteTd(block.Hash(), externTd); err != nil {
+		return NonStatTy, err
+	}
+	// Write other block data using a batch.
+	if err := WriteBlock(bc.chainDb, block); err != nil {
+		return NonStatTy, err
+	}
+	batch := bc.chainDb.NewBatch()
+	if _, err := state.CommitTo(batch, false); err != nil {
+		return NonStatTy, err
+	}
+	if err := WriteBlockReceipts(bc.chainDb, block.Hash(), receipts); err != nil {
+		return NonStatTy, err
+	}
+
+
+	// If the total difficulty is higher than our known, add it to the canonical chain
+	// Second clause in the if statement reduces the vulnerability to selfish mining.
+	// Please refer to http://www.cs.cornell.edu/~ie53/publications/btcProcFC.pdf
+	reorg := externTd.Cmp(localTd) > 0
+	if !reorg && externTd.Cmp(localTd) == 0 {
+		// Split same-difficulty blocks by number, then at random
+		reorg = block.NumberU64() < bc.currentBlock.NumberU64() || (block.NumberU64() == bc.currentBlock.NumberU64() && mrand.Float64() < 0.5)
+	}
+	if reorg {
+		// Reorganise the chain if the parent is not the head block
+		if block.ParentHash() != bc.currentBlock.Hash() {
+			if err := bc.reorg(bc.currentBlock, block); err != nil {
+				return NonStatTy, err
+			}
+		}
+		// Write the positional metadata for transaction and receipt lookups
+		if err := WriteTxLookupEntries(batch, block); err != nil {
+			return NonStatTy, err
+		}
+		// Write hash preimages
+		if err := WritePreimages(bc.chainDb, block.NumberU64(), state.Preimages()); err != nil {
+			return NonStatTy, err
+		}
+		status = CanonStatTy
+	} else {
+		status = SideStatTy
+	}
+	if err := batch.Write(); err != nil {
+		return NonStatTy, err
+	}
+
+	// Set new head.
+	if status == CanonStatTy {
+		bc.insert(block)
+	}
+	bc.futureBlocks.Remove(block.Hash())
+	return status, nil
+}
+
 // InsertChain inserts the given chain into the canonical chain or, otherwise, create a fork.
 // If the err return is not nil then chainIndex points to the cause in chain.
 // TODO: EPROJECT: return additional values in signature... ie also events and logs
@@ -1497,26 +1570,15 @@ func (self *BlockChain) InsertChain(chain types.Blocks) (chainIndex int, err err
 		// Create a new statedb using the parent block and report an
 		// error if it fails.
 		txcount += len(block.Transactions())
-		// write the block to the chain and get the status
-		// TODO: use batching for block writing?
-		status, err := self.WriteBlock(block)
-		if err != nil {
-			return i, err
-		}
-		batch := self.chainDb.NewBatch()
-		if _, err := state.CommitTo(batch, false); err != nil {
-			return i, err
-		}
+
+		// Write the block to the chain and get the status.
+		status, err := self.WriteBlockAndState(block, receipts, state)
 		if err != nil {
 			return i, err
 		}
 
 		// coalesce logs for later processing
 		coalescedLogs = append(coalescedLogs, logs...)
-
-		if err := WriteBlockReceipts(self.chainDb, block.Hash(), receipts); err != nil {
-			return i, err
-		}
 
 		latestBlockTime = time.Unix(block.Time().Int64(), 0)
 

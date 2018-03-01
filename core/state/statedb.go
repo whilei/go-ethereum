@@ -120,6 +120,11 @@ func (self *StateDB) setError(err error) {
 	}
 }
 
+// Preimages returns a list of SHA3 preimages that have been submitted.
+func (self *StateDB) Preimages() map[common.Hash][]byte {
+	return self.preimages
+}
+
 // Reset clears out all emphemeral state objects from the state db, but keeps
 // the underlying state trie to avoid reloading data for the next operations.
 func (self *StateDB) Reset(root common.Hash) error {

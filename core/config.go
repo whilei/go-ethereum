@@ -33,7 +33,6 @@ import (
 	"github.com/ethereumproject/go-ethereum/common"
 	"github.com/ethereumproject/go-ethereum/core/state"
 	"github.com/ethereumproject/go-ethereum/core/types"
-	"github.com/ethereumproject/go-ethereum/core/vm"
 	"github.com/ethereumproject/go-ethereum/ethdb"
 	"github.com/ethereumproject/go-ethereum/logger"
 	"github.com/ethereumproject/go-ethereum/logger/glog"
@@ -379,9 +378,26 @@ func (c *ChainConfig) GetSigner(blockNumber *big.Int) types.Signer {
 	return types.BasicSigner{}
 }
 
+type GasTable struct {
+	ExtcodeSize *big.Int
+	ExtcodeCopy *big.Int
+	Balance     *big.Int
+	SLoad       *big.Int
+	Calls       *big.Int
+	Suicide     *big.Int
+	ExpByte     *big.Int
+
+	// CreateBySuicide occurs when the
+	// refunded account is one that does
+	// not exist. This logic is similar
+	// to call. May be left nil. Nil means
+	// not charged.
+	CreateBySuicide *big.Int
+}
+
 // GasTable returns the gas table corresponding to the current fork
 // The returned GasTable's fields shouldn't, under any circumstances, be changed.
-func (c *ChainConfig) GasTable(num *big.Int) *vm.GasTable {
+func (c *ChainConfig) GasTable(num *big.Int) *GasTable {
 	f, _, configured := c.GetFeature(num, "gastable")
 	if !configured {
 		return DefaultHomeSteadGasTable

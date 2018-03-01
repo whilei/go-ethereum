@@ -50,7 +50,18 @@ var (
 	MIPMapLevels = []uint64{1000000, 500000, 100000, 50000, 1000}
 
 	blockHashPrefix = []byte("block-hash-") // [deprecated by the header/block split, remove eventually]
+
+	preimagePrefix = "secure-key-"              // preimagePrefix + hash -> preimage
+	lookupPrefix        = []byte("l") // lookupPrefix + hash -> transaction/receipt lookup metadata
 )
+
+// TxLookupEntry is a positional metadata to help looking up the data content of
+// a transaction or receipt given only its hash.
+type TxLookupEntry struct {
+	BlockHash  common.Hash
+	BlockIndex uint64
+	Index      uint64
+}
 
 // GetCanonicalHash retrieves a hash assigned to a canonical block number.
 func GetCanonicalHash(db ethdb.Database, number uint64) common.Hash {
@@ -479,8 +490,8 @@ func WritePreimages(db ethdb.Database, number uint64, preimages map[common.Hash]
 			hitCount++
 		}
 	}
-	preimageCounter.Inc(int64(len(preimages)))
-	preimageHitCounter.Inc(int64(hitCount))
+	//preimageCounter.Inc(int64(len(preimages)))
+	//preimageHitCounter.Inc(int64(hitCount))
 	if hitCount > 0 {
 		if err := batch.Write(); err != nil {
 			return fmt.Errorf("preimage write fail for block %d: %v", number, err)
@@ -488,6 +499,28 @@ func WritePreimages(db ethdb.Database, number uint64, preimages map[common.Hash]
 	}
 	return nil
 }
+
+// WriteTxLookupEntries stores a positional metadata for every transaction from
+// a block, enabling hash based transaction and receipt lookups.
+func WriteTxLookupEntries(db ethdb.Putter, block *types.Block) error {
+	// Iterate over each transaction and encode its metadata
+	for i, tx := range block.Transactions() {
+		entry := TxLookupEntry{
+			BlockHash:  block.Hash(),
+			BlockIndex: block.NumberU64(),
+			Index:      uint64(i),
+		}
+		data, err := rlp.EncodeToBytes(entry)
+		if err != nil {
+			return err
+		}
+		if err := db.Put(append(lookupPrefix, tx.Hash().Bytes()...), data); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 
 // [deprecated by the header/block split, remove eventually]
 // GetBlockByHashOld returns the old combined block corresponding to the hash
