@@ -462,6 +462,33 @@ func DeleteReceipt(db ethdb.Database, hash common.Hash) {
 	db.Delete(append(receiptsPrefix, hash.Bytes()...))
 }
 
+// PreimageTable returns a Database instance with the key prefix for preimage entries.
+func PreimageTable(db ethdb.Database) ethdb.Database {
+	return ethdb.NewTable(db, preimagePrefix)
+}
+
+// WritePreimages writes the provided set of preimages to the database. `number` is the
+// current block number, and is used for debug messages only.
+func WritePreimages(db ethdb.Database, number uint64, preimages map[common.Hash][]byte) error {
+	table := PreimageTable(db)
+	batch := table.NewBatch()
+	hitCount := 0
+	for hash, preimage := range preimages {
+		if _, err := table.Get(hash.Bytes()); err != nil {
+			batch.Put(hash.Bytes(), preimage)
+			hitCount++
+		}
+	}
+	preimageCounter.Inc(int64(len(preimages)))
+	preimageHitCounter.Inc(int64(hitCount))
+	if hitCount > 0 {
+		if err := batch.Write(); err != nil {
+			return fmt.Errorf("preimage write fail for block %d: %v", number, err)
+		}
+	}
+	return nil
+}
+
 // [deprecated by the header/block split, remove eventually]
 // GetBlockByHashOld returns the old combined block corresponding to the hash
 // or nil if not found. This method is only used by the upgrade mechanism to
