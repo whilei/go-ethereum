@@ -250,6 +250,7 @@ func (self *stateObject) CommitTrie(db Database, dbw trie.DatabaseWriter) error 
 	return err
 }
 
+
 // AddBalance removes amount from c's balance.
 // It is used to add funds to the destination account of a transfer.
 func (c *stateObject) AddBalance(amount *big.Int) {

@@ -252,6 +252,7 @@ func (s *TrieSync) schedule(req *request) {
 	s.requests[req.hash] = req
 }
 
+
 // children retrieves all the missing children of a state trie entry for future
 // retrieval scheduling.
 func (s *TrieSync) children(req *request, object node) ([]*request, error) {
