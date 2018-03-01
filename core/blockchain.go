@@ -1377,6 +1377,7 @@ func (self *BlockChain) WriteBlock(block *types.Block) (status WriteStatus, err 
 
 // InsertChain inserts the given chain into the canonical chain or, otherwise, create a fork.
 // If the err return is not nil then chainIndex points to the cause in chain.
+// TODO: EPROJECT: return additional values in signature... ie also events and logs
 func (self *BlockChain) InsertChain(chain types.Blocks) (chainIndex int, err error) {
 	// EPROJECT
 	// Do a sanity check that the provided chain is actually ordered and linked
@@ -1468,35 +1469,6 @@ func (self *BlockChain) InsertChain(chain types.Blocks) (chainIndex int, err err
 			return i, err
 		}
 
-		// Create a new statedb using the parent block and report an
-		// error if it fails.
-		switch {
-		case i == 0:
-			//if self.stateCache == nil {
-			//	panic("statecache nil")
-			//}
-			err = self.stateCache.Reset(self.GetBlock(block.ParentHash()).Root())
-		default:
-			err = self.stateCache.Reset(chain[i-1].Root())
-		}
-		if err != nil {
-			return i, err
-		}
-		// Process block using the parent state as reference point.
-		receipts, logs, usedGas, err := self.processor.Process(block, self.stateCache)
-		if err != nil {
-			return i, err
-		}
-		// Validate the state using the default validator
-		err = self.Validator().ValidateState(block, self.GetBlock(block.ParentHash()), self.stateCache, receipts, usedGas)
-		if err != nil {
-			return i, err
-		}
-		// Write state changes to database
-		// TODO: this is the tip of the iceberg for a lot of refactoring to franky up to
-		// delegating block write, state writes, validation, processes... etc.
-		// Create a new statedb using the parent block and report an
-		// error if it fails.
 		var parent *types.Block
 		if i == 0 {
 			parent = self.GetBlock(block.ParentHash())
@@ -1506,6 +1478,29 @@ func (self *BlockChain) InsertChain(chain types.Blocks) (chainIndex int, err err
 		state, err := state.New(parent.Root(), self.stateCache)
 		if err != nil {
 			//return i, events, coalescedLogs, err
+			return i, err
+		}
+
+		// Process block using the parent state as reference point.
+		receipts, logs, usedGas, err := self.processor.Process(block, state)
+		if err != nil {
+			return i, err
+		}
+		// Validate the state using the default validator
+		err = self.Validator().ValidateState(block, self.GetBlock(block.ParentHash()), state, receipts, usedGas)
+		if err != nil {
+			return i, err
+		}
+		// Write state changes to database
+		// TODO: this is the tip of the iceberg for a lot of refactoring to franky up to
+		// delegating block write, state writes, validation, processes... etc.
+		// Create a new statedb using the parent block and report an
+		// error if it fails.
+		txcount += len(block.Transactions())
+		// write the block to the chain and get the status
+		// TODO: use batching for block writing?
+		status, err := self.WriteBlock(block)
+		if err != nil {
 			return i, err
 		}
 		batch := self.chainDb.NewBatch()
@@ -1523,12 +1518,6 @@ func (self *BlockChain) InsertChain(chain types.Blocks) (chainIndex int, err err
 			return i, err
 		}
 
-		txcount += len(block.Transactions())
-		// write the block to the chain and get the status
-		status, err := self.WriteBlock(block)
-		if err != nil {
-			return i, err
-		}
 		latestBlockTime = time.Unix(block.Time().Int64(), 0)
 
 		switch status {
