@@ -1142,82 +1142,140 @@ func (self *BlockChain) Rollback(chain []common.Hash) {
 
 // InsertReceiptChain attempts to complete an already existing header chain with
 // transaction and receipt data.
-func (bc *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain []types.Receipts) (int, error) {
-	bc.wg.Add(1)
-	defer bc.wg.Done()
+func (self *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain []types.Receipts) (int, error) {
+	self.wg.Add(1)
+	defer self.wg.Done()
 
-	// Do a sanity check that the provided chain is actually ordered and linked
-	for i := 1; i < len(blockChain); i++ {
-		if blockChain[i].NumberU64() != blockChain[i-1].NumberU64()+1 || blockChain[i].ParentHash() != blockChain[i-1].Hash() {
-			glog.V(logger.Error).Error("Non contiguous receipt insert", "number", blockChain[i].Number(), "hash", blockChain[i].Hash(), "parent", blockChain[i].ParentHash(),
-				"prevnumber", blockChain[i-1].Number(), "prevhash", blockChain[i-1].Hash())
-			return 0, fmt.Errorf("non contiguous insert: item %d is #%d [%x…], item %d is #%d [%x…] (parent [%x…])", i-1, blockChain[i-1].NumberU64(),
-				blockChain[i-1].Hash().Bytes()[:4], i, blockChain[i].NumberU64(), blockChain[i].Hash().Bytes()[:4], blockChain[i].ParentHash().Bytes()[:4])
-		}
+	// Collect some import statistics to report on
+	stats := struct{ processed, ignored int32 }{}
+	start := time.Now()
+
+	// Create the block importing task queue and worker functions
+	tasks := make(chan int, len(blockChain))
+	for i := 0; i < len(blockChain) && i < len(receiptChain); i++ {
+		tasks <- i
 	}
+	close(tasks)
 
-	var (
-		stats = struct{ processed, ignored int32 }{}
-		start = time.Now()
-		bytes = 0
-		batch = bc.chainDb.NewBatch()
-	)
-	for i, block := range blockChain {
-		receipts := receiptChain[i]
-		// Short circuit insertion if shutting down or processing failed
-		if atomic.LoadInt32(&bc.procInterrupt) == 1 {
-			return 0, nil
-		}
-		// Short circuit if the owner header is unknown
-		if !bc.HasHeader(block.Hash(), block.NumberU64()) {
-			return i, fmt.Errorf("containing header #%d [%x…] unknown", block.Number(), block.Hash().Bytes()[:4])
-		}
-		// Skip if the entire data is already known
-		if bc.HasBlock(block.Hash(), block.NumberU64()) {
-			stats.ignored++
-			continue
-		}
-		// Compute all the non-consensus fields of the receipts
-		SetReceiptsData(bc.config, block, receipts)
-		// Write all the data out into the database
-		if err := WriteBody(batch, block.Hash(), block.NumberU64(), block.Body()); err != nil {
-			return i, fmt.Errorf("failed to write block body: %v", err)
-		}
-		if err := WriteBlockReceipts(batch, block.Hash(), block.NumberU64(), receipts); err != nil {
-			return i, fmt.Errorf("failed to write block receipts: %v", err)
-		}
-		if err := WriteTxLookupEntries(batch, block); err != nil {
-			return i, fmt.Errorf("failed to write lookup metadata: %v", err)
-		}
-		stats.processed++
+	errs, failed := make([]error, len(tasks)), int32(0)
+	process := func(worker int) {
+		for index := range tasks {
+			block, receipts := blockChain[index], receiptChain[index]
 
-		if batch.ValueSize() >= ethdb.IdealBatchSize {
-			if err := batch.Write(); err != nil {
-				return 0, err
+			// Short circuit insertion if shutting down or processing failed
+			if atomic.LoadInt32(&self.procInterrupt) == 1 {
+				return
 			}
-			bytes += batch.ValueSize()
-			batch = bc.chainDb.NewBatch()
-		}
-	}
-	if batch.ValueSize() > 0 {
-		bytes += batch.ValueSize()
-		if err := batch.Write(); err != nil {
-			return 0, err
-		}
-	}
+			if atomic.LoadInt32(&failed) > 0 {
+				return
+			}
+			// Short circuit if the owner header is unknown
+			if !self.HasHeader(block.Hash()) {
+				errs[index] = fmt.Errorf("containing header #%d [%x…] unknown", block.Number(), block.Hash().Bytes()[:4])
+				atomic.AddInt32(&failed, 1)
+				return
+			}
+			// Skip if the entire data is already known
+			if self.HasBlock(block.Hash()) {
+				atomic.AddInt32(&stats.ignored, 1)
+				continue
+			}
+			signer := self.config.GetSigner(block.Number())
+			// Compute all the non-consensus fields of the receipts
+			transactions, logIndex := block.Transactions(), uint(0)
+			for j := 0; j < len(receipts); j++ {
+				// The transaction hash can be retrieved from the transaction itself
+				receipts[j].TxHash = transactions[j].Hash()
+				tx := transactions[j]
+				from, _ := types.Sender(signer, tx)
 
+				// The contract address can be derived from the transaction itself
+				if MessageCreatesContract(transactions[j]) {
+					receipts[j].ContractAddress = crypto.CreateAddress(from, tx.Nonce())
+				}
+				// The used gas can be calculated based on previous receipts
+				if j == 0 {
+					receipts[j].GasUsed = new(big.Int).Set(receipts[j].CumulativeGasUsed)
+				} else {
+					receipts[j].GasUsed = new(big.Int).Sub(receipts[j].CumulativeGasUsed, receipts[j-1].CumulativeGasUsed)
+				}
+				// The derived log fields can simply be set from the block and transaction
+				for k := 0; k < len(receipts[j].Logs); k++ {
+					receipts[j].Logs[k].BlockNumber = block.NumberU64()
+					receipts[j].Logs[k].BlockHash = block.Hash()
+					receipts[j].Logs[k].TxHash = receipts[j].TxHash
+					receipts[j].Logs[k].TxIndex = uint(j)
+					receipts[j].Logs[k].Index = logIndex
+					logIndex++
+				}
+			}
+			// Write all the data out into the database
+			if err := WriteBody(self.chainDb, block.Hash(), block.Body()); err != nil {
+				errs[index] = fmt.Errorf("failed to write block body: %v", err)
+				atomic.AddInt32(&failed, 1)
+				glog.Fatal(errs[index])
+				return
+			}
+			if err := WriteBlockReceipts(self.chainDb, block.Hash(), receipts); err != nil {
+				errs[index] = fmt.Errorf("failed to write block receipts: %v", err)
+				atomic.AddInt32(&failed, 1)
+				glog.Fatal(errs[index])
+				return
+			}
+			if err := WriteMipmapBloom(self.chainDb, block.NumberU64(), receipts); err != nil {
+				errs[index] = fmt.Errorf("failed to write log blooms: %v", err)
+				atomic.AddInt32(&failed, 1)
+				glog.Fatal(errs[index])
+				return
+			}
+			if err := WriteTransactions(self.chainDb, block); err != nil {
+				errs[index] = fmt.Errorf("failed to write individual transactions: %v", err)
+				atomic.AddInt32(&failed, 1)
+				glog.Fatal(errs[index])
+				return
+			}
+			if err := WriteReceipts(self.chainDb, receipts); err != nil {
+				errs[index] = fmt.Errorf("failed to write individual receipts: %v", err)
+				atomic.AddInt32(&failed, 1)
+				glog.Fatal(errs[index])
+				return
+			}
+			atomic.AddInt32(&stats.processed, 1)
+		}
+	}
+	// Start as many worker threads as goroutines allowed
+	pending := new(sync.WaitGroup)
+	for i := 0; i < runtime.GOMAXPROCS(0); i++ {
+		pending.Add(1)
+		go func(id int) {
+			defer pending.Done()
+			process(id)
+		}(i)
+	}
+	pending.Wait()
+
+	// If anything failed, report
+	if failed > 0 {
+		for i, err := range errs {
+			if err != nil {
+				return i, err
+			}
+		}
+	}
+	if atomic.LoadInt32(&self.procInterrupt) == 1 {
+		glog.V(logger.Debug).Infoln("premature abort during receipt chain processing")
+		return 0, nil
+	}
 	// Update the head fast sync block if better
-	bc.mu.Lock()
-	head := blockChain[len(blockChain)-1]
-	if td := bc.GetTd(head.Hash(), head.NumberU64()); td != nil { // Rewind may have occurred, skip in that case
-		if bc.GetTd(bc.currentFastBlock.Hash(), bc.currentFastBlock.NumberU64()).Cmp(td) < 0 {
-			if err := WriteHeadFastBlockHash(bc.chainDb, head.Hash()); err != nil {
-				glog.V(logger.Error).Error("Failed to update head fast block hash", "err", err)
-			}
-			bc.currentFastBlock = head
+	self.mu.Lock()
+	head := blockChain[len(errs)-1]
+	if self.GetTd(self.currentFastBlock.Hash()).Cmp(self.GetTd(head.Hash())) < 0 {
+		if err := WriteHeadFastBlockHash(self.chainDb, head.Hash()); err != nil {
+			glog.Fatalf("failed to update head fast block hash: %v", err)
 		}
+		self.currentFastBlock = head
 	}
-	bc.mu.Unlock()
+	self.mu.Unlock()
 
 	// Report some public statistics so the user has a clue what's going on
 	first, last := blockChain[0], blockChain[len(blockChain)-1]
@@ -1705,27 +1763,6 @@ func SetReceiptsData(config *ChainConfig, block *types.Block, receipts types.Rec
 			logIndex++
 		}
 	}
-}
-
-// WriteTxLookupEntries stores a positional metadata for every transaction from
-// a block, enabling hash based transaction and receipt lookups.
-func WriteTxLookupEntries(db ethdb.Putter, block *types.Block) error {
-	// Iterate over each transaction and encode its metadata
-	for i, tx := range block.Transactions() {
-		entry := TxLookupEntry{
-			BlockHash:  block.Hash(),
-			BlockIndex: block.NumberU64(),
-			Index:      uint64(i),
-		}
-		data, err := rlp.EncodeToBytes(entry)
-		if err != nil {
-			return err
-		}
-		if err := db.Put(append(lookupPrefix, tx.Hash().Bytes()...), data); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // postChainEvents iterates over the events generated by a chain insertion and

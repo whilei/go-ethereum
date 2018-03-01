@@ -37,7 +37,6 @@ var (
 
 	blockPrefix    = []byte("block-")
 	blockNumPrefix = []byte("block-num-")
-	bodyPrefix          = []byte("b") // bodyPrefix + num (uint64 big endian) + hash -> block body
 
 	headerSuffix = []byte("-header")
 	bodySuffix   = []byte("-body")
@@ -52,13 +51,6 @@ var (
 
 	blockHashPrefix = []byte("block-hash-") // [deprecated by the header/block split, remove eventually]
 )
-
-// encodeBlockNumber encodes a block number as big endian uint64
-func encodeBlockNumber(number uint64) []byte {
-	enc := make([]byte, 8)
-	binary.BigEndian.PutUint64(enc, number)
-	return enc
-}
 
 // GetCanonicalHash retrieves a hash assigned to a canonical block number.
 func GetCanonicalHash(db ethdb.Database, number uint64) common.Hash {
@@ -300,15 +292,12 @@ func WriteBody(db ethdb.Database, hash common.Hash, body *types.Body) error {
 	if err != nil {
 		return err
 	}
-	return WriteBodyRLP(db, hash, number, data)
-}
-
-// WriteBodyRLP writes a serialized body of a block into the database.
-func WriteBodyRLP(db ethdb.Putter, hash common.Hash, number uint64, rlp rlp.RawValue) error {
-	key := append(append(bodyPrefix, encodeBlockNumber(number)...), hash.Bytes()...)
-	if err := db.Put(key, rlp); err != nil {
-		log.Crit("Failed to store block body", "err", err)
+	key := append(append(blockPrefix, hash.Bytes()...), bodySuffix...)
+	if err := db.Put(key, data); err != nil {
+		glog.Fatalf("failed to store block body into database: %v", err)
+		return err
 	}
+	glog.V(logger.Detail).Infof("stored block body [%x…]", hash.Bytes()[:4])
 	return nil
 }
 
@@ -344,7 +333,7 @@ func WriteBlock(db ethdb.Database, block *types.Block) error {
 // WriteBlockReceipts stores all the transaction receipts belonging to a block
 // as a single receipt slice. This is used during chain reorganisations for
 // rescheduling dropped transactions.
-func WriteBlockReceipts(db ethdb.Putter, hash common.Hash, number uint64, receipts types.Receipts) error {
+func WriteBlockReceipts(db ethdb.Database, hash common.Hash, receipts types.Receipts) error {
 	// Convert the receipts into their storage form and serialize them
 	storageReceipts := make([]*types.ReceiptForStorage, len(receipts))
 	for i, receipt := range receipts {
@@ -355,12 +344,11 @@ func WriteBlockReceipts(db ethdb.Putter, hash common.Hash, number uint64, receip
 		return err
 	}
 	// Store the flattened receipt slice
-	key := append(append(blockReceiptsPrefix, encodeBlockNumber(number)...), hash.Bytes()...)
-	if err := db.Put(key, bytes); err != nil {
-		glog.V(logger.Error).Errorln("Failed to store block receipts", "err", err)
-	} else {
-		glog.V(logger.Detail).Infof("stored block receipts [%x…]", hash.Bytes()[:4])
+	if err := db.Put(append(blockReceiptsPrefix, hash.Bytes()...), bytes); err != nil {
+		glog.Fatalf("failed to store block receipts into database: %v", err)
+		return err
 	}
+	glog.V(logger.Detail).Infof("stored block receipts [%x…]", hash.Bytes()[:4])
 	return nil
 }
 
