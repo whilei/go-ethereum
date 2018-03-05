@@ -46,7 +46,7 @@ import (
 	"gopkg.in/urfave/cli.v1"
 )
 
-const (
+var (
 	importBatchSize = 2500
 )
 
@@ -198,7 +198,7 @@ func ImportChain(chain *core.BlockChain, fn string) error {
 	defer fh.Close()
 	stream := rlp.NewStream(fh, 0)
 
-	// Run actual the import.
+	// Run the actual import.
 	blocks := make(types.Blocks, importBatchSize)
 	n := 0
 	for batch := 0; ; batch++ {
@@ -230,14 +230,17 @@ func ImportChain(chain *core.BlockChain, fn string) error {
 			return fmt.Errorf("interrupted")
 		}
 		if hasAllBlocks(chain, blocks[:i]) {
-			glog.D(logger.Warn).Warnf("skipping batch %d, all blocks present [%x / %x]",
-				batch, blocks[0].Hash().Bytes()[:4], blocks[i-1].Hash().Bytes()[:4])
+			glog.D(logger.Warn).Warnf("skipping batch %d, all blocks present [%d - %x / %d - %x]",
+				batch, blocks[0].NumberU64(), blocks[0].Hash().Bytes()[:4], blocks[i-1].NumberU64(), blocks[i-1].Hash().Bytes()[:4])
 			continue
 		}
 
-		if _, err := chain.InsertChain(blocks[:i]); err != nil {
-			return fmt.Errorf("invalid block %d: %v", n, err)
+		start := time.Now()
+		if _, err := chain.InsertChainDangerously(blocks[:i]); err != nil {
+			glog.Error(fmt.Errorf("invalid block %d: %v", n, err))
 		}
+		glog.V(logger.Error).Infoln("imported", blocks[0].NumberU64(), "...", blocks[i-1].NumberU64(), "took", time.Since(start), time.Since(start).Seconds()/float64(len(blocks)), "sec/bl")
+		glog.D(logger.Info).Infoln("imported", blocks[0].NumberU64(), "...", blocks[i-1].NumberU64(), "took", time.Since(start), time.Since(start).Seconds()/float64(len(blocks)), "sec/bl")
 	}
 	return nil
 }

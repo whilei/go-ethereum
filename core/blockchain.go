@@ -914,7 +914,11 @@ func (bc *BlockChain) ResetWithGenesisBlock(genesis *types.Block) error {
 
 // Export writes the active chain to the given writer.
 func (self *BlockChain) Export(w io.Writer) error {
-	if err := self.ExportN(w, uint64(0), self.currentBlock.NumberU64()); err != nil {
+	n := self.currentBlock.NumberU64()
+	if n == 0 && self.currentFastBlock.NumberU64() > 0 {
+		n = self.CurrentFastBlock().NumberU64()
+	}
+	if err := self.ExportN(w, uint64(0), n); err != nil {
 		return err
 	}
 	return nil
@@ -934,7 +938,10 @@ func (self *BlockChain) ExportN(w io.Writer, first uint64, last uint64) error {
 	for nr := first; nr <= last; nr++ {
 		block := self.GetBlockByNumber(nr)
 		if block == nil {
+			glog.V(logger.Error).Infoln("not exporting", nr)
 			return fmt.Errorf("export failed on #%d: not found", nr)
+		} else {
+			glog.V(logger.Error).Infoln("exporting", nr)
 		}
 
 		if err := block.EncodeRLP(w); err != nil {
@@ -1511,6 +1518,210 @@ func (self *BlockChain) InsertChain(chain types.Blocks) (chainIndex int, err err
 			}
 			events = append(events, ChainEvent{block, block.Hash(), logs})
 
+			// This puts transactions in a extra db for rpc
+			if err := WriteTransactions(self.chainDb, block); err != nil {
+				return i, err
+			}
+			// store the receipts
+			if err := WriteReceipts(self.chainDb, receipts); err != nil {
+				return i, err
+			}
+			// Write map map bloom filters
+			if err := WriteMipmapBloom(self.chainDb, block.NumberU64(), receipts); err != nil {
+				return i, err
+			}
+		case SideStatTy:
+			if glog.V(logger.Detail) {
+				glog.Infof("inserted forked block #%d (TD=%v) (%d TXs %d UNCs) [%s]. Took %v\n", block.Number(), block.Difficulty(), len(block.Transactions()), len(block.Uncles()), block.Hash().Hex(), time.Since(bstart))
+			}
+			events = append(events, ChainSideEvent{block, logs})
+		}
+		stats.processed++
+	}
+
+	if stats.queued > 0 || stats.processed > 0 || stats.ignored > 0 {
+		tend := time.Since(tstart)
+		start, end := chain[0], chain[len(chain)-1]
+		events = append(events, ChainInsertEvent{
+			stats.processed,
+			stats.queued,
+			stats.ignored,
+			txcount,
+			end.NumberU64(),
+			end.Hash(),
+			tend,
+			latestBlockTime,
+		})
+		if logger.MlogEnabled() {
+			mlogBlockchainInsertBlocks.AssignDetails(
+				stats.processed,
+				stats.queued,
+				stats.ignored,
+				txcount,
+				end.Number(),
+				start.Hash().Hex(),
+				end.Hash().Hex(),
+				tend,
+			).Send(mlogBlockchain)
+		}
+		glog.V(logger.Info).Infof("imported %d block(s) (%d queued %d ignored) including %d txs in %v. #%v [%s / %s]\n",
+			stats.processed,
+			stats.queued,
+			stats.ignored,
+			txcount,
+			tend,
+			end.Number(),
+			start.Hash().Hex(),
+			end.Hash().Hex())
+	}
+	go self.postChainEvents(events, coalescedLogs)
+
+	return 0, nil
+}
+
+// InsertChain inserts the given chain into the canonical chain or, otherwise, create a fork.
+// If the err return is not nil then chainIndex points to the cause in chain.
+func (self *BlockChain) InsertChainDangerously(chain types.Blocks) (chainIndex int, err error) {
+	//// Do a sanity check that the provided chain is actually ordered and linked
+	//for i := 1; i < len(chain); i++ {
+	//	if chain[i].NumberU64() != chain[i-1].NumberU64()+1 || chain[i].ParentHash() != chain[i-1].Hash() {
+	//		// Chain broke ancestry, log a messge (programming error) and skip insertion
+	//		glog.V(logger.Error).Infof("Non contiguous block insert", "number", chain[i].Number(), "hash", chain[i].Hash(),
+	//			"parent", chain[i].ParentHash(), "prevnumber", chain[i-1].Number(), "prevhash", chain[i-1].Hash())
+	//
+	//		return 0, fmt.Errorf("non contiguous insert: item %d is #%d [%x…], item %d is #%d [%x…] (parent [%x…])", i-1, chain[i-1].NumberU64(),
+	//			chain[i-1].Hash().Bytes()[:4], i, chain[i].NumberU64(), chain[i].Hash().Bytes()[:4], chain[i].ParentHash().Bytes()[:4])
+	//	}
+	//}
+
+	self.wg.Add(1)
+	defer self.wg.Done()
+
+	self.chainmu.Lock()
+	defer self.chainmu.Unlock()
+
+	// A queued approach to delivering events. This is generally
+	// faster than direct delivery and requires much less mutex
+	// acquiring.
+	var (
+		stats         struct{ queued, processed, ignored int }
+		events        = make([]interface{}, 0, len(chain))
+		coalescedLogs vm.Logs
+		tstart        = time.Now()
+
+		//nonceChecked = make([]bool, len(chain))
+	)
+
+	//// Start the parallel nonce verifier.
+	//nonceAbort, nonceResults := verifyNoncesFromBlocks(self.pow, chain)
+	//defer close(nonceAbort)
+
+	txcount := 0
+	var latestBlockTime time.Time
+	for i, block := range chain {
+		if atomic.LoadInt32(&self.procInterrupt) == 1 {
+			glog.V(logger.Debug).Infoln("Premature abort during block chain processing")
+			break
+		}
+
+		bstart := time.Now()
+		//// Wait for block i's nonce to be verified before processing
+		//// its state transition.
+		//for !nonceChecked[i] {
+		//	r := <-nonceResults
+		//	nonceChecked[r.index] = true
+		//	if !r.valid {
+		//		block := chain[r.index]
+		//		return r.index, &BlockNonceErr{Hash: block.Hash(), Number: block.Number(), Nonce: block.Nonce()}
+		//	}
+		//}
+		//
+		//if err := self.config.HeaderCheck(block.Header()); err != nil {
+		//	return i, err
+		//}
+
+		//// Stage 1 validation of the block using the chain's validator
+		// interface.
+		//err := self.Validator().ValidateBlock(block)
+		//if err != nil {
+		//	if IsKnownBlockErr(err) {
+		//		stats.ignored++
+		//		continue
+		//	}
+		//
+		//	if err == BlockFutureErr {
+		//		// Allow up to MaxFuture second in the future blocks. If this limit
+		//		// is exceeded the chain is discarded and processed at a later time
+		//		// if given.
+		//		max := big.NewInt(time.Now().Unix() + maxTimeFutureBlocks)
+		//		if block.Time().Cmp(max) == 1 {
+		//			return i, fmt.Errorf("%v: BlockFutureErr, %v > %v", BlockFutureErr, block.Time(), max)
+		//		}
+		//		self.futureBlocks.Add(block.Hash(), block)
+		//		stats.queued++
+		//		continue
+		//	}
+		//
+		//	if IsParentErr(err) && self.futureBlocks.Contains(block.ParentHash()) {
+		//		self.futureBlocks.Add(block.Hash(), block)
+		//		stats.queued++
+		//		continue
+		//	}
+		//
+		//	return i, err
+		//}
+
+		// Create a new statedb using the parent block and report an
+		// error if it fails.
+		switch {
+		case i == 0:
+			//if self.stateCache == nil {
+			//	panic("statecache nil")
+			//}
+			//err = self.stateCache.Reset(self.GetBlock(block.ParentHash()).Root())
+		default:
+			err = self.stateCache.Reset(chain[i-1].Root())
+		}
+		if err != nil {
+			return i, err
+		}
+		// Process block using the parent state as reference point.
+		receipts, logs, _, err := self.processor.Process(block, self.stateCache)
+		if err != nil {
+			return i, err
+		}
+		//// Validate the state using the default validator
+		//err = self.Validator().ValidateState(block, self.GetBlock(block.ParentHash()), self.stateCache, receipts, usedGas)
+		//if err != nil {
+		//	return i, err
+		//}
+		// Write state changes to database
+		_, err = self.stateCache.Commit()
+		if err != nil {
+			return i, err
+		}
+
+		// coalesce logs for later processing
+		coalescedLogs = append(coalescedLogs, logs...)
+
+		if err := WriteBlockReceipts(self.chainDb, block.Hash(), receipts); err != nil {
+			return i, err
+		}
+
+		txcount += len(block.Transactions())
+		// write the block to the chain and get the status
+		status, err := self.WriteBlock(block)
+		if err != nil {
+			return i, err
+		}
+		latestBlockTime = time.Unix(block.Time().Int64(), 0)
+
+		switch status {
+		case CanonStatTy:
+			if glog.V(logger.Debug) {
+				glog.Infof("[%v] inserted block #%d (%d TXs %v G %d UNCs) [%s]. Took %v\n", time.Now().UnixNano(), block.Number(), len(block.Transactions()), block.GasUsed(), len(block.Uncles()), block.Hash().Hex(), time.Since(bstart))
+			}
+			events = append(events, ChainEvent{block, block.Hash(), logs})
 			// This puts transactions in a extra db for rpc
 			if err := WriteTransactions(self.chainDb, block); err != nil {
 				return i, err

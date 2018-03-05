@@ -33,6 +33,7 @@ import (
 	"github.com/ethereumproject/go-ethereum/core/types"
 	"github.com/ethereumproject/go-ethereum/logger/glog"
 	"gopkg.in/urfave/cli.v1"
+	"github.com/ethereumproject/go-ethereum/logger"
 )
 
 var (
@@ -40,6 +41,13 @@ var (
 		Action: importChain,
 		Name:   "import",
 		Usage:  `Import a blockchain file`,
+		Flags: []cli.Flag{
+			cli.IntFlag{
+				Name:  "batch",
+				Usage: "How many blocks to import per batch",
+				Value: importBatchSize,
+			},
+		},
 	}
 	exportCommand = cli.Command{
 		Action: exportChain,
@@ -129,6 +137,8 @@ func importChain(ctx *cli.Context) error {
 	if len(ctx.Args()) != 1 {
 		log.Fatal("This command requires an argument.")
 	}
+	importBatchSize = ctx.Int("batch")
+	glog.D(logger.Error).Infoln("batch:", importBatchSize)
 	chain, chainDb := MakeChain(ctx)
 	start := time.Now()
 	err := ImportChain(chain, ctx.Args().First())
