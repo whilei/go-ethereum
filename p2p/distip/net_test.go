@@ -1,20 +1,10 @@
 package distip
 
 import (
+	"fmt"
 	"net"
-	"strconv"
 	"testing"
 )
-
-const distinctNetSetLimit = 42
-const testIpPrefix = "24.207.212."
-
-func makeTestDistinctNetSet() *DistinctNetSet {
-	return &DistinctNetSet{
-		Subnet: 24,
-		Limit:  distinctNetSetLimit,
-	}
-}
 
 func parseIP(s string) net.IP {
 	ip := net.ParseIP(s)
@@ -38,59 +28,39 @@ func checkContains(t *testing.T, fn func(net.IP) bool, inc, exc []string) {
 }
 
 func TestDistinctNetSet(t *testing.T) {
-	set := makeTestDistinctNetSet()
-
-	// 0 <= i <= 252
-	makeTestIp := func(i int) net.IP {
-		return net.ParseIP(testIpPrefix + strconv.Itoa(i))
+	ops := []struct {
+		add, remove string
+		fails       bool
+	}{
+		{add: "127.0.0.1"},
+		{add: "127.0.0.2"},
+		{add: "127.0.0.3", fails: true},
+		{add: "127.32.0.1"},
+		{add: "127.32.0.2"},
+		{add: "127.32.0.3", fails: true},
+		{add: "127.33.0.1", fails: true},
+		{add: "127.34.0.1"},
+		{add: "127.34.0.2"},
+		{add: "127.34.0.3", fails: true},
+		// Make room for an address, then add again.
+		{remove: "127.0.0.1"},
+		{add: "127.0.0.3"},
+		{add: "127.0.0.3", fails: true},
 	}
 
-	var setIps []net.IP
-
-	i := 1
-	for i <= distinctNetSetLimit {
-		testip := makeTestIp(i)
-		key := set.key(testip)
-		t.Logf("ip: %v, key: %v", testip, key)
-
-		if ok := set.Add(testip); !ok {
-			t.Errorf("got: %v, want: %v", ok, true)
+	set := DistinctNetSet{Subnet: 15, Limit: 2}
+	for _, op := range ops {
+		var desc string
+		if op.add != "" {
+			desc = fmt.Sprintf("Add(%s)", op.add)
+			if ok := set.Add(parseIP(op.add)); ok != !op.fails {
+				t.Errorf("%s == %t, want %t", desc, ok, !op.fails)
+			}
+		} else {
+			desc = fmt.Sprintf("Remove(%s)", op.remove)
+			set.Remove(parseIP(op.remove))
 		}
-		if contains := set.Contains(testip); !contains {
-			t.Errorf("got: %v, want: %v", contains, true)
-		}
-		if len := set.Len(); len != uint(i) {
-			t.Errorf("got: %v, want: %v", len, i)
-		}
-		setIps = append(setIps, testip)
-		i++
-	}
-
-	// Show that addition fails once above set limit, eg. i=43
-	if i != distinctNetSetLimit+1 {
-		t.Fatalf("i<=distinctNetSetLimit -> got: %v, want: %v", i, distinctNetSetLimit+1)
-	}
-	testip := makeTestIp(i) // i == distinctNetSetLimit + 1
-	if ok := set.Add(testip); ok {
-		t.Errorf("got: %v, want: %v", ok, false)
-	}
-	if contains := set.Contains(testip); contains {
-		t.Errorf("got: %v, want: %v, testip: %v", contains, false, testip)
-	}
-	if len := set.Len(); len == uint(i) {
-		t.Errorf("got: %v, want: %v", len, i-1)
-	}
-	i-- // set back to setlimit, eg. i=42
-
-	for _, ip := range setIps {
-		set.Remove(ip)
-		i--
-		if contains := set.Contains(ip); contains {
-			t.Errorf("got: %v, want: %v, ip: %v", contains, false, ip)
-		}
-		if len := set.Len(); len != uint(i) {
-			t.Errorf("got: %v, want: %v", len, i)
-		}
+		t.Logf("%s: %v", desc, set)
 	}
 }
 
