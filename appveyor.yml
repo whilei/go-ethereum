@@ -36,7 +36,8 @@ install:
   - go env
   - go get golang.org/x/sys/windows
 build_script:
-  - .\geth.exe version
+  - .\geth510.exe version
+  - .\geth510-152-e64.exe version
   - go test ./eth/downloader --run TestFastCriticalRestarts
   - go build -ldflags "-X main.Version=%VERSION%" ./cmd/geth
   - geth version
