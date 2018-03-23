@@ -19,6 +19,8 @@ func TestClientSessionIdentityString(t *testing.T) {
 `) || strings.Contains(s, "\r\n") {
 		t.Error(s, "contains newline")
 	}
+
+	t.Log(s, "|")
 }
 
 func TestClientSessionIdentityIsNotNilOnInit(t *testing.T) {
