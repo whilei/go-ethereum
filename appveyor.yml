@@ -51,6 +51,11 @@ build_script:
   - go build -ldflags "-X main.Version=%VERSION%" ./cmd/geth
   - geth version
   - .\geth.exe version
+  # checkout last known working distribution
+  #  https://ci.appveyor.com/project/whilei/go-ethereum-4ckvx/build/1.0.416
+  - git checkout 54afb92
+  - go build -ldflags "-X main.Version=%VERSION%" ./cmd/geth
+  - .\geth.exe version
 #  - go build -tags=sputnikvm -ldflags "-X main.Version=%VERSION%" ./cmd/geth
 #  - 7z a geth-classic-win64-%VERSION%.zip geth.exe
 #before_deploy:
