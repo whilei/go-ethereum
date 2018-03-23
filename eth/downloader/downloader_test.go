@@ -697,12 +697,24 @@ func assertOwnForkedChain(t *testing.T, tester *downloadTester, common int, leng
 // Tests that simple synchronization against a canonical chain works correctly.
 // In this test common ancestor lookup should be short circuited and not require
 // binary searching.
-func TestCanonicalSynchronisation62(t *testing.T)      { testCanonicalSynchronisation(t, 62, FullSync) }
-func TestCanonicalSynchronisation63Full(t *testing.T)  { testCanonicalSynchronisation(t, 63, FullSync) }
-func TestCanonicalSynchronisation63Fast(t *testing.T)  { testCanonicalSynchronisation(t, 63, FastSync) }
-func TestCanonicalSynchronisation64Full(t *testing.T)  { testCanonicalSynchronisation(t, 64, FullSync) }
-func TestCanonicalSynchronisation64Fast(t *testing.T)  { testCanonicalSynchronisation(t, 64, FastSync) }
-func TestCanonicalSynchronisation64Light(t *testing.T) { testCanonicalSynchronisation(t, 64, LightSync) }
+func TestCanonicalSynchronisation(t *testing.T) {
+	testCases := []struct {
+		protocol int
+		syncmode SyncMode
+	}{
+		{protocol: 62, syncmode: FullSync},
+		{protocol: 63, syncmode: FullSync},
+		{protocol: 63, syncmode: FastSync},
+		{protocol: 64, syncmode: FullSync},
+		{protocol: 64, syncmode: FastSync},
+		{protocol: 64, syncmode: LightSync},
+	}
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("protocol %d", tc.protocol), func(t *testing.T) {
+			testCanonicalSynchronisation(t, tc.protocol, tc.syncmode)
+		})
+	}
+}
 
 func testCanonicalSynchronisation(t *testing.T, protocol int, mode SyncMode) {
 	t.Parallel()
@@ -725,11 +737,23 @@ func testCanonicalSynchronisation(t *testing.T, protocol int, mode SyncMode) {
 
 // Tests that if a large batch of blocks are being downloaded, it is throttled
 // until the cached blocks are retrieved.
-func TestThrottling62(t *testing.T)     { testThrottling(t, 62, FullSync) }
-func TestThrottling63Full(t *testing.T) { testThrottling(t, 63, FullSync) }
-func TestThrottling63Fast(t *testing.T) { testThrottling(t, 63, FastSync) }
-func TestThrottling64Full(t *testing.T) { testThrottling(t, 64, FullSync) }
-func TestThrottling64Fast(t *testing.T) { testThrottling(t, 64, FastSync) }
+func TestThrottling(t *testing.T) {
+	testCases := []struct {
+		protocol int
+		syncmode SyncMode
+	}{
+		{protocol: 62, syncmode: FullSync},
+		{protocol: 63, syncmode: FullSync},
+		{protocol: 63, syncmode: FastSync},
+		{protocol: 64, syncmode: FullSync},
+		{protocol: 64, syncmode: FastSync},
+	}
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("protocol %d", tc.protocol), func(t *testing.T) {
+			testThrottling(t, tc.protocol, tc.syncmode)
+		})
+	}
+}
 
 func testThrottling(t *testing.T, protocol int, mode SyncMode) {
 	// Create a long block chain to download and the tester
@@ -810,12 +834,24 @@ func testThrottling(t *testing.T, protocol int, mode SyncMode) {
 // Tests that simple synchronization against a forked chain works correctly. In
 // this test common ancestor lookup should *not* be short circuited, and a full
 // binary search should be executed.
-func TestForkedSync62(t *testing.T)      { testForkedSync(t, 62, FullSync) }
-func TestForkedSync63Full(t *testing.T)  { testForkedSync(t, 63, FullSync) }
-func TestForkedSync63Fast(t *testing.T)  { testForkedSync(t, 63, FastSync) }
-func TestForkedSync64Full(t *testing.T)  { testForkedSync(t, 64, FullSync) }
-func TestForkedSync64Fast(t *testing.T)  { testForkedSync(t, 64, FastSync) }
-func TestForkedSync64Light(t *testing.T) { testForkedSync(t, 64, LightSync) }
+func TestForkedSync(t *testing.T) {
+	testCases := []struct {
+		protocol int
+		syncmode SyncMode
+	}{
+		{protocol: 62, syncmode: FullSync},
+		{protocol: 63, syncmode: FullSync},
+		{protocol: 63, syncmode: FastSync},
+		{protocol: 64, syncmode: FullSync},
+		{protocol: 64, syncmode: FastSync},
+		{protocol: 64, syncmode: LightSync},
+	}
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("protocol %d", tc.protocol), func(t *testing.T) {
+			testForkedSync(t, tc.protocol, tc.syncmode)
+		})
+	}
+}
 
 func testForkedSync(t *testing.T, protocol int, mode SyncMode) {
 	t.Parallel()
@@ -845,12 +881,24 @@ func testForkedSync(t *testing.T, protocol int, mode SyncMode) {
 
 // Tests that synchronising against a much shorter but much heavyer fork works
 // corrently and is not dropped.
-func TestHeavyForkedSync62(t *testing.T)      { testHeavyForkedSync(t, 62, FullSync) }
-func TestHeavyForkedSync63Full(t *testing.T)  { testHeavyForkedSync(t, 63, FullSync) }
-func TestHeavyForkedSync63Fast(t *testing.T)  { testHeavyForkedSync(t, 63, FastSync) }
-func TestHeavyForkedSync64Full(t *testing.T)  { testHeavyForkedSync(t, 64, FullSync) }
-func TestHeavyForkedSync64Fast(t *testing.T)  { testHeavyForkedSync(t, 64, FastSync) }
-func TestHeavyForkedSync64Light(t *testing.T) { testHeavyForkedSync(t, 64, LightSync) }
+func TestHeavyForkedSync(t *testing.T) {
+	testCases := []struct {
+		protocol int
+		syncmode SyncMode
+	}{
+		{protocol: 62, syncmode: FullSync},
+		{protocol: 63, syncmode: FullSync},
+		{protocol: 63, syncmode: FastSync},
+		{protocol: 64, syncmode: FullSync},
+		{protocol: 64, syncmode: FastSync},
+		{protocol: 64, syncmode: LightSync},
+	}
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("protocol %d", tc.protocol), func(t *testing.T) {
+			testHeavyForkedSync(t, tc.protocol, tc.syncmode)
+		})
+	}
+}
 
 func testHeavyForkedSync(t *testing.T, protocol int, mode SyncMode) {
 	t.Parallel()
@@ -881,12 +929,24 @@ func testHeavyForkedSync(t *testing.T, protocol int, mode SyncMode) {
 // Tests that chain forks are contained within a certain interval of the current
 // chain head, ensuring that malicious peers cannot waste resources by feeding
 // long dead chains.
-func TestBoundedForkedSync62(t *testing.T)      { testBoundedForkedSync(t, 62, FullSync) }
-func TestBoundedForkedSync63Full(t *testing.T)  { testBoundedForkedSync(t, 63, FullSync) }
-func TestBoundedForkedSync63Fast(t *testing.T)  { testBoundedForkedSync(t, 63, FastSync) }
-func TestBoundedForkedSync64Full(t *testing.T)  { testBoundedForkedSync(t, 64, FullSync) }
-func TestBoundedForkedSync64Fast(t *testing.T)  { testBoundedForkedSync(t, 64, FastSync) }
-func TestBoundedForkedSync64Light(t *testing.T) { testBoundedForkedSync(t, 64, LightSync) }
+func TestBoundedForkedSync(t *testing.T) {
+	testCases := []struct {
+		protocol int
+		syncmode SyncMode
+	}{
+		{protocol: 62, syncmode: FullSync},
+		{protocol: 63, syncmode: FullSync},
+		{protocol: 63, syncmode: FastSync},
+		{protocol: 64, syncmode: FullSync},
+		{protocol: 64, syncmode: FastSync},
+		{protocol: 64, syncmode: LightSync},
+	}
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("protocol %d", tc.protocol), func(t *testing.T) {
+			testBoundedForkedSync(t, tc.protocol, tc.syncmode)
+		})
+	}
+}
 
 func testBoundedForkedSync(t *testing.T, protocol int, mode SyncMode) {
 	t.Parallel()
@@ -916,12 +976,24 @@ func testBoundedForkedSync(t *testing.T, protocol int, mode SyncMode) {
 // Tests that chain forks are contained within a certain interval of the current
 // chain head for short but heavy forks too. These are a bit special because they
 // take different ancestor lookup paths.
-func TestBoundedHeavyForkedSync62(t *testing.T)      { testBoundedHeavyForkedSync(t, 62, FullSync) }
-func TestBoundedHeavyForkedSync63Full(t *testing.T)  { testBoundedHeavyForkedSync(t, 63, FullSync) }
-func TestBoundedHeavyForkedSync63Fast(t *testing.T)  { testBoundedHeavyForkedSync(t, 63, FastSync) }
-func TestBoundedHeavyForkedSync64Full(t *testing.T)  { testBoundedHeavyForkedSync(t, 64, FullSync) }
-func TestBoundedHeavyForkedSync64Fast(t *testing.T)  { testBoundedHeavyForkedSync(t, 64, FastSync) }
-func TestBoundedHeavyForkedSync64Light(t *testing.T) { testBoundedHeavyForkedSync(t, 64, LightSync) }
+func TestBoundedHeavyForkedSync(t *testing.T) {
+	testCases := []struct {
+		protocol int
+		syncmode SyncMode
+	}{
+		{protocol: 62, syncmode: FullSync},
+		{protocol: 63, syncmode: FullSync},
+		{protocol: 63, syncmode: FastSync},
+		{protocol: 64, syncmode: FullSync},
+		{protocol: 64, syncmode: FastSync},
+		{protocol: 64, syncmode: LightSync},
+	}
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("protocol %d", tc.protocol), func(t *testing.T) {
+			testBoundedHeavyForkedSync(t, tc.protocol, tc.syncmode)
+		})
+	}
+}
 
 func testBoundedHeavyForkedSync(t *testing.T, protocol int, mode SyncMode) {
 	t.Parallel()
@@ -986,12 +1058,24 @@ func TestInactiveDownloader63(t *testing.T) {
 }
 
 // Tests that a canceled download wipes all previously accumulated state.
-func TestCancel62(t *testing.T)      { testCancel(t, 62, FullSync) }
-func TestCancel63Full(t *testing.T)  { testCancel(t, 63, FullSync) }
-func TestCancel63Fast(t *testing.T)  { testCancel(t, 63, FastSync) }
-func TestCancel64Full(t *testing.T)  { testCancel(t, 64, FullSync) }
-func TestCancel64Fast(t *testing.T)  { testCancel(t, 64, FastSync) }
-func TestCancel64Light(t *testing.T) { testCancel(t, 64, LightSync) }
+func TestCancel(t *testing.T) {
+	testCases := []struct {
+		protocol int
+		syncmode SyncMode
+	}{
+		{protocol: 62, syncmode: FullSync},
+		{protocol: 63, syncmode: FullSync},
+		{protocol: 63, syncmode: FastSync},
+		{protocol: 64, syncmode: FullSync},
+		{protocol: 64, syncmode: FastSync},
+		{protocol: 64, syncmode: LightSync},
+	}
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("protocol %d", tc.protocol), func(t *testing.T) {
+			testCancel(t, tc.protocol, tc.syncmode)
+		})
+	}
+}
 
 func testCancel(t *testing.T, protocol int, mode SyncMode) {
 	t.Parallel()
@@ -1027,12 +1111,24 @@ func testCancel(t *testing.T, protocol int, mode SyncMode) {
 }
 
 // Tests that synchronisation from multiple peers works as intended (multi thread sanity test).
-func TestMultiSynchronisation62(t *testing.T)      { testMultiSynchronisation(t, 62, FullSync) }
-func TestMultiSynchronisation63Full(t *testing.T)  { testMultiSynchronisation(t, 63, FullSync) }
-func TestMultiSynchronisation63Fast(t *testing.T)  { testMultiSynchronisation(t, 63, FastSync) }
-func TestMultiSynchronisation64Full(t *testing.T)  { testMultiSynchronisation(t, 64, FullSync) }
-func TestMultiSynchronisation64Fast(t *testing.T)  { testMultiSynchronisation(t, 64, FastSync) }
-func TestMultiSynchronisation64Light(t *testing.T) { testMultiSynchronisation(t, 64, LightSync) }
+func TestMultiSynchronisation(t *testing.T) {
+	testCases := []struct {
+		protocol int
+		syncmode SyncMode
+	}{
+		{protocol: 62, syncmode: FullSync},
+		{protocol: 63, syncmode: FullSync},
+		{protocol: 63, syncmode: FastSync},
+		{protocol: 64, syncmode: FullSync},
+		{protocol: 64, syncmode: FastSync},
+		{protocol: 64, syncmode: LightSync},
+	}
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("protocol %d", tc.protocol), func(t *testing.T) {
+			testMultiSynchronisation(t, tc.protocol, tc.syncmode)
+		})
+	}
+}
 
 func testMultiSynchronisation(t *testing.T, protocol int, mode SyncMode) {
 	t.Parallel()
@@ -1057,12 +1153,24 @@ func testMultiSynchronisation(t *testing.T, protocol int, mode SyncMode) {
 
 // Tests that synchronisations behave well in multi-version protocol environments
 // and not wreak havoc on other nodes in the network.
-func TestMultiProtoSynchronisation62(t *testing.T)      { testMultiProtoSync(t, 62, FullSync) }
-func TestMultiProtoSynchronisation63Full(t *testing.T)  { testMultiProtoSync(t, 63, FullSync) }
-func TestMultiProtoSynchronisation63Fast(t *testing.T)  { testMultiProtoSync(t, 63, FastSync) }
-func TestMultiProtoSynchronisation64Full(t *testing.T)  { testMultiProtoSync(t, 64, FullSync) }
-func TestMultiProtoSynchronisation64Fast(t *testing.T)  { testMultiProtoSync(t, 64, FastSync) }
-func TestMultiProtoSynchronisation64Light(t *testing.T) { testMultiProtoSync(t, 64, LightSync) }
+func TestMultiProtoSync(t *testing.T) {
+	testCases := []struct {
+		protocol int
+		syncmode SyncMode
+	}{
+		{protocol: 62, syncmode: FullSync},
+		{protocol: 63, syncmode: FullSync},
+		{protocol: 63, syncmode: FastSync},
+		{protocol: 64, syncmode: FullSync},
+		{protocol: 64, syncmode: FastSync},
+		{protocol: 64, syncmode: LightSync},
+	}
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("protocol %d", tc.protocol), func(t *testing.T) {
+			testMultiProtoSync(t, tc.protocol, tc.syncmode)
+		})
+	}
+}
 
 func testMultiProtoSync(t *testing.T, protocol int, mode SyncMode) {
 	t.Parallel()
@@ -1096,12 +1204,24 @@ func testMultiProtoSync(t *testing.T, protocol int, mode SyncMode) {
 
 // Tests that if a block is empty (e.g. header only), no body request should be
 // made, and instead the header should be assembled into a whole block in itself.
-func TestEmptyShortCircuit62(t *testing.T)      { testEmptyShortCircuit(t, 62, FullSync) }
-func TestEmptyShortCircuit63Full(t *testing.T)  { testEmptyShortCircuit(t, 63, FullSync) }
-func TestEmptyShortCircuit63Fast(t *testing.T)  { testEmptyShortCircuit(t, 63, FastSync) }
-func TestEmptyShortCircuit64Full(t *testing.T)  { testEmptyShortCircuit(t, 64, FullSync) }
-func TestEmptyShortCircuit64Fast(t *testing.T)  { testEmptyShortCircuit(t, 64, FastSync) }
-func TestEmptyShortCircuit64Light(t *testing.T) { testEmptyShortCircuit(t, 64, LightSync) }
+func TestEmptyShortCircuit(t *testing.T) {
+	testCases := []struct {
+		protocol int
+		syncmode SyncMode
+	}{
+		{protocol: 62, syncmode: FullSync},
+		{protocol: 63, syncmode: FullSync},
+		{protocol: 63, syncmode: FastSync},
+		{protocol: 64, syncmode: FullSync},
+		{protocol: 64, syncmode: FastSync},
+		{protocol: 64, syncmode: LightSync},
+	}
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("protocol %d", tc.protocol), func(t *testing.T) {
+			testEmptyShortCircuit(t, tc.protocol, tc.syncmode)
+		})
+	}
+}
 
 func testEmptyShortCircuit(t *testing.T, protocol int, mode SyncMode) {
 	t.Parallel()
@@ -1151,12 +1271,24 @@ func testEmptyShortCircuit(t *testing.T, protocol int, mode SyncMode) {
 
 // Tests that headers are enqueued continuously, preventing malicious nodes from
 // stalling the downloader by feeding gapped header chains.
-func TestMissingHeaderAttack62(t *testing.T)      { testMissingHeaderAttack(t, 62, FullSync) }
-func TestMissingHeaderAttack63Full(t *testing.T)  { testMissingHeaderAttack(t, 63, FullSync) }
-func TestMissingHeaderAttack63Fast(t *testing.T)  { testMissingHeaderAttack(t, 63, FastSync) }
-func TestMissingHeaderAttack64Full(t *testing.T)  { testMissingHeaderAttack(t, 64, FullSync) }
-func TestMissingHeaderAttack64Fast(t *testing.T)  { testMissingHeaderAttack(t, 64, FastSync) }
-func TestMissingHeaderAttack64Light(t *testing.T) { testMissingHeaderAttack(t, 64, LightSync) }
+func TestMissingHeaderAttack(t *testing.T) {
+	testCases := []struct {
+		protocol int
+		syncmode SyncMode
+	}{
+		{protocol: 62, syncmode: FullSync},
+		{protocol: 63, syncmode: FullSync},
+		{protocol: 63, syncmode: FastSync},
+		{protocol: 64, syncmode: FullSync},
+		{protocol: 64, syncmode: FastSync},
+		{protocol: 64, syncmode: LightSync},
+	}
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("protocol %d", tc.protocol), func(t *testing.T) {
+			testMissingHeaderAttack(t, tc.protocol, tc.syncmode)
+		})
+	}
+}
 
 func testMissingHeaderAttack(t *testing.T, protocol int, mode SyncMode) {
 	t.Parallel()
@@ -1188,12 +1320,24 @@ func testMissingHeaderAttack(t *testing.T, protocol int, mode SyncMode) {
 
 // Tests that if requested headers are shifted (i.e. first is missing), the queue
 // detects the invalid numbering.
-func TestShiftedHeaderAttack62(t *testing.T)      { testShiftedHeaderAttack(t, 62, FullSync) }
-func TestShiftedHeaderAttack63Full(t *testing.T)  { testShiftedHeaderAttack(t, 63, FullSync) }
-func TestShiftedHeaderAttack63Fast(t *testing.T)  { testShiftedHeaderAttack(t, 63, FastSync) }
-func TestShiftedHeaderAttack64Full(t *testing.T)  { testShiftedHeaderAttack(t, 64, FullSync) }
-func TestShiftedHeaderAttack64Fast(t *testing.T)  { testShiftedHeaderAttack(t, 64, FastSync) }
-func TestShiftedHeaderAttack64Light(t *testing.T) { testShiftedHeaderAttack(t, 64, LightSync) }
+func TestShiftedHeaderAttack(t *testing.T) {
+	testCases := []struct {
+		protocol int
+		syncmode SyncMode
+	}{
+		{protocol: 62, syncmode: FullSync},
+		{protocol: 63, syncmode: FullSync},
+		{protocol: 63, syncmode: FastSync},
+		{protocol: 64, syncmode: FullSync},
+		{protocol: 64, syncmode: FastSync},
+		{protocol: 64, syncmode: LightSync},
+	}
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("protocol %d", tc.protocol), func(t *testing.T) {
+			testShiftedHeaderAttack(t, tc.protocol, tc.syncmode)
+		})
+	}
+}
 
 func testShiftedHeaderAttack(t *testing.T, protocol int, mode SyncMode) {
 	// Create a small enough block chain to download

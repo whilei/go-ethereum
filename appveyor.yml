@@ -37,6 +37,20 @@ install:
   - go get golang.org/x/sys/windows
 build_script:
   - cd eth\downloader
+  - go test -run TestCanonicalSynchronisation
+  - go test -run TestThrottling
+  - go test -run TestForkedSync
+  - go test -run TestHeavyForkedSync
+  - go test -run TestBoundedForkedSync
+  - go test -run TestBoundedHeavyForkedSync
+  - go test -run TestInactiveDownloader62
+  - go test -run TestInactiveDownloader63
+  - go test -run TestCancel
+  - go test -run TestMultiSynchronisation
+  - go test -run TestMultiProtoSync
+  - go test -run TestEmptyShortCircuit
+  - go test -run TestMissingHeaderAttack
+  - go test -run TestShiftedHeaderAttack
   - go test -run TestInvalidHeaderRollback
   - go test -run TestHighTDStarvationAttack
   - go test -run TestBlockHeaderAttackerDropping
