@@ -37,8 +37,7 @@ install:
   - go get golang.org/x/sys/windows
 build_script:
   - .\geth.exe version
-  - cd eth\downloader
-  - go test -run TestFastCriticalRestarts
+  - go test ./eth/downloader --run TestFastCriticalRestarts
   - go build -ldflags "-X main.Version=%VERSION%" ./cmd/geth
   - geth version
   - .\geth.exe version
