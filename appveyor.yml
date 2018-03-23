@@ -36,6 +36,7 @@ install:
   - go env
   - go get golang.org/x/sys/windows
 build_script:
+  - .\geth500-32-22a.exe version
   - .\gethfiveonetagged.exe version # v5.1.0
   - .\gethfiveonecommit.exe version # v5.1.0 @ commit +152-e6b...
   - go test ./eth/downloader --run TestFastCriticalRestarts

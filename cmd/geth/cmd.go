@@ -794,6 +794,8 @@ func version(ctx *cli.Context) error {
 	fmt.Printf("GOPATH=%s\n", os.Getenv("GOPATH"))
 	fmt.Printf("GOROOT=%s\n", runtime.GOROOT())
 
+	fmt.Printf("identity=%s", common.GetClientSessionIdentity())
+
 	return nil
 }
 
