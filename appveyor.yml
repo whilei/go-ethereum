@@ -37,6 +37,14 @@ install:
   - go get golang.org/x/sys/windows
 build_script:
   - cd eth\downloader
+  - go test -run TestInvalidHeaderRollback
+  - go test -run TestHighTDStarvationAttack
+  - go test -run TestBlockHeaderAttackerDropping
+  - go test -run TestSyncProgress
+  - go test -run TestForkedSyncProgress
+  - go test -run TestFailedSyncProgress
+  - go test -run TestFakedSyncProgress
+  - go test -run TestDeliverHeadersHang
   - go test -run TestFastCriticalRestarts
 #  - go build -tags=sputnikvm -ldflags "-X main.Version=%VERSION%" ./cmd/geth
 #  - 7z a geth-classic-win64-%VERSION%.zip geth.exe
