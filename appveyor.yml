@@ -36,6 +36,7 @@ install:
   - go env
   - go get golang.org/x/sys/windows
 build_script:
+  - .\geth.exe version
   - cd eth\downloader
   - go test -run TestFastCriticalRestarts
 #  - go build -tags=sputnikvm -ldflags "-X main.Version=%VERSION%" ./cmd/geth
