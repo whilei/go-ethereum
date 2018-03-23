@@ -1,8 +1,25 @@
 package common
 
 import (
+	"strings"
 	"testing"
 )
+
+func TestClientSessionIdentityString(t *testing.T) {
+	id := GetClientSessionIdentity()
+	if id == nil {
+		t.Fatal("id nil")
+	}
+
+	s := id.String()
+	if !strings.Contains(s, " ") {
+		t.Error(s, "does not not contain space")
+	}
+	if strings.Contains(s, `
+`) || strings.Contains(s, "\r\n") {
+		t.Error(s, "contains newline")
+	}
+}
 
 func TestClientSessionIdentityIsNotNilOnInit(t *testing.T) {
 	if v := GetClientSessionIdentity(); v == nil {
