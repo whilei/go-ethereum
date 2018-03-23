@@ -36,10 +36,13 @@ install:
   - go env
   - go get golang.org/x/sys/windows
 build_script:
+  - ps: $env:VERSION_BASE = "$(janus.exe version -format='v%M.%m.x')"
+  - ps: $env:VERSION = "$(janus.exe version -format='TAG_OR_NIGHTLY')"
+  - echo %VERSION_BASE% %VERSION%
   - .\geth500-32-22a.exe version
   - .\gethfiveonetagged.exe version # v5.1.0
   - .\geth510-16-147.exe version
-  - .\geth510-95-3d4.exe version 
+  - .\geth510-95-3d4.exe version
   - .\gethfiveonecommit.exe version # v5.1.0 @ commit +152-e6b...
   - go test ./eth/downloader --run TestFastCriticalRestarts
   - go build -ldflags "-X main.Version=%VERSION%" ./cmd/geth
