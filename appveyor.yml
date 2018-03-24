@@ -68,7 +68,7 @@ build_script:
   # Immediately check out to `bad~5`, the middle commit.
   - git bisect good
   # Automatically check out to the first failing rev.
-  - git bisect run ./test
+  - git bisect run .\test
   # Check out to master and end the bisect operation.
   - git bisect reset
 #  - go build -tags=sputnikvm -ldflags "-X main.Version=%VERSION%" ./cmd/geth
