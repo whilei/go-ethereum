@@ -39,41 +39,39 @@ build_script:
   - ps: $env:VERSION_BASE = "$(janus.exe version -format='v%M.%m.x')"
   - ps: $env:VERSION = "$(janus.exe version -format='TAG_OR_NIGHTLY')"
   - echo %VERSION_BASE% %VERSION%
-#  - .\geth500-32-22a.exe version
-#  - .\gethfiveonetagged.exe version # v5.1.0
-#  - .\geth510-16-147.exe version
-#  - .\geth510-29-54a.exe version
-#  - .\geth510-68-f6d.exe version
-#  - .\geth510-72-eb1.exe version
-#  - .\geth510-95-3d4.exe version
-#  - .\gethfiveonecommit.exe version # v5.1.0 @ commit +152-e6b...
-##  - go test ./eth/downloader --run TestFastCriticalRestarts
-## assert status quo
+  - .\geth500-32-22a.exe version
+  - .\gethfiveonetagged.exe version # v5.1.0
+  - .\geth510-16-147.exe version
+  - .\geth510-29-54a.exe version
+  - .\geth510-68-f6d.exe version
+  - .\geth510-72-eb1.exe version
+  - .\geth510-95-3d4.exe version
+  - .\gethfiveonecommit.exe version # v5.1.0 @ commit +152-e6b...
+#  - go test ./eth/downloader --run TestFastCriticalRestarts
+# assert status quo
+  - go build -ldflags "-X main.Version=%VERSION%" ./cmd/geth
+  - geth version
+  - .\geth.exe version
+  # checkout last known working distribution
+  #  https://ci.appveyor.com/project/whilei/go-ethereum-4ckvx/build/1.0.416
+  # We know this fails
+#  - git checkout 54afb92
 #  - go build -ldflags "-X main.Version=%VERSION%" ./cmd/geth
-#  - geth version
 #  - .\geth.exe version
-#  # checkout last known working distribution
-#  #  https://ci.appveyor.com/project/whilei/go-ethereum-4ckvx/build/1.0.416
-#  # We know this fails
-##  - git checkout 54afb92
-##  - go build -ldflags "-X main.Version=%VERSION%" ./cmd/geth
-##  - .\geth.exe version
-#
-#  - git bisect start
-#  # Tell Git that the current commit is bad.
-#  - git bisect bad
-#  - git checkout b11d32b #v4.0.0
-#  - .\hasversion.sh
-#  # If the above test passed, tell Git that the current commit is good.
-#  # Immediately check out to `bad~5`, the middle commit.
-#  - git bisect good
-#  # Automatically check out to the first failing rev.
-#  - git bisect run ./test
-#  # Check out to master and end the bisect operation.
-#  - git bisect reset
 
-  - ps:  go build -tags=sputnikvm -ldflags "-X main.Version=%VERSION%" ./cmd/geth
-  - ps: .\geth.exe version
+  - git bisect start
+  # Tell Git that the current commit is bad.
+  - git bisect bad
+  - git checkout b11d32b #v4.0.0
+  - .\hasversion.sh
+  # If the above test passed, tell Git that the current commit is good.
+  # Immediately check out to `bad~5`, the middle commit.
+  - git bisect good
+  # Automatically check out to the first failing rev.
+  - git bisect run ./test
+  # Check out to master and end the bisect operation.
+  - git bisect reset
+#  - go build -tags=sputnikvm -ldflags "-X main.Version=%VERSION%" ./cmd/geth
 #  - 7z a geth-classic-win64-%VERSION%.zip geth.exe
 #before_deploy:
 #  # Set up GCP upload.
