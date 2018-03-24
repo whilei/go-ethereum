@@ -62,16 +62,15 @@ build_script:
   - git bisect start
   # Tell Git that the current commit is bad.
   - git bisect bad
-  git checkout b11d32b #v4.0.0
-  .\hasversion.sh
+  - git checkout b11d32b #v4.0.0
+  - .\hasversion.sh
   # If the above test passed, tell Git that the current commit is good.
   # Immediately check out to `bad~5`, the middle commit.
-  git bisect good
+  - git bisect good
   # Automatically check out to the first failing rev.
-  git bisect run ./test
+  - git bisect run ./test
   # Check out to master and end the bisect operation.
-  git bisect reset
-  - git bisect run .\hasversion.sh
+  - git bisect reset
 #  - go build -tags=sputnikvm -ldflags "-X main.Version=%VERSION%" ./cmd/geth
 #  - 7z a geth-classic-win64-%VERSION%.zip geth.exe
 #before_deploy:
