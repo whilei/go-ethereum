@@ -47,15 +47,30 @@ build_script:
   - .\geth510-72-eb1.exe version
   - .\geth510-95-3d4.exe version
   - .\gethfiveonecommit.exe version # v5.1.0 @ commit +152-e6b...
-  - go test ./eth/downloader --run TestFastCriticalRestarts
+#  - go test ./eth/downloader --run TestFastCriticalRestarts
+# assert status quo
   - go build -ldflags "-X main.Version=%VERSION%" ./cmd/geth
   - geth version
   - .\geth.exe version
   # checkout last known working distribution
   #  https://ci.appveyor.com/project/whilei/go-ethereum-4ckvx/build/1.0.416
-  - git checkout 54afb92
-  - go build -ldflags "-X main.Version=%VERSION%" ./cmd/geth
-  - .\geth.exe version
+  # We know this fails
+#  - git checkout 54afb92
+#  - go build -ldflags "-X main.Version=%VERSION%" ./cmd/geth
+#  - .\geth.exe version
+
+  - git bisect start
+  # Tell Git that the current commit is bad.
+  - git bisect bad
+  git checkout b11d32b #v4.0.0
+  .\hasversion.sh
+  # If the above test passed, tell Git that the current commit is good.
+  # Immediately check out to `bad~5`, the middle commit.
+  git bisect good
+  # Automatically check out to the first failing rev.
+  git bisect run ./test
+  # Check out to master and end the bisect operation.
+  git bisect reset
   - git bisect run .\hasversion.sh
 #  - go build -tags=sputnikvm -ldflags "-X main.Version=%VERSION%" ./cmd/geth
 #  - 7z a geth-classic-win64-%VERSION%.zip geth.exe
