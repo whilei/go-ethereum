@@ -1,3 +1,4 @@
+
 #### web3_clientVersion
 
 Returns the current client version.
@@ -16,8 +17,10 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"web3_clientVersion","params":[],
 
 // Result
 {
-  "id":67,
-  "jsonrpc":"2.0",
-  "result": "Mist/v0.9.3/darwin/go1.4.1"
+"id":67,
+"jsonrpc":"2.0",
+"result": "Mist/v0.9.3/darwin/go1.4.1"
 }
 ```
+
+***
