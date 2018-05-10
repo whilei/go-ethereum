@@ -3,7 +3,7 @@
 ## Part 1
 
 - [tester](./test.md)
-    + [subdirfile](./sbud/file.md)
+    + [subdirfile](./subd/file.md)
 
 
 
