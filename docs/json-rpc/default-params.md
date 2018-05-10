@@ -1,12 +1,12 @@
-## The default block parameter
+## Default block parameters
 
 The following methods have a extra default block parameter:
 
-- [eth_getBalance](#eth_getbalance)
-- [eth_getCode](#eth_getcode)
-- [eth_getTransactionCount](#eth_gettransactioncount)
-- [eth_getStorageAt](#eth_getstorageat)
-- [eth_call](#eth_call)
+- [eth_getBalance](./methods/eth/getbalance.md)
+- [eth_getCode](./methods/eth/getcode.md)
+- [eth_getTransactionCount](./methods/eth/gettransactioncount.md)
+- [eth_getStorageAt](./methods/eth/getstorageat.md)
+- [eth_call](./methods/eth/call.md)
 
 When requests are made that act on the state of ethereum, the last default block parameter determines the height of the block.
 
