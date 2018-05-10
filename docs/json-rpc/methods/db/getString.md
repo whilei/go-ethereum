@@ -34,5 +34,3 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"db_getString","params":["testDB"
 "result": "myString"
 }
 ```
-
-***

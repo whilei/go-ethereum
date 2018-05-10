@@ -29,5 +29,3 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getUncleByBlockNumberAndInde
 ```
 
 Result see [eth_getBlockByHash](#eth-getblockbyhash)
-
-***

@@ -31,5 +31,3 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getUncleCountByBlockHash","p
 "result": "0x1" // 1
 }
 ```
-
-***

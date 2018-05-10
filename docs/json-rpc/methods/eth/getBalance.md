@@ -32,5 +32,3 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getBalance","params":["0x407
 "result": "0x0234c8a3397aab58" // 158972490234375000
 }
 ```
-
-***

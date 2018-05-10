@@ -23,5 +23,3 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_estimateGas","params":[{see 
 "result": "0x5208" // 21000
 }
 ```
-
-***

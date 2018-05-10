@@ -57,5 +57,3 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getTransactionByHash","param
 }
 }
 ```
-
-***

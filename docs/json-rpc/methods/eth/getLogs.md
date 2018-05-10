@@ -24,5 +24,3 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getLogs","params":[{"topics"
 ```
 
 Result see [eth_getFilterChanges](#eth_getfilterchanges)
-
-***

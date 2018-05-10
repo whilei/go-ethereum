@@ -22,7 +22,7 @@ while read -r li; do
 		mkdir -p "$mparent"
 
 		# remove demarc last line
-		# section="$(echo $section | sed '$ d')"
+		section="$(grep -v -e '\*\*\*' <<< $section)"
 	echo "SECTION:
 	$section"
 
@@ -31,10 +31,6 @@ while read -r li; do
 		section=""
 	fi
 done < JSON-RPC.md
-
-for f in ./**/*.md; do
-	sed -i '$ d' "$f"
-done
 
 # IFS=$OIFS
 

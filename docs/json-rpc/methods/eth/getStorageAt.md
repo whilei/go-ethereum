@@ -36,5 +36,3 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getStorageAt","params":["0x4
 "result": "0x03"
 }
 ```
-
-***

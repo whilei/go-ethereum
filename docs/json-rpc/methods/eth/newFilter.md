@@ -37,5 +37,3 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_newFilter","params":[{"topic
 "result": "0x1" // 1
 }
 ```
-
-***

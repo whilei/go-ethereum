@@ -22,5 +22,3 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id
 "result": "0x4b7" // 1207
 }
 ```
-
-***

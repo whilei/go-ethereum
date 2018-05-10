@@ -41,5 +41,3 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"shh_post","params":[{"from":"0xc
 "result": true
 }
 ```
-
-***

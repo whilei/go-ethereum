@@ -30,5 +30,3 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getUncleByBlockHashAndIndex"
 Result see [eth_getBlockByHash](#eth-getblockbyhash)
 
 **Note**: An uncle doesn't contain individual transactions.
-
-***

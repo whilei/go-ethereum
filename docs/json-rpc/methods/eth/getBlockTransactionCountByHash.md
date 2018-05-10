@@ -31,5 +31,3 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getBlockTransactionCountByHa
 "result": "0xb" // 11
 }
 ```
-
-***

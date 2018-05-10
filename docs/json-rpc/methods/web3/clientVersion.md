@@ -22,5 +22,3 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"web3_clientVersion","params":[],
 "result": "Mist/v0.9.3/darwin/go1.4.1"
 }
 ```
-
-***

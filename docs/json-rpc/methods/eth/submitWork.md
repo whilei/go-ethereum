@@ -35,5 +35,3 @@ curl -X POST --data '{"jsonrpc":"2.0", "method":"eth_submitWork", "params":["0x0
 "result": true
 }
 ```
-
-***

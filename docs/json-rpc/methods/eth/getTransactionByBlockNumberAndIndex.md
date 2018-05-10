@@ -27,5 +27,3 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getTransactionByBlockNumberA
 ```
 
 Result see [eth_getTransactionByHash](#eth-gettransactionbyhash)
-
-***

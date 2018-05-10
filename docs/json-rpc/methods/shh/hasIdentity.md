@@ -31,5 +31,3 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"shh_hasIdentity","params":["0x04
 "result": true
 }
 ```
-
-***

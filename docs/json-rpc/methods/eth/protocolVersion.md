@@ -22,5 +22,3 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_protocolVersion","params":[]
 "result": "54"
 }
 ```
-
-***

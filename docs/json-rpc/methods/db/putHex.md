@@ -36,5 +36,3 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"db_putHex","params":["testDB","m
 "result": true
 }
 ```
-
-***

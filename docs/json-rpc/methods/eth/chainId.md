@@ -22,5 +22,3 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}
 "result": "0x3d" // 61
 }
 ```
-
-***

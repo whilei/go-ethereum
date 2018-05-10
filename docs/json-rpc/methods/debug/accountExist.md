@@ -34,5 +34,3 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"debug_accountExist","params":["a
 "result": true
 }
 ```
-
-***

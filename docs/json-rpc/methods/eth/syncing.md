@@ -36,5 +36,3 @@ highestBlock: '0x454'
 "result": false
 }
 ```
-
-***

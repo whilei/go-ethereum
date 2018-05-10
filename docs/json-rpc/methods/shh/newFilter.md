@@ -36,5 +36,3 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"shh_newFilter","params":[{"topic
 "result": "0x7" // 7
 }
 ```
-
-***
