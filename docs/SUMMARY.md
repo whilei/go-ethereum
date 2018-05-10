@@ -58,6 +58,8 @@
         + [getWork](./json-rpc/methods/eth/getWork.md)
         + [submitWork](./json-rpc/methods/eth/submitWork.md)
         + [submitHashrate](./json-rpc/methods/eth/submitHashrate.md)
+    + [geth](./json-rpc/methods/geth.md)
+        + [getAddressTransactions](./json-rpc/methods/geth/getAddressTransactions.md)
     + [db](./json-rpc/methods/db.md)
         + [putString](./json-rpc/methods/db/putString.md)
         + [getString](./json-rpc/methods/db/getString.md)
