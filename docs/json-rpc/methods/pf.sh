@@ -27,6 +27,7 @@ while read -r li; do
 	$section"
 
 		echo "$section" > "$mparent/$mmethod.md"
+		echo "* [$mparent_$mmethod](./$mparent/$mmethod.md)" >> methods2.md
 		section=""
 	fi
 done < JSON-RPC.md

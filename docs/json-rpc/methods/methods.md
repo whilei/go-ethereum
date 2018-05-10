@@ -2,9 +2,11 @@
 
 * [web3_clientVersion](#web3_clientversion)
 * [web3_sha3](#web3_sha3)
+
 * [net_version](#net_version)
 * [net_peerCount](#net_peercount)
 * [net_listening](#net_listening)
+
 * [eth_protocolVersion](#eth_protocolversion)
 * [eth_syncing](#eth_syncing)
 * [eth_coinbase](#eth_coinbase)
