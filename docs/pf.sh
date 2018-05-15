@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 
-# OIFS=$IFS
-# IFS=$'\n'
-section=""
 demarc="^\*\*\*"
-header='####'
+parentheader='^###'
+header='^####'
+
+section=""
 while read -r li; do
 	echo "LI: $li"
 	section+="$li
 "
-
-
 	if [[ $li =~ $demarc ]]; then
-		title="$(echo $section | grep $header | head -n1 | cut -d' ' -f2)"
+		# either parent section or method section
+		#
+		title="$(echo $section | grep -e $header | head -n1 | cut -d' ' -f2)"
 		echo "TITLE: $title"
 		mparent="$(echo $title | cut -d'_' -f1)"
 		echo "MPARENT: $mparent"

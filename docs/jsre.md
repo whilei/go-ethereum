@@ -1,10 +1,3 @@
-***
-
-### Personal
-The `personal` api exposes method for personal  the methods to manage, control or monitor your node. It allows for limited file system access.
-
-***
-
 #### personal.listAccounts
     personal.listAccounts
 
@@ -48,11 +41,7 @@ Unlock the account with the given address, password and an optional duration (in
 
 ***
 
-### Geth
-
-***
-
-#### geth_getAddressTransactions
+#### geth.getAddressTransactions
 
 Returns transactions for an address.
 
@@ -95,10 +84,6 @@ params: [
 
 ***
 
-### TxPool
-
-***
-
 #### txpool.status
     txpool.status
 
@@ -111,12 +96,6 @@ Number of pending/queued transactions
 
 #### Example
 ` txpool.status`
-
-***
-
-### Admin
-
-The `admin` exposes the methods to manage, control or monitor your node. It allows for limited file system access.
 
 ***
 
@@ -486,10 +465,6 @@ admin.registerUrl(primary, contenthash, "file://"+filename);
 
 ***
 
-### Miner
-
-***
-
 #### miner.start
 
     miner.start(threadCount)
@@ -584,10 +559,6 @@ If `dir` is the empty string, then ethash will use the default directories `~/.e
     miner.setEtherbase(account)
 
 **Sets** the the ether base, the address that will receive mining rewards.
-
-***
-
-### Debug
 
 ***
 
@@ -748,11 +719,6 @@ exists affects the gas cost of a transaction.
 debug.accountExist("0x102e61f5d8f9bc71d0ad4a084df4e65e05ce0e1c", 1000)
 > true
 ```
-
-
-***
-
-### Additional interfaces
 
 ***
 
