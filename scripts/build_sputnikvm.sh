@@ -27,6 +27,9 @@ case "$(uname -s)" in
         exit;;
 esac
 
+# Check dependencies
+command -v cargo >/dev/null 2>&1 || { echo >&2 "Installation with SputnikVM requires Rust and it's package manager cargo, but cargo is not installed.  Aborting."; exit 1; }
+
 if [ "$OS" == "Windows" ]; then
     cd %GOPATH%\src\github.com\ethereumproject
 	# Check if git is happening in svm-ffi.
