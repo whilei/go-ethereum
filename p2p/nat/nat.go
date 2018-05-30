@@ -108,14 +108,10 @@ func Map(m Interface, c chan struct{}, protocol string, extport, intport int, na
 	}()
 	handleIfAddMappingErr := func(label string, err error) {
 		if err == nil {
-			glog.V(logger.Info).Infof("%s %s:%d -> %d (%s) using %s\n", label, protocol, extport, intport, name, m)
-			glog.D(logger.Warn).Infof("%s %s:%s -> %s (%s) using %s\n", label, logger.ColorGreen(protocol), logger.ColorGreen(strconv.Itoa(extport)), logger.ColorGreen(strconv.Itoa(intport)), name, m)
+			glog.V(logger.Debug).Infof("%s %s:%d -> %d (%s) using %s\n", label, protocol, extport, intport, name, m)
+			glog.D(logger.Debug).Infof("%s %s:%s -> %s (%s) using %s\n", label, logger.ColorGreen(protocol), logger.ColorGreen(strconv.Itoa(extport)), logger.ColorGreen(strconv.Itoa(intport)), name, m)
 		} else {
-			if label == "Refresh port mapping" {
-				glog.V(logger.Info).Infoln("%s: Network port %s:%d could not be mapped: %v\n\t(this may be because port already mapped)", label, protocol, intport, err)
-			} else {
-				glog.V(logger.Warn).Errorf("%s: Network port %s:%d could not be mapped: %v\n", label, protocol, intport, err)
-			}
+			glog.V(logger.Debug).Infoln("%s: Network port %s:%d could not be mapped: %v\n", label, protocol, intport, err)
 		}
 	}
 	err := m.AddMapping(protocol, intport, extport, name, mapTimeout)
@@ -127,7 +123,7 @@ func Map(m Interface, c chan struct{}, protocol string, extport, intport int, na
 				return
 			}
 		case <-refresh.C:
-			glog.V(logger.Detail).Infof("Refresh port mapping %s:%d -> %d (%s) using %s\n", protocol, extport, intport, name, m)
+			glog.V(logger.Debug).Infof("Refresh port mapping %s:%d -> %d (%s) using %s\n", protocol, extport, intport, name, m)
 			err := m.AddMapping(protocol, intport, extport, name, mapTimeout)
 			handleIfAddMappingErr("Refresh port mapping", err)
 			refresh.Reset(mapUpdateInterval)
