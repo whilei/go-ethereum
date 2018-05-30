@@ -31,10 +31,7 @@ import (
 
 	"github.com/ethereumproject/go-ethereum/common"
 	"github.com/ethereumproject/go-ethereum/event"
-
-	"bytes"
-	"github.com/keith-turner/ecoji"
-	"strings"
+	"github.com/icrowley/fake"
 )
 
 const (
@@ -60,7 +57,8 @@ var (
 
 // peer represents an active peer from which hashes and blocks are retrieved.
 type peer struct {
-	id string // Unique identifier of the peer
+	id   string // Unique identifier of the peer
+	nick string // Unique human name
 
 	headerIdle  int32 // Current header activity state of the peer (idle = 0, active = 1)
 	blockIdle   int32 // Current block activity state of the peer (idle = 0, active = 1)
@@ -102,6 +100,7 @@ func newPeer(id string, version int, name string, currentHead currentHeadRetriev
 	getReceipts receiptFetcherFn, getNodeData stateFetcherFn) *peer {
 	return &peer{
 		id:      id,
+		nick:    fake.FirstName() + " " + fake.LastName(),
 		lacking: make(map[common.Hash]struct{}),
 
 		currentHead:    currentHead,
@@ -336,14 +335,8 @@ func (p *peer) String() string {
 	p.lock.RLock()
 	defer p.lock.RUnlock()
 
-	reader := bytes.NewBuffer([]byte(p.id))
-	buffer1 := bytes.NewBuffer(nil)
-
-	ecoji.Encode(reader, buffer1, 0)
-	s := buffer1.String()
-	s = strings.Replace(s, "", `   `, -1)
-
-	return fmt.Sprintf("Peer id=%s eth/%d [%s]", buffer1.String(), p.version, p.name) //	strings.Join([]string{
+	return fmt.Sprintf("peer '%s' id=%s eth/%d [%s]", p.nick, p.id, p.version, p.name) //	strings.Join([]string{
+	//return fmt.Sprintf("Peer id=%s eth/%d [%s]", p.id, p.version, p.name) //	strings.Join([]string{
 	//	fmt.Sprintf("hs %3.2f/s", p.headerThroughput),
 	//	fmt.Sprintf("bs %3.2f/s", p.blockThroughput),
 	//	fmt.Sprintf("rs %3.2f/s", p.receiptThroughput),

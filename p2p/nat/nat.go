@@ -106,16 +106,20 @@ func Map(m Interface, c chan struct{}, protocol string, extport, intport int, na
 		glog.V(logger.Debug).Infof("Deleting port mapping: %s %d -> %d (%s) using %s\n", protocol, extport, intport, name, m)
 		m.DeleteMapping(protocol, extport, intport)
 	}()
-	handleIfAddMappingErr := func(successLabel string, err error) {
+	handleIfAddMappingErr := func(label string, err error) {
 		if err == nil {
-			glog.V(logger.Info).Infof("%s %s:%d -> %d (%s) using %s\n", successLabel, protocol, extport, intport, name, m)
-			glog.D(logger.Warn).Infof("%s %s:%s -> %s (%s) using %s\n", successLabel, logger.ColorGreen(protocol), logger.ColorGreen(strconv.Itoa(extport)), logger.ColorGreen(strconv.Itoa(intport)), name, m)
+			glog.V(logger.Info).Infof("%s %s:%d -> %d (%s) using %s\n", label, protocol, extport, intport, name, m)
+			glog.D(logger.Warn).Infof("%s %s:%s -> %s (%s) using %s\n", label, logger.ColorGreen(protocol), logger.ColorGreen(strconv.Itoa(extport)), logger.ColorGreen(strconv.Itoa(intport)), name, m)
 		} else {
-			glog.V(logger.Warn).Errorf("Network port %s:%d could not be mapped: %v\n", protocol, intport, err)
+			if label == "Refresh port mapping" {
+				glog.V(logger.Info).Infoln("%s: Network port %s:%d could not be mapped: %v\n\t(this may be because port already mapped)", label, protocol, intport, err)
+			} else {
+				glog.V(logger.Warn).Errorf("%s: Network port %s:%d could not be mapped: %v\n", label, protocol, intport, err)
+			}
 		}
 	}
 	err := m.AddMapping(protocol, intport, extport, name, mapTimeout)
-	handleIfAddMappingErr("Mapped network port", err)
+	handleIfAddMappingErr("Mapping network port", err)
 	for {
 		select {
 		case _, ok := <-c:
