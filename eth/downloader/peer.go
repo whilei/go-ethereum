@@ -25,13 +25,16 @@ import (
 	"math"
 	"math/big"
 	"sort"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/ethereumproject/go-ethereum/common"
 	"github.com/ethereumproject/go-ethereum/event"
+
+	"bytes"
+	"github.com/keith-turner/ecoji"
+	"strings"
 )
 
 const (
@@ -333,14 +336,21 @@ func (p *peer) String() string {
 	p.lock.RLock()
 	defer p.lock.RUnlock()
 
-	return fmt.Sprintf("Peer id=%s eth/%d [%s] [%s]", p.id, p.version, p.name, strings.Join([]string{
-		fmt.Sprintf("hs %3.2f/s", p.headerThroughput),
-		fmt.Sprintf("bs %3.2f/s", p.blockThroughput),
-		fmt.Sprintf("rs %3.2f/s", p.receiptThroughput),
-		fmt.Sprintf("ss %3.2f/s", p.stateThroughput),
-		fmt.Sprintf("miss %4d", len(p.lacking)),
-		fmt.Sprintf("rtt %v", p.rtt),
-	}, ", "))
+	reader := bytes.NewBuffer([]byte(p.id))
+	buffer1 := bytes.NewBuffer(nil)
+
+	ecoji.Encode(reader, buffer1, 0)
+	s := buffer1.String()
+	s = strings.Replace(s, "", `   `, -1)
+
+	return fmt.Sprintf("Peer id=%s eth/%d [%s]", buffer1.String(), p.version, p.name) //	strings.Join([]string{
+	//	fmt.Sprintf("hs %3.2f/s", p.headerThroughput),
+	//	fmt.Sprintf("bs %3.2f/s", p.blockThroughput),
+	//	fmt.Sprintf("rs %3.2f/s", p.receiptThroughput),
+	//	fmt.Sprintf("ss %3.2f/s", p.stateThroughput),
+	//	fmt.Sprintf("miss %4d", len(p.lacking)),
+	//	fmt.Sprintf("rtt %v", p.rtt),
+	//}, ", ")
 }
 
 // peerSet represents the collection of active peer participating in the chain

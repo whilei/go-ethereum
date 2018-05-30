@@ -120,3 +120,7 @@
 [[constraint]]
   name = "github.com/fatih/color"
   version = "v1.7.0"
+
+[[constraint]]
+  name = "github.com/keith-turner/ecoji"
+  version = "1.0.0"
