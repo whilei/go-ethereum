@@ -26,6 +26,7 @@ import (
 	"github.com/ethereumproject/go-ethereum/crypto"
 	"github.com/ethereumproject/go-ethereum/logger"
 	"github.com/ethereumproject/go-ethereum/logger/glog"
+	"runtime"
 )
 
 var (
@@ -78,6 +79,13 @@ func (evm *EVM) Run(contract *Contract, input []byte) (ret []byte, err error) {
 		codehash = crypto.Keccak256Hash(contract.Code)
 	}
 
+	if fmt.Sprintf("%x", codehash[:4]) == "fabf2cf3" {
+		_, file, no, ok := runtime.Caller(1)
+		if ok {
+			fmt.Printf("called from %s#%d\n", file, no)
+		}
+	}
+
 	var (
 		caller     = contract.caller
 		code       = contract.Code
@@ -113,7 +121,7 @@ func (evm *EVM) Run(contract *Contract, input []byte) (ret []byte, err error) {
 		glog.Infof("running byte VM %x\n", codehash[:4])
 		tstart := time.Now()
 		defer func() {
-			glog.Infof("byte VM %x done. time: %v instrc: %v\n", codehash[:4], time.Since(tstart), instrCount)
+			glog.Infof("byte VM %x done. time: %v instrc: %v err=%v\n", codehash[:4], time.Since(tstart), instrCount, err)
 		}()
 	}
 
