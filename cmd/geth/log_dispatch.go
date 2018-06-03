@@ -84,6 +84,8 @@ func mustGetDisplaySystemFromName(s string) displayEventHandlers {
 		return dashDisplaySystem
 	case "git":
 		return gitDisplaySystem
+	case "progress":
+		return progressDisplaySystem
 	default:
 		glog.Fatalln("%v: --%v", ErrInvalidFlag, DisplayFormatFlag.Name)
 	}
