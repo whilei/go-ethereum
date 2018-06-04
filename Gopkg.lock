@@ -205,6 +205,12 @@
   revision = "20d25e2804050c1cd24a7eea1e7a6447dd0e74ec"
 
 [[projects]]
+  name = "gopkg.in/cheggaaa/pb.v1"
+  packages = ["."]
+  revision = "2af8bbdea9e99e83b3ac400d8f6b6d1b8cbbf338"
+  version = "v1.0.25"
+
+[[projects]]
   name = "gopkg.in/fatih/set.v0"
   packages = ["."]
   revision = "57907de300222151a123d29255ed17f5ed43fad3"
@@ -230,6 +236,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6d6381c7de7cbf2986147f08741e9bf5d526e3d1b21dfb7d9c66851a803eddb2"
+  inputs-digest = "003e42db7edc3ae488d826037d504d21cd28c61794fa68478f94bce7a052636c"
   solver-name = "gps-cdcl"
   solver-version = 1
