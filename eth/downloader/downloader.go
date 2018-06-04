@@ -221,6 +221,8 @@ type BlockChain interface {
 	// HasBlock verifies block and associated states' presence in the local chain.
 	HasBlock(common.Hash) bool
 
+	HasBlockAndState(common.Hash) bool
+
 	// GetBlockByHash retrieves a block from the local chain.
 	GetBlockByHash(common.Hash) *types.Block
 
