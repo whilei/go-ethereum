@@ -1,6 +1,7 @@
 package main
 
 import (
+	"regexp"
 	"strings"
 	"sync"
 
@@ -90,7 +91,15 @@ var progressDisplaySystem = displayEventHandlers{
 			func(ctx *cli.Context, e *eth.Ethereum, evData interface{}, tickerInterval time.Duration) {
 				switch d := evData.(type) {
 				case eth.PMHandlerRemoveEvent:
-					peersBar.Set(d.PMPeersLen).Postfix(" -removed " + d.Peer.ID().String()[:9] + "@" + strings.Split(d.Peer.Name(), "/")[0])
+					// name := strings.Split(d.Peer.Name(), "/")[0]
+					name := d.Peer.Name()
+					re := regexp.MustCompile(`v\d*\.\d*\.\d*`)
+					matches := re.FindStringSubmatch(name)
+					clientName := strings.Split(name, "/")[0]
+					if matches != nil {
+						name = clientName + "/" + matches[0]
+					}
+					peersBar.Set(d.PMPeersLen).Postfix(" -removed " + d.Peer.ID().String()[:9] + "@" + name)
 				}
 			},
 		},
@@ -102,7 +111,14 @@ var progressDisplaySystem = displayEventHandlers{
 			func(ctx *cli.Context, e *eth.Ethereum, evData interface{}, tickerInterval time.Duration) {
 				switch d := evData.(type) {
 				case eth.PMHandlerAddEvent:
-					peersBar.Set(d.PMPeersLen).Postfix("  +added " + d.Peer.ID().String()[:9] + "@" + strings.Split(d.Peer.Name(), "/")[0])
+					name := d.Peer.Name()
+					re := regexp.MustCompile(`v\d*\.\d*\.\d*`)
+					matches := re.FindStringSubmatch(name)
+					clientName := strings.Split(name, "/")[0]
+					if matches != nil {
+						name = clientName + "/" + matches[0]
+					}
+					peersBar.Set(d.PMPeersLen).Postfix("  +added " + d.Peer.ID().String()[:9] + "@" + name)
 				}
 			},
 		},
