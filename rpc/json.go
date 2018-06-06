@@ -113,6 +113,7 @@ func (c *jsonCodec) ReadRequestHeaders() ([]rpcRequest, bool, RPCError) {
 
 	var incomingMsg json.RawMessage
 	if err := c.d.Decode(&incomingMsg); err != nil {
+		glog.V(logger.Error).Errorln("err incoming ms", err)
 		return nil, false, &invalidRequestError{err.Error()}
 	}
 
@@ -142,8 +143,11 @@ func checkReqId(reqId json.RawMessage) error {
 // parseRequest will parse a single request from the given RawMessage. It will return
 // the parsed request, an indication if the request was a batch or an error when
 // the request could not be parsed.
-func parseRequest(incomingMsg json.RawMessage) ([]rpcRequest, bool, RPCError) {
+func parseRequest(incomingMsg json.RawMessage) (req []rpcRequest, ok bool, err RPCError) {
 	var in JSONRequest
+	defer func() {
+		glog.V(logger.Error).Errorln("err parse request ms", err)
+	}()
 	if err := json.Unmarshal(incomingMsg, &in); err != nil {
 		return nil, false, &invalidMessageError{err.Error()}
 	}
