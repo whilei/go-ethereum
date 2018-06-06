@@ -19,6 +19,7 @@ package secp256k1
 import (
 	"bytes"
 	"encoding/hex"
+	"github.com/ethereumproject/go-ethereum/common/math"
 	"math/big"
 	"testing"
 )
@@ -28,7 +29,7 @@ func TestReadBits(t *testing.T) {
 		want, _ := hex.DecodeString(input)
 		int, _ := new(big.Int).SetString(input, 16)
 		buf := make([]byte, len(want))
-		readBits(buf, int)
+		math.ReadBits(int, buf)
 		if !bytes.Equal(buf, want) {
 			t.Errorf("have: %x\nwant: %x", buf, want)
 		}

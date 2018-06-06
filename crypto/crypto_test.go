@@ -21,15 +21,14 @@ import (
 	"crypto/ecdsa"
 	"encoding/hex"
 	"fmt"
+	"github.com/ethereumproject/go-ethereum/common"
+	"github.com/ethereumproject/go-ethereum/common/hexutil"
+	"github.com/ethereumproject/go-ethereum/crypto/secp256k1"
 	"io/ioutil"
 	"math/big"
 	"os"
 	"testing"
 	"time"
-
-	"github.com/ethereumproject/go-ethereum/common"
-	"github.com/ethereumproject/go-ethereum/common/hexutil"
-	"github.com/ethereumproject/go-ethereum/crypto/secp256k1"
 )
 
 var testAddrHex = "970e8128ab834e8eac17ab8e3812f010678cf791"
@@ -88,14 +87,6 @@ func BenchmarkSha3(b *testing.B) {
 	}
 
 	fmt.Println(amount, ":", time.Since(start))
-}
-
-func Test0Key(t *testing.T) {
-	key := common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000000")
-	_, err := secp256k1.GeneratePubKey(key)
-	if err == nil {
-		t.Errorf("expected error due to zero privkey")
-	}
 }
 
 func TestSign(t *testing.T) {
@@ -223,7 +214,7 @@ func TestValidateSignatureValues(t *testing.T) {
 	minusOne := big.NewInt(-1)
 	one := common.Big1
 	zero := new(big.Int)
-	secp256k1nMinus1 := new(big.Int).Sub(secp256k1.N, common.Big1)
+	secp256k1nMinus1 := new(big.Int).Sub(secp256k1N, common.Big1)
 
 	// correct v,r,s
 	check(true, 27, one, one)
@@ -250,9 +241,9 @@ func TestValidateSignatureValues(t *testing.T) {
 	// correct sig with max r,s
 	check(true, 27, secp256k1nMinus1, secp256k1nMinus1)
 	// correct v, combinations of incorrect r,s at upper limit
-	check(false, 27, secp256k1.N, secp256k1nMinus1)
-	check(false, 27, secp256k1nMinus1, secp256k1.N)
-	check(false, 27, secp256k1.N, secp256k1.N)
+	check(false, 27, secp256k1N, secp256k1nMinus1)
+	check(false, 27, secp256k1nMinus1, secp256k1N)
+	check(false, 27, secp256k1N, secp256k1N)
 
 	// current callers ensures r,s cannot be negative, but let's test for that too
 	// as crypto package could be used stand-alone
