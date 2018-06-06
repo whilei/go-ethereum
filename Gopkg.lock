@@ -184,7 +184,7 @@
   branch = "master"
   name = "golang.org/x/net"
   packages = ["html","html/atom","html/charset","websocket"]
-  revision = "d866cfc389cec985d6fda2859936a575a55a3ab6"
+  revision = "1e491301e022f8f977054da4c2d852decd59571f"
 
 [[projects]]
   branch = "master"
