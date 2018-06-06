@@ -77,7 +77,7 @@ func New(assetPath string, output io.Writer) *JSRE {
 	}
 	go re.runEventLoop()
 	re.Set("loadScript", re.loadScript)
-	re.Set("inspect", re.prettyPrintJS)
+	re.Set("inspect", prettyPrintJS)
 	return re
 }
 
