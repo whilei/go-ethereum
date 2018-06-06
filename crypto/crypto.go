@@ -35,6 +35,11 @@ import (
 	"golang.org/x/crypto/ripemd160"
 )
 
+var (
+	secp256k1N, _  = new(big.Int).SetString("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16)
+	secp256k1halfN = new(big.Int).Div(secp256k1N, big.NewInt(2))
+)
+
 func Keccak256(data ...[]byte) []byte {
 	d := sha3.NewKeccak256()
 	for _, b := range data {
@@ -160,14 +165,14 @@ func ValidateSignatureValues(v byte, r, s *big.Int, homestead bool) bool {
 	vint := uint32(v)
 	// reject upper range of s values (ECDSA malleability)
 	// see discussion in secp256k1/libsecp256k1/include/secp256k1.h
-	if homestead && s.Cmp(secp256k1.HalfN) > 0 {
+	if homestead && s.Cmp(secp256k1halfN) > 0 {
 		return false
 	}
 	// Frontier: allow s to be in full N range
-	if s.Cmp(secp256k1.N) >= 0 {
+	if s.Cmp(secp256k1N) >= 0 {
 		return false
 	}
-	if r.Cmp(secp256k1.N) < 0 && (vint == 27 || vint == 28) {
+	if r.Cmp(secp256k1N) < 0 && (vint == 27 || vint == 28) {
 		return true
 	} else {
 		return false
