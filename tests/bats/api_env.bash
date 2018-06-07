@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 # Current build.
-# @ghc Use the given temp data dir from Bats as ephemeral data-dir.
+# NOTE: Use the given temp data dir from Bats as ephemeral data-dir.
 : ${GETH_CMD:=$GOPATH/bin/geth}
 : ${GETH_OPTS:=--datadir $BATS_TMPDIR \
                 --lightkdf \
@@ -12,10 +12,12 @@
                 --keystore $GOPATH/src/github.com/ethereumproject/go-ethereum/accounts/testdata/keystore \
                 --unlock "f466859ead1932d743d622cb74fc058882e8648a" \
     }
-# @ghc-#
-# it also seems like someday it would be good to extract this kind of testing to it's own
-# repo. So that we don't have to bundle hardcoded test cases like this dumb key along with geth archives and binaries
-# @ghc-
+# NOTE-#
+# It also seems like someday it would be good to extract this kind of testing to it's own repo.
+
+# So that we don't have to bundle hardcoded test cases and dependencies
+# like this dumb key along with geth production executables.
+# NOTE-
 
 setup() {
     testacc=f466859ead1932d743d622cb74fc058882e8648a

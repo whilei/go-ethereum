@@ -14,7 +14,6 @@ load api_env
 @test "personal_sign2" {
     run $GETH_CMD $GETH_OPTS \
         --password=<(echo $tesetacc_pass) \
-        # @ghc Noting here that the arugment for 'sign' has to be hex. This differed from the docs at one point.
         --exec="personal.sign(web3.fromAscii('Schoolbus'), '"$testacc"', '"$tesetacc_pass"');" console 2> /dev/null
     echo "$output"
     [ "$status" -eq 0 ]
