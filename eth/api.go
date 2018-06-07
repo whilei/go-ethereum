@@ -90,23 +90,80 @@ func stateAndBlockByNumber(m *miner.Miner, bc *core.BlockChain, blockNr rpc.Bloc
 	return stateDb, block, err
 }
 
+type Apiish struct {
+	methods   []apiishMethodDefinition
+	receivers []interface{}
+	lock      sync.Mutex
+}
+
+type Apier interface {
+	registerMethod(definition apiishMethodDefinition)
+	// methods() []apiishMethodDefinition
+	printMethods(w io.Writer)
+}
+
+type apiishMethodDefinition struct {
+	receiver    interface{}
+	pub         string
+	fn          interface{}
+	description string
+	inputEx     []interface{}
+	outputEx    []interface{}
+	write       func(receiver interface{}, writer io.Writer)
+}
+
+func (d apiishMethodDefinition) registerReceiver(r interface{}) {
+	d.receiver = r
+}
+
+func (e *PublicEthereumAPI) registerMethod(internal apiishMethodDefinition) apiishMethodDefinition {
+	e.methods = append(e.methods, internal)
+	return internal
+}
+
+func sharedEthWriter(m apiishMethodDefinition, w io.Writer) {
+	w.Write([]byte("# " + m.pub + "\n"))
+	w.Write([]byte("> " + m.description + "\n"))
+
+}
+
+func (e *PublicEthereumAPI) printMethods(w io.Writer) {
+	for i := range e.methods {
+		m := e.methods[i]
+		sharedEthWriter(m, w)
+	}
+}
+
 // PublicEthereumAPI provides an API to access Ethereum related information.
 // It offers only methods that operate on public data that is freely available to anyone.
 type PublicEthereumAPI struct {
+	*Apiish
 	e   *Ethereum
 	gpo *GasPriceOracle
 }
 
 // NewPublicEthereumAPI creates a new Ethereum protocol API.
 func NewPublicEthereumAPI(e *Ethereum) *PublicEthereumAPI {
-	return &PublicEthereumAPI{
+	eapi := &PublicEthereumAPI{
 		e:   e,
 		gpo: e.gpo,
 	}
+	gasPriceMethod := apiishMethodDefinition{
+		pub:         "gasPrice",
+		fn:          eapi.GasPrice,
+		description: "Gets an estimated gas price using an oracle.",
+		inputEx:     nil,
+		outputEx:    []interface{}{big.NewInt(500000)},
+	}
+	eapi.registerMethod(gasPriceMethod).registerReceiver(eapi)
+	return eapi
 }
 
 // GasPrice returns a suggestion for a gas price.
 func (s *PublicEthereumAPI) GasPrice() *big.Int {
+	if s == nil {
+		return big.NewInt(0)
+	}
 	return s.gpo.SuggestPrice()
 }
 
