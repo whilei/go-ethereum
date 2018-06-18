@@ -64,13 +64,13 @@ func NewStateProcessor(config *ChainConfig, bc *BlockChain) *StateProcessor {
 // Process returns the receipts and logs accumulated during the process and
 // returns the amount of gas that was used in the process. If any of the
 // transactions failed to execute due to insufficient gas it will return an error.
-func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB) (types.Receipts, vm.Logs, *big.Int, error) {
+func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB) (types.Receipts, []*types.Log, *big.Int, error) {
 	var (
 		receipts     types.Receipts
 		totalUsedGas = big.NewInt(0)
 		err          error
 		header       = block.Header()
-		allLogs      vm.Logs
+		allLogs      []*types.Log
 		gp           = new(GasPool).AddGas(block.GasLimit())
 	)
 	// Iterate over and process the individual transactions
@@ -111,7 +111,7 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB) (ty
 //
 // ApplyTransactions returns the generated receipts and vm logs during the
 // execution of the state transition phase.
-func ApplyTransaction(config *ChainConfig, bc *BlockChain, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *big.Int) (*types.Receipt, vm.Logs, *big.Int, error) {
+func ApplyTransaction(config *ChainConfig, bc *BlockChain, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *big.Int) (*types.Receipt, []*types.Log, *big.Int, error) {
 	tx.SetSigner(config.GetSigner(header.Number))
 
 	_, gas, err := ApplyMessage(NewEnv(statedb, config, bc, tx, header), tx, gp)
