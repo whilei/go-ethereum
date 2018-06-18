@@ -154,7 +154,7 @@ func (st *StateTransition) buyGas() error {
 	if st.state.GetBalance(st.msg.From()).Cmp(mgval) < 0 {
 		return errInsufficientBalanceForGas
 	}
-	if err := st.gp.SubGas(st.msg.Gas()); err != nil {
+	if err := st.gp.SubGas(big.NewInt(0).SetUint64(st.msg.Gas())); err != nil {
 		return err
 	}
 	st.gas += st.msg.Gas()
@@ -241,7 +241,7 @@ func (st *StateTransition) refundGas() {
 
 	// Also return remaining gas to the block gas counter so it is
 	// available for the next transaction.
-	st.gp.AddGas(st.gas)
+	st.gp.AddGas(big.NewInt(0).SetUint64(st.gas))
 }
 
 // gasUsed returns the amount of gas used up by the state transition.
