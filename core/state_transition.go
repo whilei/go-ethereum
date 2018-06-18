@@ -17,7 +17,7 @@
 package core
 
 import (
-	"fmt"
+	"errors"
 	"math/big"
 
 	"github.com/ethereumproject/go-ethereum/common"
@@ -27,10 +27,12 @@ import (
 )
 
 var (
-	TxGas                 = big.NewInt(21000) // Per transaction not creating a contract. NOTE: Not payable on data of calls between transactions.
-	TxGasContractCreation = big.NewInt(53000) // Per transaction that creates a contract. NOTE: Not payable on data of calls between transactions.
-	TxDataZeroGas         = big.NewInt(4)     // Per byte of data attached to a transaction that equals zero. NOTE: Not payable on data of calls between transactions.
-	TxDataNonZeroGas      = big.NewInt(68)    // Per byte of data attached to a transaction that is not equal to zero. NOTE: Not payable on data of calls between transactions.
+	TxGas                        = big.NewInt(21000) // Per transaction not creating a contract. NOTE: Not payable on data of calls between transactions.
+	TxGasContractCreation        = big.NewInt(53000) // Per transaction that creates a contract. NOTE: Not payable on data of calls between transactions.
+	TxDataZeroGas                = big.NewInt(4)     // Per byte of data attached to a transaction that equals zero. NOTE: Not payable on data of calls between transactions.
+	TxDataNonZeroGas             = big.NewInt(68)    // Per byte of data attached to a transaction that is not equal to zero. NOTE: Not payable on data of calls between transactions.
+	Big0                         = big.NewInt(0)
+	errInsufficientBalanceForGas = errors.New("insufficient balance to pay for gas")
 )
 
 /*
@@ -134,34 +136,28 @@ func ApplyMessage(env vm.Environment, msg Message, gp *GasPool) ([]byte, *big.In
 	return ret, gasUsed, err
 }
 
-func (self *StateTransition) from() (vm.Account, error) {
-	var (
-		f   common.Address
-		err error
-	)
-	f, err = self.msg.From()
-	if err != nil {
-		return nil, err
-	}
+func (self *StateTransition) from() vm.AccountRef {
+	f := self.msg.From()
 	if !self.state.Exist(f) {
-		return self.state.CreateAccount(f), nil
+		self.state.CreateAccount(f)
 	}
-	return self.state.GetAccount(f), nil
+	return vm.AccountRef(f)
 }
 
-func (self *StateTransition) to() vm.Account {
+func (self *StateTransition) to() vm.AccountRef {
 	if self.msg == nil {
-		return nil
+		return vm.AccountRef{}
 	}
 	to := self.msg.To()
 	if to == nil {
-		return nil // contract creation
+		return vm.AccountRef{} // contract creation
 	}
 
+	reference := vm.AccountRef(*to)
 	if !self.state.Exist(*to) {
-		return self.state.CreateAccount(*to)
+		self.state.CreateAccount(*to)
 	}
-	return self.state.GetAccount(*to)
+	return reference
 }
 
 func (self *StateTransition) useGas(amount *big.Int) error {
@@ -181,19 +177,19 @@ func (self *StateTransition) buyGas() error {
 	mgas := self.msg.Gas()
 	mgval := new(big.Int).Mul(mgas, self.gasPrice)
 
-	sender, err := self.from()
-	if err != nil {
-		return err
-	}
-	if sender.Balance().Cmp(mgval) < 0 {
-		return fmt.Errorf("insufficient ETH for gas (%x). Req %v, has %v", sender.Address().Bytes()[:4], mgval, sender.Balance())
+	var (
+		state  = self.state
+		sender = self.from()
+	)
+	if state.GetBalance(sender.Address()).Cmp(mgval) < 0 {
+		return errInsufficientBalanceForGas
 	}
 	if err = self.gp.SubGas(mgas); err != nil {
 		return err
 	}
 	self.addGas(mgas)
 	self.initialGas.Set(mgas)
-	sender.SubBalance(mgval)
+	state.SubBalance(sender.Address(), mgval)
 	return nil
 }
 
@@ -276,9 +272,9 @@ func (self *StateTransition) TransitionDb() (ret []byte, requiredGas, usedGas *b
 func (self *StateTransition) refundGas() {
 	// Return eth for remaining gas to the sender account,
 	// exchanged at the original rate.
-	sender, _ := self.from() // err already checked
-	remaining := new(big.Int).Mul(self.gas, self.gasPrice)
-	sender.AddBalance(remaining)
+	sender := self.from() // err already checked
+	remaining := new(big.Int).Mul(new(big.Int).SetUint64(self.gas), self.gasPrice)
+	self.state.AddBalance(sender.Address(), remaining)
 
 	// Apply refund counter, capped to half of the used gas.
 	uhalf := remaining.Div(self.gasUsed(), common.Big2)

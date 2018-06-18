@@ -34,7 +34,7 @@ type (
 		account *common.Address
 	}
 	resetObjectChange struct {
-		prev *StateObject
+		prev *stateObject
 	}
 	suicideChange struct {
 		account     *common.Address
