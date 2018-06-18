@@ -170,9 +170,18 @@ func (st *StateTransition) preCheck() error {
 	if st.msg.CheckNonce() {
 		nonce := st.state.GetNonce(st.msg.From())
 		if nonce < st.msg.Nonce() {
-			return ErrNonceTooHigh
+			// PTAL this sucks
+			return errors.New(BlockNonceErr{
+				Number: st.evm.BlockNumber,
+				Hash:   st.msg.From().Hash(),
+				Nonce:  nonce,
+			}.Error())
 		} else if nonce > st.msg.Nonce() {
-			return ErrNonceTooLow
+			return errors.New(BlockNonceErr{
+				Number: st.evm.BlockNumber,
+				Hash:   st.msg.From().Hash(),
+				Nonce:  nonce,
+			}.Error())
 		}
 	}
 	return st.buyGas()
