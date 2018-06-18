@@ -1274,7 +1274,7 @@ func (bc *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain [
 				from, _ := types.Sender(signer, tx)
 
 				// The contract address can be derived from the transaction itbc
-				if MessageCreatesContract(transactions[j]) {
+				if transactions[j].To() == nil {
 					receipts[j].ContractAddress = crypto.CreateAddress(from, tx.Nonce())
 				}
 				// The used gas can be calculated based on previous receipts
