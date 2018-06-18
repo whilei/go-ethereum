@@ -17,7 +17,7 @@
 package core
 
 import (
-	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/ethereumproject/go-ethereum/common"
@@ -27,12 +27,10 @@ import (
 )
 
 var (
-	TxGas                        = big.NewInt(21000) // Per transaction not creating a contract. NOTE: Not payable on data of calls between transactions.
-	TxGasContractCreation        = big.NewInt(53000) // Per transaction that creates a contract. NOTE: Not payable on data of calls between transactions.
-	TxDataZeroGas                = big.NewInt(4)     // Per byte of data attached to a transaction that equals zero. NOTE: Not payable on data of calls between transactions.
-	TxDataNonZeroGas             = big.NewInt(68)    // Per byte of data attached to a transaction that is not equal to zero. NOTE: Not payable on data of calls between transactions.
-	Big0                         = big.NewInt(0)
-	errInsufficientBalanceForGas = errors.New("insufficient balance to pay for gas")
+	TxGas                 = big.NewInt(21000) // Per transaction not creating a contract. NOTE: Not payable on data of calls between transactions.
+	TxGasContractCreation = big.NewInt(53000) // Per transaction that creates a contract. NOTE: Not payable on data of calls between transactions.
+	TxDataZeroGas         = big.NewInt(4)     // Per byte of data attached to a transaction that equals zero. NOTE: Not payable on data of calls between transactions.
+	TxDataNonZeroGas      = big.NewInt(68)    // Per byte of data attached to a transaction that is not equal to zero. NOTE: Not payable on data of calls between transactions.
 )
 
 /*
@@ -136,28 +134,34 @@ func ApplyMessage(env vm.Environment, msg Message, gp *GasPool) ([]byte, *big.In
 	return ret, gasUsed, err
 }
 
-func (self *StateTransition) from() vm.AccountRef {
-	f := self.msg.From()
-	if !self.state.Exist(f) {
-		self.state.CreateAccount(f)
+func (self *StateTransition) from() (vm.Account, error) {
+	var (
+		f   common.Address
+		err error
+	)
+	f, err = self.msg.From()
+	if err != nil {
+		return nil, err
 	}
-	return vm.AccountRef(f)
+	if !self.state.Exist(f) {
+		return self.state.CreateAccount(f), nil
+	}
+	return self.state.GetAccount(f), nil
 }
 
-func (self *StateTransition) to() vm.AccountRef {
+func (self *StateTransition) to() vm.Account {
 	if self.msg == nil {
-		return vm.AccountRef{}
+		return nil
 	}
 	to := self.msg.To()
 	if to == nil {
-		return vm.AccountRef{} // contract creation
+		return nil // contract creation
 	}
 
-	reference := vm.AccountRef(*to)
 	if !self.state.Exist(*to) {
-		self.state.CreateAccount(*to)
+		return self.state.CreateAccount(*to)
 	}
-	return reference
+	return self.state.GetAccount(*to)
 }
 
 func (self *StateTransition) useGas(amount *big.Int) error {
@@ -177,19 +181,19 @@ func (self *StateTransition) buyGas() error {
 	mgas := self.msg.Gas()
 	mgval := new(big.Int).Mul(mgas, self.gasPrice)
 
-	var (
-		state  = self.state
-		sender = self.from()
-	)
-	if state.GetBalance(sender.Address()).Cmp(mgval) < 0 {
-		return errInsufficientBalanceForGas
+	sender, err := self.from()
+	if err != nil {
+		return err
+	}
+	if sender.Balance().Cmp(mgval) < 0 {
+		return fmt.Errorf("insufficient ETH for gas (%x). Req %v, has %v", sender.Address().Bytes()[:4], mgval, sender.Balance())
 	}
 	if err = self.gp.SubGas(mgas); err != nil {
 		return err
 	}
 	self.addGas(mgas)
 	self.initialGas.Set(mgas)
-	state.SubBalance(sender.Address(), mgval)
+	sender.SubBalance(mgval)
 	return nil
 }
 
@@ -272,9 +276,9 @@ func (self *StateTransition) TransitionDb() (ret []byte, requiredGas, usedGas *b
 func (self *StateTransition) refundGas() {
 	// Return eth for remaining gas to the sender account,
 	// exchanged at the original rate.
-	sender := self.from() // err already checked
-	remaining := new(big.Int).Mul(new(big.Int).SetUint64(self.gas), self.gasPrice)
-	self.state.AddBalance(sender.Address(), remaining)
+	sender, _ := self.from() // err already checked
+	remaining := new(big.Int).Mul(self.gas, self.gasPrice)
+	sender.AddBalance(remaining)
 
 	// Apply refund counter, capped to half of the used gas.
 	uhalf := remaining.Div(self.gasUsed(), common.Big2)
