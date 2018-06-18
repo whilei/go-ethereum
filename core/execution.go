@@ -32,14 +32,14 @@ var (
 
 // Call executes within the given contract
 func Call(env *vm.EVM, caller vm.ContractRef, addr common.Address, input []byte, gas, gasPrice, value *big.Int) (ret []byte, err error) {
-	ret, _, err = exec(env, caller, &addr, &addr, env.StateDB().GetCodeHash(addr), input, env.StateDB().GetCode(addr), gas, gasPrice, value)
+	ret, _, err = exec(env, caller, &addr, &addr, env.Db().GetCodeHash(addr), input, env.Db().GetCode(addr), gas, gasPrice, value)
 	return ret, err
 }
 
 // CallCode executes the given address' code as the given contract address
 func CallCode(env *vm.EVM, caller vm.ContractRef, addr common.Address, input []byte, gas, gasPrice, value *big.Int) (ret []byte, err error) {
 	callerAddr := caller.Address()
-	ret, _, err = exec(env, caller, &callerAddr, &addr, env.StateDB().GetCodeHash(addr), input, env.StateDB().GetCode(addr), gas, gasPrice, value)
+	ret, _, err = exec(env, caller, &callerAddr, &addr, env.Db().GetCodeHash(addr), input, env.Db().GetCode(addr), gas, gasPrice, value)
 	return ret, err
 }
 
@@ -48,7 +48,7 @@ func DelegateCall(env *vm.EVM, caller vm.ContractRef, addr common.Address, input
 	callerAddr := caller.Address()
 	originAddr := env.Origin()
 	callerValue := caller.Value()
-	ret, _, err = execDelegateCall(env, caller, &originAddr, &callerAddr, &addr, env.StateDB().GetCodeHash(addr), input, env.StateDB().GetCode(addr), gas, gasPrice, callerValue)
+	ret, _, err = execDelegateCall(env, caller, &originAddr, &callerAddr, &addr, env.Db().GetCodeHash(addr), input, env.Db().GetCode(addr), gas, gasPrice, callerValue)
 	return ret, err
 }
 
@@ -77,14 +77,14 @@ func exec(env *vm.EVM, caller vm.ContractRef, address, codeAddr *common.Address,
 	if !env.CanTransfer(caller.Address(), value) {
 		caller.ReturnGas(gas, gasPrice)
 
-		return nil, common.Address{}, ValueTransferErr("insufficient funds to transfer value. Req %v, has %v", value, env.StateDB().GetBalance(caller.Address()))
+		return nil, common.Address{}, ValueTransferErr("insufficient funds to transfer value. Req %v, has %v", value, env.Db().GetBalance(caller.Address()))
 	}
 
 	var createAccount bool
 	if address == nil {
 		// Create a new account on the state
-		nonce := env.StateDB().GetNonce(caller.Address())
-		env.StateDB().SetNonce(caller.Address(), nonce+1)
+		nonce := env.Db().GetNonce(caller.Address())
+		env.Db().SetNonce(caller.Address(), nonce+1)
 		addr = crypto.CreateAddress(caller.Address(), nonce)
 		address = &addr
 		createAccount = true
@@ -92,16 +92,16 @@ func exec(env *vm.EVM, caller vm.ContractRef, address, codeAddr *common.Address,
 
 	snapshotPreTransfer := env.SnapshotDatabase()
 	var (
-		from = env.StateDB().GetAccount(caller.Address())
+		from = env.Db().GetAccount(caller.Address())
 		to   vm.Account
 	)
 	if createAccount {
-		to = env.StateDB().CreateAccount(*address)
+		to = env.Db().CreateAccount(*address)
 	} else {
-		if !env.StateDB().Exist(*address) {
-			to = env.StateDB().CreateAccount(*address)
+		if !env.Db().Exist(*address) {
+			to = env.Db().CreateAccount(*address)
 		} else {
-			to = env.StateDB().GetAccount(*address)
+			to = env.Db().GetAccount(*address)
 		}
 	}
 	env.Transfer(from, to, value)
@@ -123,7 +123,7 @@ func exec(env *vm.EVM, caller vm.ContractRef, address, codeAddr *common.Address,
 		// create data gas
 		dataGas.Mul(dataGas, big.NewInt(200))
 		if contract.UseGas(dataGas) {
-			env.StateDB().SetCode(*address, ret)
+			env.Db().SetCode(*address, ret)
 		} else {
 			err = vm.CodeStoreOutOfGasError
 		}
@@ -153,10 +153,10 @@ func execDelegateCall(env *vm.EVM, caller vm.ContractRef, originAddr, toAddr, co
 	snapshot := env.SnapshotDatabase()
 
 	var to vm.Account
-	if !env.StateDB().Exist(*toAddr) {
-		to = env.StateDB().CreateAccount(*toAddr)
+	if !env.Db().Exist(*toAddr) {
+		to = env.Db().CreateAccount(*toAddr)
 	} else {
-		to = env.StateDB().GetAccount(*toAddr)
+		to = env.Db().GetAccount(*toAddr)
 	}
 
 	// Iinitialise a new contract and make initialise the delegate values
