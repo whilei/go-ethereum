@@ -57,7 +57,7 @@ type StateTransition struct {
 	initialGas    *big.Int
 	value         *big.Int
 	data          []byte
-	state         vm.Database
+	state         vm.StateDB
 
 	env vm.Environment
 }
