@@ -19,6 +19,7 @@ package state
 
 import (
 	"fmt"
+	"github.com/ethereumproject/go-ethereum/core/types"
 	"math/big"
 	"sort"
 	"sync"
