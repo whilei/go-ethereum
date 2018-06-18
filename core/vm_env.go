@@ -97,7 +97,7 @@ func (self *VMEnv) RevertToSnapshot(snapshot int) {
 	self.state.RevertToSnapshot(snapshot)
 }
 
-func (self *VMEnv) Transfer(from, to vm.Account, amount *big.Int) {
+func (self *VMEnv) Transfer(from, to vm.AccountRef, amount *big.Int) {
 	Transfer(from, to, amount)
 }
 
