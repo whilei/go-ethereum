@@ -10,7 +10,7 @@ BUILD_TIME=`date +%FT%T%z`
 COMMIT=`git log --pretty=format:'%h' -n 1`
 
 # Choose to install geth with or without SputnikVM.
-WITH_SVM?=1
+WITH_SVM?=0
 
 # Provide default value of GOPATH, if it's not set in environment 
 export GOPATH?=${HOME}/go
