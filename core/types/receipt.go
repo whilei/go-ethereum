@@ -114,7 +114,7 @@ func (r *ReceiptForStorage) DecodeRLP(s *rlp.Stream) error {
 	r.PostState, r.CumulativeGasUsed, r.Bloom = receipt.PostState, receipt.CumulativeGasUsed, receipt.Bloom
 	r.Logs = make([]*Log, len(receipt.Logs))
 	for i, log := range receipt.Logs {
-		r.Logs[i] = (*vm.Log)(log)
+		r.Logs[i] = (*Log)(log)
 	}
 	// Assign the implementation fields
 	r.TxHash, r.ContractAddress, r.GasUsed = receipt.TxHash, receipt.ContractAddress, receipt.GasUsed
