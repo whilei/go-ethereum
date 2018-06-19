@@ -164,7 +164,7 @@ func runStateTest(ruleSet RuleSet, test VmTest) error {
 			return fmt.Errorf("did not find expected post-state account: %s", addr)
 		}
 		// Because vm.Account interface does not have Nonce method, so after
-		// checking that obj exists, we'll use the StateObject type afterwards
+		// checking that obj exists, we'll use the stateObject type afterwards
 		sobj := statedb.GetOrNewStateObject(common.HexToAddress(addr))
 
 		if balance, ok := new(big.Int).SetString(account.Balance, 0); !ok {
