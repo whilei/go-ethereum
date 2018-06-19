@@ -34,6 +34,7 @@ type ChainContext interface {
 	// GetHeader returns the hash corresponding to their hash.
 	// PTAL Here's a fork in the road. Walking down the (common.Hash, uint64) path leads to batch db with sequential keys.
 	// TODO(whilei), but if we can break off that hunk then I think we should.
+	// TODO:batcher
 	// GetHeader(common.Hash, uint64) *types.Header
 	GetHeader(common.Hash) *types.Header
 }

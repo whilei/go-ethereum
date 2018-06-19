@@ -48,7 +48,9 @@ type ChainReader interface {
 	GetHeaderByHash(hash common.Hash) *types.Header
 
 	// GetBlock retrieves a block from the database by hash and number.
-	GetBlock(hash common.Hash, number uint64) *types.Block
+	// GetBlock(hash common.Hash, number uint64) *types.Block
+	// TODO:batcher
+	GetBlock(hash common.Hash) *types.Block
 }
 
 // Engine is an algorithm agnostic consensus engine.

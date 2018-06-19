@@ -191,7 +191,9 @@ func (ethash *Ethash) VerifyUncles(chain consensus.ChainReader, block *types.Blo
 
 	number, parent := block.NumberU64()-1, block.ParentHash()
 	for i := 0; i < 7; i++ {
-		ancestor := chain.GetBlock(parent, number)
+		// ancestor := chain.GetBlock(parent, number)
+		// TODO:batcher
+		ancestor := chain.GetBlock(parent)
 		if ancestor == nil {
 			break
 		}
