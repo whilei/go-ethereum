@@ -290,8 +290,8 @@ func (pool *TxPool) validateTx(tx *types.Transaction) (e error) {
 		return
 	}
 
-	intrGas := IntrinsicGas(tx.Data(), MessageCreatesContract(tx), pool.homestead)
-	if tx.Gas().Cmp(intrGas) < 0 {
+	intrGas, e := IntrinsicGas(tx.Data(), tx.To() == nil, pool.homestead)
+	if tx.Gas().Cmp(big.NewInt(0).SetUint64(intrGas)) < 0 {
 		e = ErrIntrinsicGas
 		return
 	}

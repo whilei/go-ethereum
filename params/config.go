@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ethereumproject/go-ethereum/params"
 	"io/ioutil"
 	"math/big"
 	"os"
@@ -37,7 +38,6 @@ import (
 	"github.com/ethereumproject/go-ethereum/common"
 	"github.com/ethereumproject/go-ethereum/core/state"
 	"github.com/ethereumproject/go-ethereum/core/types"
-	"github.com/ethereumproject/go-ethereum/core/vm"
 	"github.com/ethereumproject/go-ethereum/ethdb"
 	"github.com/ethereumproject/go-ethereum/logger"
 	"github.com/ethereumproject/go-ethereum/logger/glog"
@@ -446,10 +446,10 @@ func (c *ChainConfig) GetSigner(blockNumber *big.Int) types.Signer {
 
 // GasTable returns the gas table corresponding to the current fork
 // The returned GasTable's fields shouldn't, under any circumstances, be changed.
-func (c *ChainConfig) GasTable(num *big.Int) *vm.GasTable {
+func (c *ChainConfig) GasTable(num *big.Int) *params.GasTable {
 	f, _, configured := c.GetFeature(num, "gastable")
 	if !configured {
-		return DefaultHomeSteadGasTable
+		return &params.GasTableHomestead
 	}
 	name, ok := f.GetString("type")
 	if !ok {
@@ -457,11 +457,11 @@ func (c *ChainConfig) GasTable(num *big.Int) *vm.GasTable {
 	} // will wall to default panic
 	switch name {
 	case "homestead":
-		return DefaultHomeSteadGasTable
+		return &params.GasTableHomestead
 	case "eip150":
-		return DefaultGasRepriceGasTable
+		return &params.GasTableEIP150
 	case "eip160":
-		return DefaultDiehardGasTable
+		return &params.GasTableEIP158 // PTAL Hm.
 	default:
 		panic(fmt.Errorf("Unsupported gastable value '%v' at block: %v", name, num))
 	}

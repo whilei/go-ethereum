@@ -19,12 +19,12 @@ package state
 
 import (
 	"fmt"
+	"github.com/ethereumproject/go-ethereum/core/types"
 	"math/big"
 	"sort"
 	"sync"
 
 	"github.com/ethereumproject/go-ethereum/common"
-	"github.com/ethereumproject/go-ethereum/core/vm"
 	"github.com/ethereumproject/go-ethereum/crypto"
 	"github.com/ethereumproject/go-ethereum/logger"
 	"github.com/ethereumproject/go-ethereum/logger/glog"
@@ -82,7 +82,7 @@ type StateDB struct {
 
 	thash, bhash common.Hash
 	txIndex      int
-	logs         map[common.Hash]vm.Logs
+	logs         map[common.Hash][]*types.Log
 	logSize      uint
 
 	// Journal of state modifications. This is the backbone of
@@ -108,7 +108,7 @@ func New(root common.Hash, db Database) (*StateDB, error) {
 		stateObjects:      make(map[common.Address]*StateObject),
 		stateObjectsDirty: make(map[common.Address]struct{}),
 		refund:            new(big.Int),
-		logs:              make(map[common.Hash]vm.Logs),
+		logs:              make(map[common.Hash][]*types.Log),
 		preimages:         make(map[common.Hash][]byte),
 	}, nil
 }
@@ -138,7 +138,7 @@ func (self *StateDB) Reset(root common.Hash) error {
 	self.thash = common.Hash{}
 	self.bhash = common.Hash{}
 	self.txIndex = 0
-	self.logs = make(map[common.Hash]vm.Logs)
+	self.logs = make(map[common.Hash][]*types.Log)
 	self.logSize = 0
 	self.preimages = make(map[common.Hash][]byte)
 	self.clearJournalAndRefund()
@@ -163,23 +163,23 @@ func (self *StateDB) StartRecord(thash, bhash common.Hash, ti int) {
 	self.txIndex = ti
 }
 
-func (self *StateDB) AddLog(log vm.Log) {
+func (self *StateDB) AddLog(log *types.Log) {
 	self.journal = append(self.journal, addLogChange{txhash: self.thash})
 
 	log.TxHash = self.thash
 	log.BlockHash = self.bhash
 	log.TxIndex = uint(self.txIndex)
 	log.Index = self.logSize
-	self.logs[self.thash] = append(self.logs[self.thash], &log)
+	self.logs[self.thash] = append(self.logs[self.thash], log)
 	self.logSize++
 }
 
-func (self *StateDB) GetLogs(hash common.Hash) vm.Logs {
+func (self *StateDB) GetLogs(hash common.Hash) []*types.Log {
 	return self.logs[hash]
 }
 
-func (self *StateDB) Logs() vm.Logs {
-	var logs vm.Logs
+func (self *StateDB) Logs() []*types.Log {
+	var logs []*types.Log
 	for _, lgs := range self.logs {
 		logs = append(logs, lgs...)
 	}
@@ -197,7 +197,7 @@ func (self *StateDB) Exist(addr common.Address) bool {
 	return self.getStateObject(addr) != nil
 }
 
-func (self *StateDB) GetAccount(addr common.Address) vm.Account {
+func (self *StateDB) GetAccount(addr common.Address) *StateObject {
 	return self.getStateObject(addr)
 }
 
@@ -437,12 +437,11 @@ func (self *StateDB) createObject(addr common.Address) (newobj, prev *StateObjec
 //   2. tx_create(sha(account ++ nonce)) (note that this gets the address of 1)
 //
 // Carrying over the balance ensures that Ether doesn't disappear.
-func (self *StateDB) CreateAccount(addr common.Address) vm.Account {
+func (self *StateDB) CreateAccount(addr common.Address) {
 	new, prev := self.createObject(addr)
 	if prev != nil {
 		new.setBalance(prev.data.Balance)
 	}
-	return self.getStateObject(addr)
 }
 
 // Copy creates a deep, independent copy of the state.
@@ -458,7 +457,7 @@ func (self *StateDB) Copy() *StateDB {
 		stateObjects:      make(map[common.Address]*StateObject, len(self.stateObjectsDirty)),
 		stateObjectsDirty: make(map[common.Address]struct{}, len(self.stateObjectsDirty)),
 		refund:            new(big.Int).Set(self.refund),
-		logs:              make(map[common.Hash]vm.Logs, len(self.logs)),
+		logs:              make(map[common.Hash][]*types.Log, len(self.logs)),
 		logSize:           self.logSize,
 		preimages:         make(map[common.Hash][]byte),
 	}
@@ -468,7 +467,7 @@ func (self *StateDB) Copy() *StateDB {
 		state.stateObjectsDirty[addr] = struct{}{}
 	}
 	for hash, logs := range self.logs {
-		state.logs[hash] = make(vm.Logs, len(logs))
+		state.logs[hash] = make([]*types.Log, len(logs))
 		copy(state.logs[hash], logs)
 	}
 	for hash, preimage := range self.preimages {

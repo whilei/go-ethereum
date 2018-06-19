@@ -31,29 +31,29 @@ var (
 )
 
 // Call executes within the given contract
-func Call(env vm.Environment, caller vm.ContractRef, addr common.Address, input []byte, gas, gasPrice, value *big.Int) (ret []byte, err error) {
-	ret, _, err = exec(env, caller, &addr, &addr, env.Db().GetCodeHash(addr), input, env.Db().GetCode(addr), gas, gasPrice, value)
+func Call(env *vm.EVM, caller vm.ContractRef, addr common.Address, input []byte, gas, gasPrice, value *big.Int) (ret []byte, err error) {
+	ret, _, err = exec(env, caller, &addr, &addr, env.StateDB.GetCodeHash(addr), input, env.StateDB.GetCode(addr), gas, gasPrice, value)
 	return ret, err
 }
 
 // CallCode executes the given address' code as the given contract address
-func CallCode(env vm.Environment, caller vm.ContractRef, addr common.Address, input []byte, gas, gasPrice, value *big.Int) (ret []byte, err error) {
+func CallCode(env *vm.EVM, caller vm.ContractRef, addr common.Address, input []byte, gas, gasPrice, value *big.Int) (ret []byte, err error) {
 	callerAddr := caller.Address()
-	ret, _, err = exec(env, caller, &callerAddr, &addr, env.Db().GetCodeHash(addr), input, env.Db().GetCode(addr), gas, gasPrice, value)
+	ret, _, err = exec(env, caller, &callerAddr, &addr, env.StateDB.GetCodeHash(addr), input, env.StateDB.GetCode(addr), gas, gasPrice, value)
 	return ret, err
 }
 
 // DelegateCall is equivalent to CallCode except that sender and value propagates from parent scope to child scope
-func DelegateCall(env vm.Environment, caller vm.ContractRef, addr common.Address, input []byte, gas, gasPrice *big.Int) (ret []byte, err error) {
+func DelegateCall(env *vm.EVM, caller vm.ContractRef, addr common.Address, input []byte, gas, gasPrice *big.Int) (ret []byte, err error) {
 	callerAddr := caller.Address()
 	originAddr := env.Origin()
 	callerValue := caller.Value()
-	ret, _, err = execDelegateCall(env, caller, &originAddr, &callerAddr, &addr, env.Db().GetCodeHash(addr), input, env.Db().GetCode(addr), gas, gasPrice, callerValue)
+	ret, _, err = execDelegateCall(env, caller, &originAddr, &callerAddr, &addr, env.StateDB.GetCodeHash(addr), input, env.StateDB.GetCode(addr), gas, gasPrice, callerValue)
 	return ret, err
 }
 
 // Create creates a new contract with the given code
-func Create(env vm.Environment, caller vm.ContractRef, code []byte, gas, gasPrice, value *big.Int) (ret []byte, address common.Address, err error) {
+func Create(env *vm.EVM, caller vm.ContractRef, code []byte, gas, gasPrice, value *big.Int) (ret []byte, address common.Address, err error) {
 	ret, address, err = exec(env, caller, nil, nil, crypto.Keccak256Hash(code), nil, code, gas, gasPrice, value)
 	// Here we get an error if we run into maximum stack depth,
 	// See: https://github.com/ethereum/yellowpaper/pull/131
@@ -64,7 +64,7 @@ func Create(env vm.Environment, caller vm.ContractRef, code []byte, gas, gasPric
 	return ret, address, err
 }
 
-func exec(env vm.Environment, caller vm.ContractRef, address, codeAddr *common.Address, codeHash common.Hash, input, code []byte, gas, gasPrice, value *big.Int) (ret []byte, addr common.Address, err error) {
+func exec(env *vm.EVM, caller vm.ContractRef, address, codeAddr *common.Address, codeHash common.Hash, input, code []byte, gas, gasPrice, value *big.Int) (ret []byte, addr common.Address, err error) {
 	evm := env.Vm()
 	// Depth check execution. Fail if we're trying to execute above the
 	// limit.
@@ -77,14 +77,14 @@ func exec(env vm.Environment, caller vm.ContractRef, address, codeAddr *common.A
 	if !env.CanTransfer(caller.Address(), value) {
 		caller.ReturnGas(gas, gasPrice)
 
-		return nil, common.Address{}, ValueTransferErr("insufficient funds to transfer value. Req %v, has %v", value, env.Db().GetBalance(caller.Address()))
+		return nil, common.Address{}, ValueTransferErr("insufficient funds to transfer value. Req %v, has %v", value, env.StateDB.GetBalance(caller.Address()))
 	}
 
 	var createAccount bool
 	if address == nil {
 		// Create a new account on the state
-		nonce := env.Db().GetNonce(caller.Address())
-		env.Db().SetNonce(caller.Address(), nonce+1)
+		nonce := env.StateDB.GetNonce(caller.Address())
+		env.StateDB.SetNonce(caller.Address(), nonce+1)
 		addr = crypto.CreateAddress(caller.Address(), nonce)
 		address = &addr
 		createAccount = true
@@ -92,16 +92,16 @@ func exec(env vm.Environment, caller vm.ContractRef, address, codeAddr *common.A
 
 	snapshotPreTransfer := env.SnapshotDatabase()
 	var (
-		from = env.Db().GetAccount(caller.Address())
+		from = env.StateDB.GetAccount(caller.Address())
 		to   vm.Account
 	)
 	if createAccount {
-		to = env.Db().CreateAccount(*address)
+		to = env.StateDB.CreateAccount(*address)
 	} else {
-		if !env.Db().Exist(*address) {
-			to = env.Db().CreateAccount(*address)
+		if !env.StateDB.Exist(*address) {
+			to = env.StateDB.CreateAccount(*address)
 		} else {
-			to = env.Db().GetAccount(*address)
+			to = env.StateDB.GetAccount(*address)
 		}
 	}
 	env.Transfer(from, to, value)
@@ -123,7 +123,7 @@ func exec(env vm.Environment, caller vm.ContractRef, address, codeAddr *common.A
 		// create data gas
 		dataGas.Mul(dataGas, big.NewInt(200))
 		if contract.UseGas(dataGas) {
-			env.Db().SetCode(*address, ret)
+			env.StateDB.SetCode(*address, ret)
 		} else {
 			err = vm.CodeStoreOutOfGasError
 		}
@@ -141,7 +141,7 @@ func exec(env vm.Environment, caller vm.ContractRef, address, codeAddr *common.A
 	return ret, addr, err
 }
 
-func execDelegateCall(env vm.Environment, caller vm.ContractRef, originAddr, toAddr, codeAddr *common.Address, codeHash common.Hash, input, code []byte, gas, gasPrice, value *big.Int) (ret []byte, addr common.Address, err error) {
+func execDelegateCall(env *vm.EVM, caller vm.ContractRef, originAddr, toAddr, codeAddr *common.Address, codeHash common.Hash, input, code []byte, gas, gasPrice, value *big.Int) (ret []byte, addr common.Address, err error) {
 	evm := env.Vm()
 	// Depth check execution. Fail if we're trying to execute above the
 	// limit.
@@ -153,10 +153,10 @@ func execDelegateCall(env vm.Environment, caller vm.ContractRef, originAddr, toA
 	snapshot := env.SnapshotDatabase()
 
 	var to vm.Account
-	if !env.Db().Exist(*toAddr) {
-		to = env.Db().CreateAccount(*toAddr)
+	if !env.StateDB.Exist(*toAddr) {
+		to = env.StateDB.CreateAccount(*toAddr)
 	} else {
-		to = env.Db().GetAccount(*toAddr)
+		to = env.StateDB.GetAccount(*toAddr)
 	}
 
 	// Iinitialise a new contract and make initialise the delegate values
