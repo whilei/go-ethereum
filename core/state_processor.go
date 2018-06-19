@@ -47,12 +47,12 @@ var (
 //
 // StateProcessor implements Processor.
 type StateProcessor struct {
-	config *params.ClassicChainConfig
+	config *params.ChainConfig
 	bc     *BlockChain
 }
 
 // NewStateProcessor initialises a new StateProcessor.
-func NewStateProcessor(config *params.ClassicChainConfig, bc *BlockChain) *StateProcessor {
+func NewStateProcessor(config *params.ChainConfig, bc *BlockChain) *StateProcessor {
 	return &StateProcessor{
 		config: config,
 		bc:     bc,
@@ -112,7 +112,7 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB) (ty
 // and uses the input parameters for its environment. It returns the receipt
 // for the transaction, gas used and an error if the transaction failed,
 // indicating the block was invalid.
-func ApplyTransaction(config *params.ClassicChainConfig, bc ChainContext, author *common.Address, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64, cfg vm.Config) (*types.Receipt, uint64, error) {
+func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *common.Address, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64, cfg vm.Config) (*types.Receipt, uint64, error) {
 	// signer := types.MakeSigner(config, header.Number)
 	signer := config.GetSigner(header.Number)
 	msg, err := tx.AsMessage(signer)
@@ -158,7 +158,7 @@ func ApplyTransaction(config *params.ClassicChainConfig, bc ChainContext, author
 // mining reward. The total reward consists of the static block reward
 // and rewards for included uncles. The coinbase of each uncle block is
 // also rewarded.
-func AccumulateRewards(config *params.ClassicChainConfig, statedb *state.StateDB, header *types.Header, uncles []*types.Header) {
+func AccumulateRewards(config *params.ChainConfig, statedb *state.StateDB, header *types.Header, uncles []*types.Header) {
 
 	// An uncle is a block that would be considered an orphan because its not on the longest chain (it's an alternative block at the same height as your parent).
 	// https://www.reddit.com/r/ethereum/comments/3c9jbf/wtf_are_uncles_and_why_do_they_matter/

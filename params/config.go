@@ -89,17 +89,17 @@ func GetCacheChainConfig() *SufficientChainConfig {
 
 // SufficientChainConfig holds necessary data for externalizing a given blockchain configuration.
 type SufficientChainConfig struct {
-	ID              string              `json:"id,omitempty"` // deprecated in favor of 'Identity', method decoding should id -> identity
-	Identity        string              `json:"identity"`
-	Name            string              `json:"name,omitempty"`
-	State           *StateConfig        `json:"state"`     // don't omitempty for clarity of potential custom options
-	Network         int                 `json:"network"`   // eth.NetworkId (mainnet=1, morden=2)
-	Consensus       string              `json:"consensus"` // pow type (ethash OR ethash-test)
-	Genesis         *GenesisDump        `json:"genesis"`
-	ChainConfig     *ClassicChainConfig `json:"chainConfig"`
-	Bootstrap       []string            `json:"bootstrap"`
-	ParsedBootstrap []*discover.Node    `json:"-"`
-	Include         []string            `json:"include"` // config files to include
+	ID              string           `json:"id,omitempty"` // deprecated in favor of 'Identity', method decoding should id -> identity
+	Identity        string           `json:"identity"`
+	Name            string           `json:"name,omitempty"`
+	State           *StateConfig     `json:"state"`     // don't omitempty for clarity of potential custom options
+	Network         int              `json:"network"`   // eth.NetworkId (mainnet=1, morden=2)
+	Consensus       string           `json:"consensus"` // pow type (ethash OR ethash-test)
+	Genesis         *GenesisDump     `json:"genesis"`
+	ChainConfig     *ChainConfig     `json:"chainConfig"`
+	Bootstrap       []string         `json:"bootstrap"`
+	ParsedBootstrap []*discover.Node `json:"-"`
+	Include         []string         `json:"include"` // config files to include
 }
 
 // StateConfig hold variable data for statedb.
@@ -107,10 +107,10 @@ type StateConfig struct {
 	StartingNonce uint64 `json:"startingNonce,omitempty"`
 }
 
-// ClassicChainConfig is stored in the database on a per block basis. This means
+// ChainConfig is stored in the database on a per block basis. This means
 // that any network, identified by its genesis block, can have its own
 // set of configuration options.
-type ClassicChainConfig struct {
+type ChainConfig struct {
 	// Forks holds fork block requirements. See ErrHashKnownFork.
 	Forks Forks `json:"forks"`
 
@@ -243,16 +243,16 @@ func (g *GenesisDump) Header() (*types.Header, error) {
 
 // SortForks sorts a ChainConfiguration's forks by block number smallest to bigget (chronologically).
 // This should need be called only once after construction
-func (c *ClassicChainConfig) SortForks() *ClassicChainConfig {
+func (c *ChainConfig) SortForks() *ChainConfig {
 	sort.Sort(c.Forks)
 	return c
 }
 
 // GetChainID gets the chainID for a chainconfig.
 // It returns big.Int zero-value if no chainID is ever set for eip155/chainID.
-// It uses ClassicChainConfig#HasFeature, so it will return the last chronological value
+// It uses ChainConfig#HasFeature, so it will return the last chronological value
 // if the value is set multiple times.
-func (c *ClassicChainConfig) GetChainID() *big.Int {
+func (c *ChainConfig) GetChainID() *big.Int {
 	n := new(big.Int)
 	feat, _, ok := c.HasFeature("eip155")
 	if !ok {
@@ -265,7 +265,7 @@ func (c *ClassicChainConfig) GetChainID() *big.Int {
 }
 
 // IsHomestead returns whether num is either equal to the homestead block or greater.
-func (c *ClassicChainConfig) IsHomestead(num *big.Int) bool {
+func (c *ChainConfig) IsHomestead(num *big.Int) bool {
 	if c.ForkByName("Homestead").Block == nil || num == nil {
 		return false
 	}
@@ -273,7 +273,7 @@ func (c *ClassicChainConfig) IsHomestead(num *big.Int) bool {
 }
 
 // IsDiehard returns whether num is greater than or equal to the Diehard block, but less than explosion.
-func (c *ClassicChainConfig) IsDiehard(num *big.Int) bool {
+func (c *ChainConfig) IsDiehard(num *big.Int) bool {
 	fork := c.ForkByName("Diehard")
 	if fork.Block == nil || num == nil {
 		return false
@@ -282,7 +282,7 @@ func (c *ClassicChainConfig) IsDiehard(num *big.Int) bool {
 }
 
 // IsExplosion returns whether num is either equal to the explosion block or greater.
-func (c *ClassicChainConfig) IsExplosion(num *big.Int) bool {
+func (c *ChainConfig) IsExplosion(num *big.Int) bool {
 	feat, fork, configured := c.GetFeature(num, "difficulty")
 
 	if configured {
@@ -301,7 +301,7 @@ func (c *ClassicChainConfig) IsExplosion(num *big.Int) bool {
 }
 
 // ForkByName looks up a Fork by its name, assumed to be unique
-func (c *ClassicChainConfig) ForkByName(name string) *Fork {
+func (c *ChainConfig) ForkByName(name string) *Fork {
 	for i := range c.Forks {
 		if c.Forks[i].Name == name {
 			return c.Forks[i]
@@ -314,7 +314,7 @@ func (c *ClassicChainConfig) ForkByName(name string) *Fork {
 // GetFeature returns the feature|nil, the latest fork configuring a given id, and if the given feature id was found at all
 // If queried feature is not found, returns ForkFeature{}, Fork{}, false.
 // If queried block number and/or feature is a zero-value, returns ForkFeature{}, Fork{}, false.
-func (c *ClassicChainConfig) GetFeature(num *big.Int, id string) (*ForkFeature, *Fork, bool) {
+func (c *ChainConfig) GetFeature(num *big.Int, id string) (*ForkFeature, *Fork, bool) {
 	var okForkFeature = &ForkFeature{}
 	var okFork = &Fork{}
 	var found = false
@@ -340,7 +340,7 @@ func (c *ClassicChainConfig) GetFeature(num *big.Int, id string) (*ForkFeature, 
 
 // HasFeature looks up if fork feature exists on any fork at any block in the configuration.
 // In case of multiple same-'id'd features, returns latest (assuming forks are sorted).
-func (c *ClassicChainConfig) HasFeature(id string) (*ForkFeature, *Fork, bool) {
+func (c *ChainConfig) HasFeature(id string) (*ForkFeature, *Fork, bool) {
 	var okForkFeature = &ForkFeature{}
 	var okFork = &Fork{}
 	var found = false
@@ -358,7 +358,7 @@ func (c *ClassicChainConfig) HasFeature(id string) (*ForkFeature, *Fork, bool) {
 	return okForkFeature, okFork, found
 }
 
-func (c *ClassicChainConfig) HeaderCheck(h *types.Header) error {
+func (c *ChainConfig) HeaderCheck(h *types.Header) error {
 	for _, fork := range c.Forks {
 		if fork.Block.Cmp(h.Number) != 0 {
 			continue
@@ -382,7 +382,7 @@ func (c *ClassicChainConfig) HeaderCheck(h *types.Header) error {
 
 // GetLatestRequiredHash returns the latest requiredHash from chain config for a given blocknumber n (eg. bc head).
 // It does NOT depend on forks being sorted.
-func (c *ClassicChainConfig) GetLatestRequiredHashFork(n *big.Int) (f *Fork) {
+func (c *ChainConfig) GetLatestRequiredHashFork(n *big.Int) (f *Fork) {
 	lastBlockN := new(big.Int)
 	for _, ff := range c.Forks {
 		if ff.RequiredHash.IsEmpty() {
@@ -398,7 +398,7 @@ func (c *ClassicChainConfig) GetLatestRequiredHashFork(n *big.Int) (f *Fork) {
 	return
 }
 
-func (c *ClassicChainConfig) GetSigner(blockNumber *big.Int) types.Signer {
+func (c *ChainConfig) GetSigner(blockNumber *big.Int) types.Signer {
 	feature, _, configured := c.GetFeature(blockNumber, "eip155")
 	if configured {
 		if chainId, ok := feature.GetBigInt("chainID"); ok {
@@ -412,7 +412,7 @@ func (c *ClassicChainConfig) GetSigner(blockNumber *big.Int) types.Signer {
 
 // GasTable returns the gas table corresponding to the current fork
 // The returned GasTable's fields shouldn't, under any circumstances, be changed.
-func (c *ClassicChainConfig) GasTable(num *big.Int) *params.GasTable {
+func (c *ChainConfig) GasTable(num *big.Int) *params.GasTable {
 	f, _, configured := c.GetFeature(num, "gastable")
 	if !configured {
 		return &params.GasTableHomestead

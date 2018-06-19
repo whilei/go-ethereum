@@ -29,67 +29,68 @@ var (
 	TestnetGenesisHash = common.HexToHash("0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d")
 )
 
-var (
-	// MainnetChainConfig is the chain parameters to run a node on the main network.
-	MainnetChainConfig = &ChainConfig{
-		ChainID:             big.NewInt(1),
-		HomesteadBlock:      big.NewInt(1150000),
-		DAOForkBlock:        big.NewInt(1920000),
-		DAOForkSupport:      true,
-		EIP150Block:         big.NewInt(2463000),
-		EIP150Hash:          common.HexToHash("0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0"),
-		EIP155Block:         big.NewInt(2675000),
-		EIP158Block:         big.NewInt(2675000),
-		ByzantiumBlock:      nil,
-		ConstantinopleBlock: nil,
-		Ethash:              new(EthashConfig),
-	}
+// var (
+// // MainnetChainConfig is the chain parameters to run a node on the main network.
+// MainnetChainConfig = &ChainConfig{
+// 	ChainID:             big.NewInt(1),
+// 	HomesteadBlock:      big.NewInt(1150000),
+// 	DAOForkBlock:        big.NewInt(1920000),
+// 	DAOForkSupport:      true,
+// 	EIP150Block:         big.NewInt(2463000),
+// 	EIP150Hash:          common.HexToHash("0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0"),
+// 	EIP155Block:         big.NewInt(2675000),
+// 	EIP158Block:         big.NewInt(2675000),
+// 	ByzantiumBlock:      nil,
+// 	ConstantinopleBlock: nil,
+// 	Ethash:              new(EthashConfig),
+// }
 
-	// AllEthashProtocolChanges contains every protocol change (EIPs) introduced
-	// and accepted by the Ethereum core developers into the Ethash consensus.
-	//
-	// This configuration is intentionally not using keyed fields to force anyone
-	// adding flags to the config to also have to set these fields.
-	AllEthashProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, new(EthashConfig), nil}
-
-	// AllCliqueProtocolChanges contains every protocol change (EIPs) introduced
-	// and accepted by the Ethereum core developers into the Clique consensus.
-	//
-	// This configuration is intentionally not using keyed fields to force anyone
-	// adding flags to the config to also have to set these fields.
-	AllCliqueProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, &CliqueConfig{Period: 0, Epoch: 30000}}
-
-	TestChainConfig = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, new(EthashConfig), nil}
-	TestRules       = TestChainConfig.Rules(new(big.Int))
-)
-
-// ChainConfig is the core config which determines the blockchain settings.
+// TODO(whilei): Add these back
+// // AllEthashProtocolChanges contains every protocol change (EIPs) introduced
+// // and accepted by the Ethereum core developers into the Ethash consensus.
+// //
+// // This configuration is intentionally not using keyed fields to force anyone
+// // adding flags to the config to also have to set these fields.
+// AllEthashProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, new(EthashConfig), nil}
 //
-// ChainConfig is stored in the database on a per block basis. This means
-// that any network, identified by its genesis block, can have its own
-// set of configuration options.
-type ChainConfig struct {
-	ChainID *big.Int `json:"chainId"` // chainId identifies the current chain and is used for replay protection
+// // AllCliqueProtocolChanges contains every protocol change (EIPs) introduced
+// // and accepted by the Ethereum core developers into the Clique consensus.
+// //
+// // This configuration is intentionally not using keyed fields to force anyone
+// // adding flags to the config to also have to set these fields.
+// AllCliqueProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, &CliqueConfig{Period: 0, Epoch: 30000}}
+//
+// TestChainConfig = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, new(EthashConfig), nil}
+// TestRules       = TestChainConfig.Rules(new(big.Int))
+// )
 
-	HomesteadBlock *big.Int `json:"homesteadBlock,omitempty"` // Homestead switch block (nil = no fork, 0 = already homestead)
-
-	DAOForkBlock   *big.Int `json:"daoForkBlock,omitempty"`   // TheDAO hard-fork switch block (nil = no fork)
-	DAOForkSupport bool     `json:"daoForkSupport,omitempty"` // Whether the nodes supports or opposes the DAO hard-fork
-
-	// EIP150 implements the Gas price changes (https://github.com/ethereum/EIPs/issues/150)
-	EIP150Block *big.Int    `json:"eip150Block,omitempty"` // EIP150 HF block (nil = no fork)
-	EIP150Hash  common.Hash `json:"eip150Hash,omitempty"`  // EIP150 HF hash (needed for header only clients as only gas pricing changed)
-
-	EIP155Block *big.Int `json:"eip155Block,omitempty"` // EIP155 HF block
-	EIP158Block *big.Int `json:"eip158Block,omitempty"` // EIP158 HF block
-
-	ByzantiumBlock      *big.Int `json:"byzantiumBlock,omitempty"`      // Byzantium switch block (nil = no fork, 0 = already on byzantium)
-	ConstantinopleBlock *big.Int `json:"constantinopleBlock,omitempty"` // Constantinople switch block (nil = no fork, 0 = already activated)
-
-	// Various consensus engines
-	Ethash *EthashConfig `json:"ethash,omitempty"`
-	Clique *CliqueConfig `json:"clique,omitempty"`
-}
+// // ChainConfig is the core config which determines the blockchain settings.
+// //
+// // ChainConfig is stored in the database on a per block basis. This means
+// // that any network, identified by its genesis block, can have its own
+// // set of configuration options.
+// type ChainConfig struct {
+// 	ChainID *big.Int `json:"chainId"` // chainId identifies the current chain and is used for replay protection
+//
+// 	HomesteadBlock *big.Int `json:"homesteadBlock,omitempty"` // Homestead switch block (nil = no fork, 0 = already homestead)
+//
+// 	DAOForkBlock   *big.Int `json:"daoForkBlock,omitempty"`   // TheDAO hard-fork switch block (nil = no fork)
+// 	DAOForkSupport bool     `json:"daoForkSupport,omitempty"` // Whether the nodes supports or opposes the DAO hard-fork
+//
+// 	// EIP150 implements the Gas price changes (https://github.com/ethereum/EIPs/issues/150)
+// 	EIP150Block *big.Int    `json:"eip150Block,omitempty"` // EIP150 HF block (nil = no fork)
+// 	EIP150Hash  common.Hash `json:"eip150Hash,omitempty"`  // EIP150 HF hash (needed for header only clients as only gas pricing changed)
+//
+// 	EIP155Block *big.Int `json:"eip155Block,omitempty"` // EIP155 HF block
+// 	EIP158Block *big.Int `json:"eip158Block,omitempty"` // EIP158 HF block
+//
+// 	ByzantiumBlock      *big.Int `json:"byzantiumBlock,omitempty"`      // Byzantium switch block (nil = no fork, 0 = already on byzantium)
+// 	ConstantinopleBlock *big.Int `json:"constantinopleBlock,omitempty"` // Constantinople switch block (nil = no fork, 0 = already activated)
+//
+// 	// Various consensus engines
+// 	Ethash *EthashConfig `json:"ethash,omitempty"`
+// 	Clique *CliqueConfig `json:"clique,omitempty"`
+// }
 
 // EthashConfig is the consensus engine configs for proof-of-work based sealing.
 type EthashConfig struct{}
@@ -110,35 +111,35 @@ func (c *CliqueConfig) String() string {
 	return "clique"
 }
 
-// String implements the fmt.Stringer interface.
-func (c *ChainConfig) String() string {
-	var engine interface{}
-	switch {
-	case c.Ethash != nil:
-		engine = c.Ethash
-	case c.Clique != nil:
-		engine = c.Clique
-	default:
-		engine = "unknown"
-	}
-	return fmt.Sprintf("{ChainID: %v Homestead: %v DAO: %v DAOSupport: %v EIP150: %v EIP155: %v EIP158: %v Byzantium: %v Constantinople: %v Engine: %v}",
-		c.ChainID,
-		c.HomesteadBlock,
-		c.DAOForkBlock,
-		c.DAOForkSupport,
-		c.EIP150Block,
-		c.EIP155Block,
-		c.EIP158Block,
-		c.ByzantiumBlock,
-		c.ConstantinopleBlock,
-		engine,
-	)
-}
+// // String implements the fmt.Stringer interface.
+// func (c *ChainConfig) String() string {
+// 	var engine interface{}
+// 	switch {
+// 	case c.Ethash != nil:
+// 		engine = c.Ethash
+// 	case c.Clique != nil:
+// 		engine = c.Clique
+// 	default:
+// 		engine = "unknown"
+// 	}
+// 	return fmt.Sprintf("{ChainID: %v Homestead: %v DAO: %v DAOSupport: %v EIP150: %v EIP155: %v EIP158: %v Byzantium: %v Constantinople: %v Engine: %v}",
+// 		c.ChainID,
+// 		c.HomesteadBlock,
+// 		c.DAOForkBlock,
+// 		c.DAOForkSupport,
+// 		c.EIP150Block,
+// 		c.EIP155Block,
+// 		c.EIP158Block,
+// 		c.ByzantiumBlock,
+// 		c.ConstantinopleBlock,
+// 		engine,
+// 	)
+// }
 
-// IsHomestead returns whether num is either equal to the homestead block or greater.
-func (c *ChainConfig) IsHomestead(num *big.Int) bool {
-	return isForked(c.HomesteadBlock, num)
-}
+// // IsHomestead returns whether num is either equal to the homestead block or greater.
+// func (c *ChainConfig) IsHomestead(num *big.Int) bool {
+// 	return isForked(c.HomesteadBlock, num)
+// }
 
 // IsDAOFork returns whether num is either equal to the DAO fork block or greater.
 func (c *ChainConfig) IsDAOFork(num *big.Int) bool {
