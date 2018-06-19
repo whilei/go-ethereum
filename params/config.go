@@ -18,27 +18,23 @@ package params
 
 import (
 	"encoding/csv"
-	hexlib "encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ethereumproject/go-ethereum/params"
+	"io"
 	"io/ioutil"
 	"math/big"
 	"os"
-	"sort"
-	"sync"
-
 	"path/filepath"
 	"reflect"
-
-	"io"
+	"sort"
 	"strings"
+	"sync"
+
+	"github.com/ethereumproject/go-ethereum/params"
 
 	"github.com/ethereumproject/go-ethereum/common"
-	"github.com/ethereumproject/go-ethereum/core/state"
 	"github.com/ethereumproject/go-ethereum/core/types"
-	"github.com/ethereumproject/go-ethereum/ethdb"
 	"github.com/ethereumproject/go-ethereum/logger"
 	"github.com/ethereumproject/go-ethereum/logger/glog"
 	"github.com/ethereumproject/go-ethereum/p2p/discover"
