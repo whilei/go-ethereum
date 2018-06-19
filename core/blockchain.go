@@ -392,12 +392,12 @@ func (bc *BlockChain) blockIsInvalid(b *types.Block) error {
 			return ParentError(b.ParentHash())
 		}
 
-		if err := bc.Validator().ValidateHeader(b.Header(), parent.Header(), true); err != nil {
+		// PTAL last arg is 'seal' value here... this should be engine-specific. Not sure applies for standard ethash
+		if err := bc.engine.VerifyHeader(bc.hc, b.Header(), false); err != nil {
 			return err
 		}
 
-		// verify the uncles are correctly rewarded
-		if err := bc.Validator().VerifyUncles(b, parent); err != nil {
+		if err := bc.engine.VerifyUncles(bc, b); err != nil {
 			return err
 		}
 
@@ -980,7 +980,8 @@ func (bc *BlockChain) Processor() Processor {
 }
 
 // AuxValidator returns the auxiliary validator (Proof of work atm)
-func (bc *BlockChain) AuxValidator() pow.PoW { return bc.pow }
+// TODO(whilei): look at me
+// func (bc *BlockChain) AuxValidator() pow.PoW { return bc.pow }
 
 // State returns a new mutable state based on the current HEAD block.
 func (bc *BlockChain) State() (*state.StateDB, error) {
@@ -1550,6 +1551,27 @@ func (bc *BlockChain) WriteBlock(block *types.Block) (status WriteStatus, err er
 	return
 }
 
+// WriteBlockWithoutState writes only the block and its metadata to the database,
+// but does not write any state. This is used to construct competing side forks
+// up to the point where they exceed the canonical total difficulty.
+func (bc *BlockChain) WriteBlockWithoutState(block *types.Block, td *big.Int) (err error) {
+	bc.wg.Add(1)
+	defer bc.wg.Done()
+	if err := bc.hc.WriteTd(block.Hash(), td); err != nil {
+		return err
+	}
+	_, err = bc.WriteBlock(block)
+	return
+}
+
+// HasState checks if state trie is fully present in the database or not.
+func (bc *BlockChain) HasState(hash common.Hash) bool {
+	// PTAL FIXME
+	// _, err := bc.stateCache.OpenTrie(hash)
+	return bc.stateCache.Empty(common.BytesToAddress(hash.Bytes()))
+	// return err == nil
+}
+
 // InsertChain inserts the given chain into the canonical chain or, otherwise, create a fork.
 // If the err return is not nil then chainIndex points to the cause in chain.
 func (bc *BlockChain) InsertChain(chain types.Blocks) (res *ChainInsertResult) {
@@ -1582,93 +1604,139 @@ func (bc *BlockChain) InsertChain(chain types.Blocks) (res *ChainInsertResult) {
 		coalescedLogs []*types.Log
 		tstart        = time.Now()
 
-		nonceChecked = make([]bool, len(chain))
+		// nonceChecked = make([]bool, len(chain))
+		// lastCanon *types.Block
 	)
 
 	// Start the parallel nonce verifier.
-	nonceAbort, nonceResults := verifyNoncesFromBlocks(bc.pow, chain)
-	defer close(nonceAbort)
+	// nonceAbort, nonceResults := verifyNoncesFromBlocks(bc.pow, chain)
+	// defer close(nonceAbort)
+
+	headers := make([]*types.Header, len(chain))
+	seals := make([]bool, len(chain))
+
+	for i, block := range chain {
+		headers[i] = block.Header()
+		seals[i] = true // PTAL See above comment about seals ?.
+	}
+
+	abort, results := bc.engine.VerifyHeaders(bc, headers, seals)
+	defer close(abort)
+
+	// // Start a parallel signature recovery (signer will fluke on fork transition, minimal perf loss)
+	// senderCacher.recoverFromBlocks(types.MakeSigner(bc.chainConfig, chain[0].Number()), chain)
 
 	txcount := 0
+blocks:
 	for i, block := range chain {
 		res.Index = i
+		// If chain is terminating, stop processing blocks
 		if atomic.LoadInt32(&bc.procInterrupt) == 1 {
 			glog.V(logger.Debug).Infoln("Premature abort during block chain processing")
 			break
 		}
 
 		bstart := time.Now()
-		// Wait for block i's nonce to be verified before processing
-		// its state transition.
-		for !nonceChecked[i] {
-			r := <-nonceResults
-			nonceChecked[r.index] = true
-			if !r.valid {
-				block := chain[r.index]
-				res.Index = r.index
-				res.Error = &BlockNonceErr{Hash: block.Hash(), Number: block.Number(), Nonce: block.Nonce()}
-				return
+
+		for j := range bc.config.BadHashes {
+			if bc.config.BadHashes[j].Hash == block.Hash() {
+				res.Error = ErrBlacklistedHash
+				break blocks
 			}
 		}
 
-		if err := bc.config.HeaderCheck(block.Header()); err != nil {
+		err := <-results
+		if err == nil {
+			err = bc.Validator().ValidateBody(block)
 			res.Error = err
-			return
 		}
-
-		// Stage 1 validation of the block using the chain's validator
-		// interface.
-		err := bc.Validator().ValidateBlock(block)
-		if err != nil {
-			if IsKnownBlockErr(err) {
+		switch {
+		case err == ErrKnownBlock:
+			// Block and state both already known. However if the current block is below
+			// this number we did a rollback and we should reimport it nonetheless.
+			if bc.CurrentBlock().NumberU64() >= block.NumberU64() {
 				stats.ignored++
 				continue
 			}
+		case err == consensus.ErrFutureBlock:
+			// Allow up to MaxFuture second in the future blocks. If this limit is exceeded
+			// the chain is discarded and processed at a later time if given.
+			max := big.NewInt(time.Now().Unix() + maxTimeFutureBlocks)
+			if block.Time().Cmp(max) > 0 {
+				res.Error = fmt.Errorf("future block: %v > %v", block.Time(), max)
+				break blocks
+			}
+			bc.futureBlocks.Add(block.Hash(), block)
+			stats.queued++
+			continue
+		case err == consensus.ErrUnknownAncestor && bc.futureBlocks.Contains(block.ParentHash()):
+			bc.futureBlocks.Add(block.Hash(), block)
+			stats.queued++
+			continue
 
-			if err == BlockFutureErr {
-				// Allow up to MaxFuture second in the future blocks. If this limit
-				// is exceeded the chain is discarded and processed at a later time
-				// if given.
-				max := big.NewInt(time.Now().Unix() + maxTimeFutureBlocks)
-				if block.Time().Cmp(max) == 1 {
-					res.Error = fmt.Errorf("%v: BlockFutureErr, %v > %v", BlockFutureErr, block.Time(), max)
-					return
+		case err == consensus.ErrPrunedAncestor:
+			// Block competing with the canonical chain, store in the db, but don't process
+			// until the competitor TD goes above the canonical TD
+			currentBlock := bc.CurrentBlock()
+			// TODO:batcher
+			localTd := bc.GetTd(currentBlock.Hash())
+			externTd := new(big.Int).Add(bc.GetTd(block.ParentHash()), block.Difficulty())
+			if localTd.Cmp(externTd) > 0 {
+				if err = bc.WriteBlockWithoutState(block, externTd); err != nil {
+					break blocks
 				}
-				bc.futureBlocks.Add(block.Hash(), block)
-				stats.queued++
 				continue
 			}
-
-			if IsParentErr(err) && bc.futureBlocks.Contains(block.ParentHash()) {
-				bc.futureBlocks.Add(block.Hash(), block)
-				stats.queued++
-				continue
+			// Competitor chain beat canonical, gather all blocks from the common ancestor
+			var winner []*types.Block
+			// TODO:batcher
+			parent := bc.GetBlock(block.ParentHash())
+			for !bc.HasState(parent.Root()) {
+				winner = append(winner, parent)
+				// TODO:batcher
+				parent = bc.GetBlock(parent.ParentHash())
 			}
-
-			res.Error = err
+			for j := 0; j < len(winner)/2; j++ {
+				winner[j], winner[len(winner)-1-j] = winner[len(winner)-1-j], winner[j]
+			}
+			// Import all the pruned blocks to make the state available
+			bc.chainmu.Unlock()
+			// _, evs, logs, err := bc.InsertChain(winner)
+			res := bc.InsertChain(winner)
+			bc.chainmu.Lock()
+			// PTAL my brilliant dedicated result type doesn't have logs, so recursive calls don't work
+			// events, coalescedLogs = evs, logs
+			// events, coalescedLogs = append(events, res.ChainInsertEvent), append(logs, res.
+			events = append(events, res.ChainInsertEvent)
+			if err != nil {
+				res.Error = err
+				return
+				// return i, events, coalescedLogs, err
+			}
+		case err != nil:
+			// bc.reportBlock(block, nil, err)
 			return
-		}
+		} // end switch on ValidateBody results
 
-		// Create a new statedb using the parent block and report an
-		// error if it fails.
-		switch {
-		case i == 0:
+		var parent *types.Block
+		if i == 0 {
+			parent = bc.GetBlock(block.ParentHash())
 			err = bc.stateCache.Reset(bc.GetBlock(block.ParentHash()).Root())
-		default:
+		} else {
+			parent = chain[i-1]
 			err = bc.stateCache.Reset(chain[i-1].Root())
 		}
+		// state, err := state.New(parent.Root(), bc.stateCache)
 		res.Error = err
 		if err != nil {
 			return
 		}
-		// Process block using the parent state as reference point.
-		receipts, logs, usedGas, err := bc.processor.Process(block, bc.stateCache)
+		receipts, logs, usedGas, err := bc.processor.Process(block, bc.stateCache, bc.vmConfig)
 		if err != nil {
 			res.Error = err
 			return
 		}
-		// Validate the state using the default validator
-		err = bc.Validator().ValidateState(block, bc.GetBlock(block.ParentHash()), bc.stateCache, receipts, usedGas)
+		err = bc.Validator().ValidateState(block, parent, bc.stateCache, receipts, usedGas)
 		if err != nil {
 			res.Error = err
 			return
@@ -1690,12 +1758,11 @@ func (bc *BlockChain) InsertChain(chain types.Blocks) (res *ChainInsertResult) {
 
 		txcount += len(block.Transactions())
 		// write the block to the chain and get the status
-		status, err := bc.WriteBlock(block)
+		status, err := bc.WriteBlock(block) // NOTE: different EF WriteBlock method
 		if err != nil {
 			res.Error = err
 			return
 		}
-
 		switch status {
 		case CanonStatTy:
 			if glog.V(logger.Debug) {
@@ -2002,6 +2069,19 @@ func (bc *BlockChain) update() {
 // of the header retrieval mechanisms already need to verify nonces, as well as
 // because nonces can be verified sparsely, not needing to check each.
 func (bc *BlockChain) InsertHeaderChain(chain []*types.Header, checkFreq int) *HeaderChainInsertResult {
+	if i, err := bc.hc.ValidateHeaderChain(bc.config, chain, checkFreq); err != nil {
+		return &HeaderChainInsertResult{
+			HeaderChainInsertEvent: HeaderChainInsertEvent{
+				Processed:  0,
+				Ignored:    len(chain),
+				LastNumber: chain[len(chain)-1].Number.Uint64(),
+				LastHash:   chain[len(chain)-1].Hash(),
+				Elasped:    nil,
+			},
+			Index: i,
+			Error: err,
+		}
+	}
 	// Make sure only one thread manipulates the chain at once
 	bc.chainmu.Lock()
 	defer bc.chainmu.Unlock()
@@ -2017,7 +2097,7 @@ func (bc *BlockChain) InsertHeaderChain(chain []*types.Header, checkFreq int) *H
 		return err
 	}
 
-	return bc.hc.InsertHeaderChain(chain, checkFreq, whFunc)
+	return bc.hc.InsertHeaderChain(chain, whFunc)
 }
 
 // CurrentHeader retrieves the current head header of the canonical chain. The

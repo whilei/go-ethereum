@@ -29,14 +29,15 @@ import (
 // Trie cache generation limit after which to evict trie nodes from memory.
 var MaxTrieCacheGen = uint16(120)
 
-//const (
-//	// Number of past tries to keep. This value is chosen such that
-//	// reasonable chain reorg depths will hit an existing trie.
-//	maxPastTries = 12
 //
-//	// Number of codehash->size associations to keep.
-//	codeSizeCacheSize = 100000
-//)
+// const (
+// 	// Number of past tries to keep. This value is chosen such that
+// 	// reasonable chain reorg depths will hit an existing trie.
+// 	maxPastTries = 12
+//
+// 	// Number of codehash->size associations to keep.
+// 	codeSizeCacheSize = 100000
+// )
 
 // Database wraps access to tries and contract code.
 type Database interface {

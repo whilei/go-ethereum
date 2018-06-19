@@ -96,6 +96,27 @@ type StateDB struct {
 	lock sync.Mutex
 }
 
+// implements state Database interface
+// func (self *StateDB) OpenTrie(root common.Hash) (Trie, error) {
+// 	panic("implement me")
+// }
+//
+// func (self *StateDB) OpenStorageTrie(addrHash, root common.Hash) (Trie, error) {
+// 	panic("implement me")
+// }
+//
+// func (self *StateDB) ContractCode(addrHash, codeHash common.Hash) ([]byte, error) {
+// 	panic("implement me")
+// }
+//
+// func (self *StateDB) ContractCodeSize(addrHash, codeHash common.Hash) (int, error) {
+// 	panic("implement me")
+// }
+//
+// func (self *StateDB) CopyTrie(Trie) Trie {
+// 	panic("implement me")
+// }
+
 // Empty returns whether the state object is either non-existent
 // or empty according to the EIP161 specification (balance = nonce = code = 0)
 func (self *StateDB) Empty(addr common.Address) bool {

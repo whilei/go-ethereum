@@ -363,6 +363,29 @@ func WriteBlockReceipts(db ethdb.Database, hash common.Hash, receipts types.Rece
 	return nil
 }
 
+// WriteReceipts stores a batch of transaction receipts into the database.
+func WriteReceipts(db ethdb.Database, receipts types.Receipts) error {
+	batch := db.NewBatch()
+
+	// Iterate over all the receipts and queue them for database injection
+	for _, receipt := range receipts {
+		storageReceipt := (*types.ReceiptForStorage)(receipt)
+		data, err := rlp.EncodeToBytes(storageReceipt)
+		if err != nil {
+			return err
+		}
+		if err := batch.Put(append(receiptsPrefix, receipt.TxHash.Bytes()...), data); err != nil {
+			return err
+		}
+	}
+	// Write the scheduled data into the database
+	if err := batch.Write(); err != nil {
+		glog.Fatalf("failed to store receipts into database: %v", err)
+		return err
+	}
+	return nil
+}
+
 // WriteTransactions stores the transactions associated with a specific block
 // into the given database. Beside writing the transaction, the function also
 // stores a metadata entry along with the transaction, detailing the position
@@ -401,29 +424,6 @@ func WriteTransactions(db ethdb.Database, block *types.Block) error {
 	// Write the scheduled data into the database
 	if err := batch.Write(); err != nil {
 		glog.Fatalf("failed to store transactions into database: %v", err)
-		return err
-	}
-	return nil
-}
-
-// WriteReceipts stores a batch of transaction receipts into the database.
-func WriteReceipts(db ethdb.Database, receipts types.Receipts) error {
-	batch := db.NewBatch()
-
-	// Iterate over all the receipts and queue them for database injection
-	for _, receipt := range receipts {
-		storageReceipt := (*types.ReceiptForStorage)(receipt)
-		data, err := rlp.EncodeToBytes(storageReceipt)
-		if err != nil {
-			return err
-		}
-		if err := batch.Put(append(receiptsPrefix, receipt.TxHash.Bytes()...), data); err != nil {
-			return err
-		}
-	}
-	// Write the scheduled data into the database
-	if err := batch.Write(); err != nil {
-		glog.Fatalf("failed to store receipts into database: %v", err)
 		return err
 	}
 	return nil
