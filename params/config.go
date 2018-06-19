@@ -128,6 +128,74 @@ type ChainConfig struct {
 
 	// BadHashes holds well known blocks with consensus issues. See ErrHashKnownBad.
 	BadHashes []*BadHash `json:"badHashes"`
+
+	ChainID *big.Int `json:"chainId"` // chainId identifies the current chain and is used for replay protection
+
+	HomesteadBlock *big.Int `json:"-"` // Homestead switch block (nil = no fork, 0 = already homestead)
+
+	DAOForkBlock   *big.Int `json:"-"` // TheDAO hard-fork switch block (nil = no fork)
+	DAOForkSupport bool     `json:"-"` // Whether the nodes supports or opposes the DAO hard-fork
+
+	// EIP150 implements the Gas price changes (https://github.com/ethereum/EIPs/issues/150)
+	EIP150Block *big.Int    `json:"-"` // EIP150 HF block (nil = no fork)
+	EIP150Hash  common.Hash `json:"-"` // EIP150 HF hash (needed for header only clients as only gas pricing changed)
+
+	EIP155Block *big.Int `json:"-"` // EIP155 HF block
+	EIP158Block *big.Int `json:"-"` // EIP158 HF block
+
+	ByzantiumBlock *big.Int `json:"-"` // Byzantium switch block (nil = no fork, 0 = already on byzantium)
+	// ConstantinopleBlock *big.Int `json:"-"` // Constantinople switch block (nil = no fork, 0 = already activated)
+
+}
+
+func (c *ChainConfig) SetForkBlockVals() {
+	for _, f := range c.Forks {
+		switch f.Name {
+		case "Homestead":
+			if f.Block != nil {
+				c.HomesteadBlock = f.Block
+			}
+		case "The DAO Hard Fork":
+			if f.Block != nil {
+				c.DAOForkBlock = f.Block
+				if !f.RequiredHash.IsEmpty() {
+					c.DAOForkSupport = false
+				}
+			}
+		case "GasReprice":
+			if f.Block != nil {
+				if c.IsEIP150(f.Block) {
+					c.EIP150Block = f.Block
+					// PTAL fallback hardcoded block hashes from default configs... not ideal
+					// rel #628
+					if f.RequiredHash.IsEmpty() {
+						if f.Block.Cmp(big.NewInt(2500000)) == 0 {
+							c.EIP150Hash = common.HexToHash("0x584bdb5d4e74fe97f5a5222b533fe1322fd0b6ad3eb03f02c3221984e2c0b430")
+						} else if f.Block.Cmp(big.NewInt(1783000)) == 0 {
+							c.EIP150Hash = common.HexToHash("0xf376243aeff1f256d970714c3de9fd78fa4e63cf63e32a51fe1169e375d98145")
+						}
+					} else {
+						c.EIP150Hash = f.RequiredHash
+					}
+				}
+			}
+		case "Diehard":
+			if f.Block != nil {
+				if c.IsEIP155(f.Block) {
+					c.EIP155Block = f.Block
+				}
+				if c.IsEIP158(f.Block) {
+					c.EIP158Block = f.Block
+				}
+			}
+		case "Busybee":
+			if f.Block != nil {
+				if c.IsByzantium(f.Block) {
+					c.ByzantiumBlock = f.Block
+				}
+			}
+		}
+	}
 }
 
 type Fork struct {
