@@ -1,4 +1,4 @@
-package core
+package params
 
 import (
 	"github.com/ethereumproject/go-ethereum/logger/glog"
