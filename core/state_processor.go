@@ -22,12 +22,14 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/ethereumproject/go-ethereum/common"
 	"github.com/ethereumproject/go-ethereum/core/state"
 	"github.com/ethereumproject/go-ethereum/core/types"
 	"github.com/ethereumproject/go-ethereum/core/vm"
 	"github.com/ethereumproject/go-ethereum/crypto"
 	"github.com/ethereumproject/go-ethereum/logger"
 	"github.com/ethereumproject/go-ethereum/logger/glog"
+	"github.com/ethereumproject/go-ethereum/params"
 )
 
 var (
@@ -86,7 +88,7 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB) (ty
 		}
 		statedb.StartRecord(tx.Hash(), block.Hash(), i)
 		if !UseSputnikVM {
-			receipt, logs, _, err := ApplyTransaction(p.config, p.bc, gp, statedb, header, tx, totalUsedGas)
+			receipt, _, err := ApplyTransaction(p.config, p.bc, gp, statedb, header, tx, totalUsedGas)
 			if err != nil {
 				return nil, nil, totalUsedGas, err
 			}
@@ -107,35 +109,49 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB) (ty
 }
 
 // ApplyTransaction attempts to apply a transaction to the given state database
-// and uses the input parameters for its environment.
-//
-// ApplyTransactions returns the generated receipts and vm logs during the
-// execution of the state transition phase.
-func ApplyTransaction(config *params.ClassicChainConfig, bc *BlockChain, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *big.Int) (*types.Receipt, []*types.Log, *big.Int, error) {
-	tx.SetSigner(config.GetSigner(header.Number))
-
-	_, gas, err := ApplyMessage(NewEnv(statedb, config, bc, tx, header), tx, gp)
+// and uses the input parameters for its environment. It returns the receipt
+// for the transaction, gas used and an error if the transaction failed,
+// indicating the block was invalid.
+func ApplyTransaction(config *params.ClassicChainConfig, bc ChainContext, author *common.Address, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64, cfg vm.Config) (*types.Receipt, uint64, error) {
+	// signer := types.MakeSigner(config, header.Number)
+	signer := config.GetSigner(header.Number)
+	msg, err := tx.AsMessage(signer)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, 0, err
 	}
-
+	// Create a new context to be used in the EVM environment
+	context := NewEVMContext(msg, header, bc, author)
+	// Create a new environment which holds all relevant information
+	// about the transaction and calling mechanisms.
+	vmenv := vm.NewEVM(context, statedb, config, cfg)
+	// Apply the transaction to the current state (included in the env)
+	_, gas, failed, err := ApplyMessage(vmenv, msg, gp)
+	if err != nil {
+		return nil, 0, err
+	}
 	// Update the state with pending changes
-	usedGas.Add(usedGas, gas)
-	receipt := types.NewReceipt(statedb.IntermediateRoot(false).Bytes(), usedGas)
-	receipt.TxHash = tx.Hash()
-	receipt.GasUsed = new(big.Int).Set(gas)
-	if MessageCreatesContract(tx) {
-		from, _ := tx.From()
-		receipt.ContractAddress = crypto.CreateAddress(from, tx.Nonce())
+	var root []byte
+	if config.IsByzantium(header.Number) {
+		statedb.Finalise(true)
+	} else {
+		root = statedb.IntermediateRoot(config.IsEIP158(header.Number)).Bytes()
 	}
+	*usedGas += gas
 
-	logs := statedb.GetLogs(tx.Hash())
-	receipt.Logs = logs
+	// Create a new receipt for the transaction, storing the intermediate root and gas used by the tx
+	// based on the eip phase, we're passing wether the root touch-delete accounts.
+	receipt := types.NewReceipt(root, failed, *usedGas)
+	receipt.TxHash = tx.Hash()
+	receipt.GasUsed = gas
+	// if the transaction created a contract, store the creation address in the receipt.
+	if msg.To() == nil {
+		receipt.ContractAddress = crypto.CreateAddress(vmenv.Context.Origin, tx.Nonce())
+	}
+	// Set the receipt logs and create a bloom for filtering
+	receipt.Logs = statedb.GetLogs(tx.Hash())
 	receipt.Bloom = types.CreateBloom(types.Receipts{receipt})
 
-	glog.V(logger.Debug).Infoln(receipt)
-
-	return receipt, logs, gas, err
+	return receipt, gas, err
 }
 
 // AccumulateRewards credits the coinbase of the given block with the
