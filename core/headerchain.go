@@ -43,7 +43,7 @@ import (
 // It is not thread safe either, the encapsulating chain structures should do
 // the necessary mutex locking/unlocking.
 type HeaderChain struct {
-	config *params.ClassicChainConfig
+	config *params.ChainConfig
 
 	chainDb       ethdb.Database
 	genesisHeader *types.Header
@@ -68,7 +68,7 @@ type getHeaderValidatorFn func() HeaderValidator
 //  getValidator should return the parent's validator
 //  procInterrupt points to the parent's interrupt semaphore
 //  wg points to the parent's shutdown wait group
-func NewHeaderChain(chainDb ethdb.Database, config *params.ClassicChainConfig, mux *event.TypeMux, getValidator getHeaderValidatorFn, procInterrupt func() bool) (*HeaderChain, error) {
+func NewHeaderChain(chainDb ethdb.Database, config *params.ChainConfig, mux *event.TypeMux, getValidator getHeaderValidatorFn, procInterrupt func() bool) (*HeaderChain, error) {
 	headerCache, _ := lru.New(headerCacheLimit)
 	tdCache, _ := lru.New(tdCacheLimit)
 
@@ -89,13 +89,13 @@ func NewHeaderChain(chainDb ethdb.Database, config *params.ClassicChainConfig, m
 		getValidator:  getValidator,
 	}
 
-	gen := DefaultConfigMainnet.Genesis
+	gen := params.DefaultConfigMainnet.Genesis
 	genname := "mainnet"
-	// Check if ClassicChainConfig is mainnet or testnet and write genesis accordingly.
+	// Check if ChainConfig is mainnet or testnet and write genesis accordingly.
 	// If it's neither (custom), write default (this will be overwritten or avoided,
 	// but maintains consistent implementation.
-	if config == DefaultConfigMorden.ChainConfig {
-		gen = DefaultConfigMorden.Genesis
+	if config == params.DefaultConfigMorden.ChainConfig {
+		gen = params.DefaultConfigMorden.Genesis
 		genname = "morden testnet"
 	}
 
@@ -570,7 +570,7 @@ func (hc *HeaderChain) postChainEvents(events []interface{}) {
 //
 // headerValidator implements HeaderValidator.
 type headerValidator struct {
-	config *params.ClassicChainConfig
+	config *params.ChainConfig
 	hc     *HeaderChain // Canonical header chain
 	Pow    pow.PoW      // Proof of work used for validating
 }

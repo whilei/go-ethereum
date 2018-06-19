@@ -30,6 +30,7 @@ import (
 	"github.com/ethereumproject/go-ethereum/event"
 	"github.com/ethereumproject/go-ethereum/logger"
 	"github.com/ethereumproject/go-ethereum/logger/glog"
+	"github.com/ethereumproject/go-ethereum/params"
 )
 
 var (
@@ -59,7 +60,7 @@ type stateFn func() (*state.StateDB, error)
 // current state) and future transactions. Transactions move between those
 // two states over time as they are received and processed.
 type TxPool struct {
-	config       *params.ClassicChainConfig
+	config       *params.ChainConfig
 	signer       types.Signer
 	currentState stateFn // The state function which will allow us to do some pre checks
 	pendingState *state.ManagedState
@@ -77,7 +78,7 @@ type TxPool struct {
 	homestead bool
 }
 
-func NewTxPool(config *params.ClassicChainConfig, eventMux *event.TypeMux, currentStateFn stateFn, gasLimitFn func() *big.Int) *TxPool {
+func NewTxPool(config *params.ChainConfig, eventMux *event.TypeMux, currentStateFn stateFn, gasLimitFn func() *big.Int) *TxPool {
 	pool := &TxPool{
 		config:       config,
 		signer:       types.NewChainIdSigner(config.GetChainID()),

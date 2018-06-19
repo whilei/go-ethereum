@@ -32,8 +32,8 @@ import (
  * TODO: move this to another package.
  */
 
-// MakeChainConfig returns a new ClassicChainConfig with the ethereum default chain settings.
-func MakeChainConfig() *params.ClassicChainConfig {
+// MakeChainConfig returns a new ChainConfig with the ethereum default chain settings.
+func MakeChainConfig() *params.ChainConfig {
 	return &ChainConfig{
 		Forks: []*Fork{
 			{
@@ -52,7 +52,7 @@ func MakeChainConfig() *params.ClassicChainConfig {
 	}
 }
 
-func MakeDiehardChainConfig() *params.ClassicChainConfig {
+func MakeDiehardChainConfig() *params.ChainConfig {
 	return &ChainConfig{
 		Forks: []*Fork{
 			{
@@ -114,7 +114,7 @@ type BlockGen struct {
 	txs      []*types.Transaction
 	receipts []*types.Receipt
 	uncles   []*types.Header
-	config   *params.ClassicChainConfig
+	config   *params.ChainConfig
 }
 
 // SetCoinbase sets the coinbase of the generated block.
@@ -220,7 +220,7 @@ func (b *BlockGen) OffsetTime(seconds int64) {
 // Blocks created by GenerateChain do not contain valid proof of work
 // values. Inserting them into BlockChain requires use of FakePow or
 // a similar non-validating proof of work implementation.
-func GenerateChain(config *params.ClassicChainConfig, parent *types.Block, db ethdb.Database, n int, gen func(int, *BlockGen)) ([]*types.Block, []types.Receipts) {
+func GenerateChain(config *params.ChainConfig, parent *types.Block, db ethdb.Database, n int, gen func(int, *BlockGen)) ([]*types.Block, []types.Receipts) {
 	blocks, receipts := make(types.Blocks, n), make([]types.Receipts, n)
 	genblock := func(i int, h *types.Header, statedb *state.StateDB) (*types.Block, types.Receipts) {
 		b := &BlockGen{parent: parent, i: i, chain: blocks, header: h, statedb: statedb, config: config}
@@ -255,7 +255,7 @@ func GenerateChain(config *params.ClassicChainConfig, parent *types.Block, db et
 	return blocks, receipts
 }
 
-func makeHeader(config *params.ClassicChainConfig, parent *types.Block, state *state.StateDB) *types.Header {
+func makeHeader(config *params.ChainConfig, parent *types.Block, state *state.StateDB) *types.Header {
 	var time *big.Int
 	if parent.Time() == nil {
 		time = big.NewInt(10)
@@ -277,7 +277,7 @@ func makeHeader(config *params.ClassicChainConfig, parent *types.Block, state *s
 // newCanonical creates a chain database, and injects a deterministic canonical
 // chain. Depending on the full flag, if creates either a full block chain or a
 // header only chain.
-func newCanonical(config *params.ClassicChainConfig, n int, full bool) (ethdb.Database, *BlockChain, error) {
+func newCanonical(config *params.ChainConfig, n int, full bool) (ethdb.Database, *BlockChain, error) {
 	// Create the new chain database
 	db, err := ethdb.NewMemDatabase()
 	if err != nil {
@@ -314,7 +314,7 @@ func newCanonical(config *params.ClassicChainConfig, n int, full bool) (ethdb.Da
 }
 
 // makeHeaderChain creates a deterministic chain of headers rooted at parent.
-func makeHeaderChain(config *params.ClassicChainConfig, parent *types.Header, n int, db ethdb.Database, seed int) []*types.Header {
+func makeHeaderChain(config *params.ChainConfig, parent *types.Header, n int, db ethdb.Database, seed int) []*types.Header {
 	blocks := makeBlockChain(config, types.NewBlockWithHeader(parent), n, db, seed)
 	headers := make([]*types.Header, len(blocks))
 	for i, block := range blocks {
@@ -324,7 +324,7 @@ func makeHeaderChain(config *params.ClassicChainConfig, parent *types.Header, n 
 }
 
 // makeBlockChain creates a deterministic chain of blocks rooted at parent.
-func makeBlockChain(config *params.ClassicChainConfig, parent *types.Block, n int, db ethdb.Database, seed int) []*types.Block {
+func makeBlockChain(config *params.ChainConfig, parent *types.Block, n int, db ethdb.Database, seed int) []*types.Block {
 	blocks, _ := GenerateChain(config, parent, db, n, func(i int, b *BlockGen) {
 		b.SetCoinbase(common.Address{0: byte(seed), 19: byte(i)})
 	})
