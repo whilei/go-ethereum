@@ -161,7 +161,7 @@ func benchInsertChain(b *testing.B, disk bool, gen func(int, *BlockGen)) {
 
 	// Generate a chain of b.N blocks using the supplied block
 	// generator function.
-	genesis := WriteGenesisBlockForTesting(db, GenesisAccount{benchRootAddr, benchRootFunds})
+	genesis := WriteGenesisBlockForTesting(db, params.GenesisAccount{benchRootAddr, benchRootFunds})
 	chain, _ := GenerateChain(DefaultConfigMainnet.ChainConfig, genesis, db, b.N, gen)
 
 	// Time the insertion of the new chain.

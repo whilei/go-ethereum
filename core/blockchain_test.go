@@ -830,7 +830,7 @@ func TestFastVsFullChains(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	WriteGenesisBlockForTesting(archiveDb, GenesisAccount{address, funds})
+	WriteGenesisBlockForTesting(archiveDb, params.GenesisAccount{address, funds})
 
 	archive, err := NewBlockChain(archiveDb, config, FakePow{}, new(event.TypeMux))
 	if err != nil {
@@ -845,7 +845,7 @@ func TestFastVsFullChains(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	WriteGenesisBlockForTesting(fastDb, GenesisAccount{address, funds})
+	WriteGenesisBlockForTesting(fastDb, params.GenesisAccount{address, funds})
 	fast, err := NewBlockChain(fastDb, config, FakePow{}, new(event.TypeMux))
 	if err != nil {
 		t.Fatal(err)
@@ -946,8 +946,8 @@ func TestFastVsFullChainsATXI(t *testing.T) {
 			t.Fatal(err)
 		}
 		genesis := WriteGenesisBlockForTesting(db,
-			GenesisAccount{addr1, big.NewInt(1000000)},
-			GenesisAccount{addr2, big.NewInt(1000000)},
+			params.GenesisAccount{addr1, big.NewInt(1000000)},
+			params.GenesisAccount{addr2, big.NewInt(1000000)},
 		)
 		blocks, receipts := GenerateChain(config, genesis, db, 3, func(i int, gen *BlockGen) {
 			if i == 0 {
@@ -1059,8 +1059,8 @@ func TestRmAddrTx(t *testing.T) {
 		t.Fatal(err)
 	}
 	genesis := WriteGenesisBlockForTesting(db,
-		GenesisAccount{addr1, big.NewInt(1000000)},
-		GenesisAccount{addr2, big.NewInt(1000000)},
+		params.GenesisAccount{addr1, big.NewInt(1000000)},
+		params.GenesisAccount{addr2, big.NewInt(1000000)},
 	)
 	blocks, _ := GenerateChain(config, genesis, db, 3, func(i int, gen *BlockGen) {
 		if i == 0 {
@@ -1140,7 +1140,7 @@ func TestLightVsFastVsFullChainHeads(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	WriteGenesisBlockForTesting(archiveDb, GenesisAccount{address, funds})
+	WriteGenesisBlockForTesting(archiveDb, params.GenesisAccount{address, funds})
 
 	archive, err := NewBlockChain(archiveDb, testChainConfig(), FakePow{}, new(event.TypeMux))
 	if err != nil {
@@ -1159,7 +1159,7 @@ func TestLightVsFastVsFullChainHeads(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	WriteGenesisBlockForTesting(fastDb, GenesisAccount{address, funds})
+	WriteGenesisBlockForTesting(fastDb, params.GenesisAccount{address, funds})
 	fast, err := NewBlockChain(fastDb, testChainConfig(), FakePow{}, new(event.TypeMux))
 	if err != nil {
 		t.Fatal(err)
@@ -1184,7 +1184,7 @@ func TestLightVsFastVsFullChainHeads(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	WriteGenesisBlockForTesting(lightDb, GenesisAccount{address, funds})
+	WriteGenesisBlockForTesting(lightDb, params.GenesisAccount{address, funds})
 	light, err := NewBlockChain(lightDb, testChainConfig(), FakePow{}, new(event.TypeMux))
 	if err != nil {
 		t.Fatal(err)
@@ -1244,9 +1244,9 @@ func testChainTxReorgs(t *testing.T, db ethdb.Database, withATXI bool) {
 		signer = types.NewChainIdSigner(big.NewInt(63))
 	)
 	genesis := WriteGenesisBlockForTesting(db,
-		GenesisAccount{addr1, big.NewInt(1000000)},
-		GenesisAccount{addr2, big.NewInt(1000000)},
-		GenesisAccount{addr3, big.NewInt(1000000)},
+		params.params.GenesisAccount{addr1, big.NewInt(1000000)},
+		params.GenesisAccount{addr2, big.NewInt(1000000)},
+		params.GenesisAccount{addr3, big.NewInt(1000000)},
 	)
 	// Create two transactions shared between the chains:
 	// addr1 -> addr2
@@ -1443,7 +1443,7 @@ func TestLogReorgs(t *testing.T) {
 		t.Fatal(err)
 	}
 	genesis := WriteGenesisBlockForTesting(db,
-		GenesisAccount{addr1, big.NewInt(10000000000000)},
+		params.GenesisAccount{addr1, big.NewInt(10000000000000)},
 	)
 	chainConfig := MakeDiehardChainConfig()
 
@@ -1499,7 +1499,7 @@ func TestReorgSideEvent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	genesis := WriteGenesisBlockForTesting(db, GenesisAccount{addr1, big.NewInt(10000000000000)})
+	genesis := WriteGenesisBlockForTesting(db, params.GenesisAccount{addr1, big.NewInt(10000000000000)})
 	signer := types.NewChainIdSigner(big.NewInt(63))
 	chainConfig := MakeDiehardChainConfig()
 
@@ -1632,7 +1632,7 @@ func TestEIP155Transition(t *testing.T) {
 	var (
 		address = crypto.PubkeyToAddress(key.PublicKey)
 		funds   = big.NewInt(1000000000)
-		genesis = WriteGenesisBlockForTesting(db, GenesisAccount{address, funds})
+		genesis = WriteGenesisBlockForTesting(db, params.GenesisAccount{address, funds})
 		config  = &ChainConfig{
 			Forks: []*Fork{
 				{
