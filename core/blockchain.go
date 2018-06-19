@@ -38,6 +38,7 @@ import (
 	"github.com/ethereumproject/go-ethereum/consensus"
 	"github.com/ethereumproject/go-ethereum/core/state"
 	"github.com/ethereumproject/go-ethereum/core/types"
+	"github.com/ethereumproject/go-ethereum/core/vm"
 	"github.com/ethereumproject/go-ethereum/crypto"
 	"github.com/ethereumproject/go-ethereum/ethdb"
 	"github.com/ethereumproject/go-ethereum/event"
@@ -110,6 +111,7 @@ type BlockChain struct {
 	wg            sync.WaitGroup // chain processing wait group for shutting down
 
 	engine    consensus.Engine
+	vmConfig  vm.Config
 	processor Processor // block processor interface
 	validator Validator // block and state validator interface
 
@@ -155,7 +157,7 @@ func (bc *BlockChain) GetBlockByHash(h common.Hash) *types.Block {
 // NewBlockChain returns a fully initialised block chain using information
 // available in the database. It initialises the default Ethereum Validator and
 // Processor.
-func NewBlockChain(chainDb ethdb.Database, config *params.ChainConfig, engine consensus.Engine, mux *event.TypeMux) (*BlockChain, error) {
+func NewBlockChain(chainDb ethdb.Database, config *params.ChainConfig, engine consensus.Engine, mux *event.TypeMux, vmConfig vm.Config) (*BlockChain, error) {
 	bodyCache, _ := lru.New(bodyCacheLimit)
 	bodyRLPCache, _ := lru.New(bodyCacheLimit)
 	blockCache, _ := lru.New(blockCacheLimit)
@@ -170,7 +172,8 @@ func NewBlockChain(chainDb ethdb.Database, config *params.ChainConfig, engine co
 		bodyRLPCache: bodyRLPCache,
 		blockCache:   blockCache,
 		futureBlocks: futureBlocks,
-		pow:          pow,
+		engine:       engine,
+		vmConfig:     vmConfig,
 	}
 	bc.SetValidator(NewBlockValidator(config, bc, engine))
 	bc.SetProcessor(NewStateProcessor(config, bc, engine))
@@ -192,10 +195,7 @@ func NewBlockChain(chainDb ethdb.Database, config *params.ChainConfig, engine co
 	}
 	// Check the current state of the block hashes and make sure that we do not have any of the bad blocks in our chain
 	for i := range config.BadHashes {
-		// get the canonical block corresponding to the offending header's number
-		headerByNumber := bc.GetHeaderByNumber(header.Number.Uint64())
-		// make sure the headerByNumber (if present) is in our current canonical chain
-		if headerByNumber != nil && headerByNumber.Hash() == header.Hash() {
+		if header := bc.GetHeader(config.BadHashes[i].Hash); header != nil && header.Number.Cmp(config.BadHashes[i].Block) == 0 {
 			glog.V(logger.Error).Infof("Found bad hash, rewinding chain to block #%d [%s]", header.Number, header.ParentHash.Hex())
 			bc.SetHead(header.Number.Uint64() - 1)
 			glog.V(logger.Error).Infoln("Chain rewind was successful, resuming normal operation")
