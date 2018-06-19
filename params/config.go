@@ -707,6 +707,7 @@ func parseExternalChainConfig(mainConfigFile string, open func(string) (io.ReadC
 	}
 
 	config.ChainConfig = config.ChainConfig.SortForks()
+	config.ChainConfig.SetForkBlockVals()
 	return config, nil
 }
 
