@@ -18,12 +18,11 @@ package core
 
 import (
 	crand "crypto/rand"
+	"errors"
+	"fmt"
 	"math"
 	"math/big"
 	mrand "math/rand"
-	"runtime"
-	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/ethereumproject/go-ethereum/common"
@@ -34,7 +33,6 @@ import (
 	"github.com/ethereumproject/go-ethereum/logger"
 	"github.com/ethereumproject/go-ethereum/logger/glog"
 	"github.com/ethereumproject/go-ethereum/params"
-	"github.com/ethereumproject/go-ethereum/pow"
 	"github.com/hashicorp/golang-lru"
 )
 
@@ -235,6 +233,51 @@ func (hc *HeaderChain) WriteHeader(header *types.Header) (status WriteStatus, er
 // header writes should be protected by the parent chain mutex individually.
 type WhCallback func(*types.Header) error
 
+func (hc *HeaderChain) ValidateHeaderChain(config *params.ChainConfig, chain []*types.Header, checkFreq int) (int, error) {
+	// Do a sanity check that the provided chain is actually ordered and linked
+	for i := 1; i < len(chain); i++ {
+		if chain[i].Number.Uint64() != chain[i-1].Number.Uint64()+1 || chain[i].ParentHash != chain[i-1].Hash() {
+			// Chain broke ancestry, log a messge (programming error) and skip insertion
+			glog.V(logger.Error).Errorln("Non contiguous header insert", "number", chain[i].Number, "hash", chain[i].Hash(),
+				"parent", chain[i].ParentHash, "prevnumber", chain[i-1].Number, "prevhash", chain[i-1].Hash())
+			return 0, fmt.Errorf("non contiguous insert: item %d is #%d [%x…], item %d is #%d [%x…] (parent [%x…])", i-1, chain[i-1].Number,
+				chain[i-1].Hash().Bytes()[:4], i, chain[i].Number, chain[i].Hash().Bytes()[:4], chain[i].ParentHash[:4])
+		}
+	}
+	// Generate the list of seal verification requests, and start the parallel verifier
+	seals := make([]bool, len(chain))
+	for i := 0; i < len(seals)/checkFreq; i++ {
+		index := i*checkFreq + hc.rand.Intn(checkFreq)
+		if index >= len(seals) {
+			index = len(seals) - 1
+		}
+		seals[index] = true
+	}
+	seals[len(seals)-1] = true // Last should always be verified to avoid junk
+	abort, results := hc.engine.VerifyHeaders(hc, chain, seals)
+	defer close(abort)
+
+	// Iterate over the headers and ensure they all check out
+	for i, header := range chain {
+		// If the chain is terminating, stop processing blocks
+		if hc.procInterrupt() {
+			glog.V(logger.Debug).Infoln("Premature abort during headers verification")
+			return 0, errors.New("aborted")
+		}
+		// If the header is a banned one, straight out abort
+		for j := range config.BadHashes {
+			if config.BadHashes[j].Hash == header.Hash() {
+				return j, ErrBlacklistedHash
+			}
+		}
+		// Otherwise wait for headers checks and ensure they pass
+		if err := <-results; err != nil {
+			return i, err
+		}
+	}
+	return 0, nil
+}
+
 // InsertHeaderChain attempts to insert the given header chain in to the local
 // chain, possibly creating a reorg. If an error is returned, it will return the
 // index number of the failing header as well an error describing what went wrong.
@@ -243,7 +286,7 @@ type WhCallback func(*types.Header) error
 // should be done or not. The reason behind the optional check is because some
 // of the header retrieval mechanisms already need to verfy nonces, as well as
 // because nonces can be verified sparsely, not needing to check each.
-func (hc *HeaderChain) InsertHeaderChain(chain []*types.Header, checkFreq int, writeHeader WhCallback) (res *HeaderChainInsertResult) {
+func (hc *HeaderChain) InsertHeaderChain(chain []*types.Header, writeHeader WhCallback) (res *HeaderChainInsertResult) {
 	res = &HeaderChainInsertResult{}
 
 	// Collect some import statistics to report on
@@ -251,84 +294,84 @@ func (hc *HeaderChain) InsertHeaderChain(chain []*types.Header, checkFreq int, w
 	stats := struct{ processed, ignored int }{}
 	start := time.Now()
 
-	// Generate the list of headers that should be POW verified
-	verify := make([]bool, len(chain))
-	for i := 0; i < len(verify)/checkFreq; i++ {
-		index := i*checkFreq + hc.rand.Intn(checkFreq)
-		if index >= len(verify) {
-			index = len(verify) - 1
-		}
-		verify[index] = true
-	}
-	verify[len(verify)-1] = true // Last should always be verified to avoid junk
-
-	// Create the header verification task queue and worker functions
-	tasks := make(chan int, len(chain))
-	for i := 0; i < len(chain); i++ {
-		tasks <- i
-	}
-	close(tasks)
-
-	errs, failed := make([]error, len(tasks)), int32(0)
-	process := func(worker int) {
-		for index := range tasks {
-			header, hash := chain[index], chain[index].Hash()
-
-			// Short circuit insertion if shutting down or processing failed
-			if hc.procInterrupt() {
-				return
-			}
-			if atomic.LoadInt32(&failed) > 0 {
-				return
-			}
-
-			// Short circuit if the header is bad or already known
-			if err := hc.config.HeaderCheck(header); err != nil {
-				errs[index] = err
-				atomic.AddInt32(&failed, 1)
-				return
-			}
-			if hc.HasHeader(hash) {
-				continue
-			}
-			// Verify that the header honors the chain parameters
-			checkPow := verify[index]
-
-			var err error
-			if index == 0 {
-				err = hc.getValidator().ValidateHeader(header, hc.GetHeader(header.ParentHash), checkPow)
-			} else {
-				err = hc.getValidator().ValidateHeader(header, chain[index-1], checkPow)
-			}
-			if err != nil {
-				errs[index] = err
-				atomic.AddInt32(&failed, 1)
-				return
-			}
-		}
-	}
-
-	// Start as many worker threads as goroutines allowed
-	pending := new(sync.WaitGroup)
-	for i := 0; i < runtime.GOMAXPROCS(0); i++ {
-		pending.Add(1)
-		go func(id int) {
-			defer pending.Done()
-			process(id)
-		}(i)
-	}
-	pending.Wait()
-
-	// If anything failed, report
-	if failed > 0 {
-		for i, err := range errs {
-			if err != nil {
-				res.Index = i
-				res.Error = err
-				return
-			}
-		}
-	}
+	// // Generate the list of headers that should be POW verified
+	// verify := make([]bool, len(chain))
+	// for i := 0; i < len(verify)/checkFreq; i++ {
+	// 	index := i*checkFreq + hc.rand.Intn(checkFreq)
+	// 	if index >= len(verify) {
+	// 		index = len(verify) - 1
+	// 	}
+	// 	verify[index] = true
+	// }
+	// verify[len(verify)-1] = true // Last should always be verified to avoid junk
+	//
+	// // Create the header verification task queue and worker functions
+	// tasks := make(chan int, len(chain))
+	// for i := 0; i < len(chain); i++ {
+	// 	tasks <- i
+	// }
+	// close(tasks)
+	//
+	// errs, failed := make([]error, len(tasks)), int32(0)
+	// process := func(worker int) {
+	// 	for index := range tasks {
+	// 		header, hash := chain[index], chain[index].Hash()
+	//
+	// 		// Short circuit insertion if shutting down or processing failed
+	// 		if hc.procInterrupt() {
+	// 			return
+	// 		}
+	// 		if atomic.LoadInt32(&failed) > 0 {
+	// 			return
+	// 		}
+	//
+	// 		// Short circuit if the header is bad or already known
+	// 		if err := hc.config.HeaderCheck(header); err != nil {
+	// 			errs[index] = err
+	// 			atomic.AddInt32(&failed, 1)
+	// 			return
+	// 		}
+	// 		if hc.HasHeader(hash) {
+	// 			continue
+	// 		}
+	// 		// Verify that the header honors the chain parameters
+	// 		checkPow := verify[index]
+	//
+	// 		var err error
+	// 		if index == 0 {
+	// 			err = hc.getValidator().ValidateHeader(header, hc.GetHeader(header.ParentHash), checkPow)
+	// 		} else {
+	// 			err = hc.getValidator().ValidateHeader(header, chain[index-1], checkPow)
+	// 		}
+	// 		if err != nil {
+	// 			errs[index] = err
+	// 			atomic.AddInt32(&failed, 1)
+	// 			return
+	// 		}
+	// 	}
+	// }
+	//
+	// // Start as many worker threads as goroutines allowed
+	// pending := new(sync.WaitGroup)
+	// for i := 0; i < runtime.GOMAXPROCS(0); i++ {
+	// 	pending.Add(1)
+	// 	go func(id int) {
+	// 		defer pending.Done()
+	// 		process(id)
+	// 	}(i)
+	// }
+	// pending.Wait()
+	//
+	// // If anything failed, report
+	// if failed > 0 {
+	// 	for i, err := range errs {
+	// 		if err != nil {
+	// 			res.Index = i
+	// 			res.Error = err
+	// 			return
+	// 		}
+	// 	}
+	// }
 	// All headers passed verification, import them into the database
 	for i, header := range chain {
 		// Short circuit insertion if shutting down
@@ -566,28 +609,4 @@ func (hc *HeaderChain) postChainEvents(events []interface{}) {
 		// Fire the insertion events individually
 		hc.eventMux.Post(event)
 	}
-}
-
-// headerValidator is responsible for validating block headers
-//
-// headerValidator implements HeaderValidator.
-type headerValidator struct {
-	config *params.ChainConfig
-	hc     *HeaderChain // Canonical header chain
-	Pow    pow.PoW      // Proof of work used for validating
-}
-
-// ValidateHeader validates the given header and, depending on the pow arg,
-// checks the proof of work of the given header. Returns an error if the
-// validation failed.
-func (v *headerValidator) ValidateHeader(header, parent *types.Header, checkPow bool) error {
-	// Short circuit if the parent is missing.
-	if parent == nil {
-		return ParentError(header.ParentHash)
-	}
-	// Short circuit if the header's already known or its parent missing
-	if v.hc.HasHeader(header.Hash()) {
-		return nil
-	}
-	return ValidateHeader(v.config, v.Pow, header, parent, checkPow, false)
 }

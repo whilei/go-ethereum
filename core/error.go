@@ -36,6 +36,9 @@ var (
 
 	// ErrKnownBlock is returned when a block to import is already known locally.
 	ErrKnownBlock = errors.New("block already known")
+
+	// ErrBlacklistedHash is returned if a block to import is on the blacklist.
+	ErrBlacklistedHash = errors.New("blacklisted hash")
 )
 
 // Parent error. In case a parent is unknown this error will be thrown
