@@ -30,7 +30,7 @@ import (
 	"github.com/ethereumproject/go-ethereum/event"
 )
 
-func testChainConfig() *ChainConfig {
+func testChainConfig() *params.ClassicChainConfig {
 	return &ChainConfig{
 		Forks: []*Fork{
 			{

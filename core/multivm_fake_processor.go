@@ -13,6 +13,6 @@ const SputnikVMExists = false
 
 var UseSputnikVM = false
 
-func ApplyMultiVmTransaction(config *ChainConfig, bc *BlockChain, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, totalUsedGas *big.Int) (*types.Receipt, []*types.Log, *big.Int, error) {
+func ApplyMultiVmTransaction(config *params.ClassicChainConfig, bc *BlockChain, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, totalUsedGas *big.Int) (*types.Receipt, []*types.Log, *big.Int, error) {
 	panic("not implemented")
 }

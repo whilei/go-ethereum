@@ -45,12 +45,12 @@ var (
 //
 // StateProcessor implements Processor.
 type StateProcessor struct {
-	config *ChainConfig
+	config *params.ClassicChainConfig
 	bc     *BlockChain
 }
 
 // NewStateProcessor initialises a new StateProcessor.
-func NewStateProcessor(config *ChainConfig, bc *BlockChain) *StateProcessor {
+func NewStateProcessor(config *params.ClassicChainConfig, bc *BlockChain) *StateProcessor {
 	return &StateProcessor{
 		config: config,
 		bc:     bc,
@@ -111,7 +111,7 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB) (ty
 //
 // ApplyTransactions returns the generated receipts and vm logs during the
 // execution of the state transition phase.
-func ApplyTransaction(config *ChainConfig, bc *BlockChain, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *big.Int) (*types.Receipt, []*types.Log, *big.Int, error) {
+func ApplyTransaction(config *params.ClassicChainConfig, bc *BlockChain, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *big.Int) (*types.Receipt, []*types.Log, *big.Int, error) {
 	tx.SetSigner(config.GetSigner(header.Number))
 
 	_, gas, err := ApplyMessage(NewEnv(statedb, config, bc, tx, header), tx, gp)
@@ -142,7 +142,7 @@ func ApplyTransaction(config *ChainConfig, bc *BlockChain, gp *GasPool, statedb 
 // mining reward. The total reward consists of the static block reward
 // and rewards for included uncles. The coinbase of each uncle block is
 // also rewarded.
-func AccumulateRewards(config *ChainConfig, statedb *state.StateDB, header *types.Header, uncles []*types.Header) {
+func AccumulateRewards(config *params.ClassicChainConfig, statedb *state.StateDB, header *types.Header, uncles []*types.Header) {
 
 	// An uncle is a block that would be considered an orphan because its not on the longest chain (it's an alternative block at the same height as your parent).
 	// https://www.reddit.com/r/ethereum/comments/3c9jbf/wtf_are_uncles_and_why_do_they_matter/

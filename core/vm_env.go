@@ -32,7 +32,7 @@ package core
 // }
 //
 // type VMEnv struct {
-// 	chainConfig *ChainConfig   // Chain configuration
+// 	chainConfig *params.ClassicChainConfig   // Chain configuration
 // 	state       *state.StateDB // State to use for executing
 // 	evm         *vm.EVM        // The Ethereum Virtual Machine
 // 	depth       int            // Current execution depth
@@ -43,7 +43,7 @@ package core
 // 	getHashFn func(uint64) common.Hash // getHashFn callback is used to retrieve block hashes
 // }
 //
-// func NewEnv(state *state.StateDB, chainConfig *ChainConfig, chain *BlockChain, msg Message, header *types.Header) *VMEnv {
+// func NewEnv(state *state.StateDB, chainConfig *params.ClassicChainConfig, chain *BlockChain, msg Message, header *types.Header) *VMEnv {
 // 	env := &VMEnv{
 // 		chainConfig: chainConfig,
 // 		chain:       chain,

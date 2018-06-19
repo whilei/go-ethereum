@@ -55,14 +55,14 @@ type DifficultyConfig struct {
 //
 // BlockValidator implements Validator.
 type BlockValidator struct {
-	config *ChainConfig // Chain configuration options
+	config *params.ClassicChainConfig // Chain configuration options
 	bc     *BlockChain  // Canonical block chain
 	engine consensus.Engine
 	Pow    pow.PoW      // Proof of work used for validating
 }
 
 // NewBlockValidator returns a new block validator which is safe for re-use
-func NewBlockValidator(config *ChainConfig, blockchain *BlockChain, engine consensus.Engine, pow pow.PoW) *BlockValidator {
+func NewBlockValidator(config *params.ClassicChainConfig, blockchain *BlockChain, engine consensus.Engine, pow pow.PoW) *BlockValidator {
 	validator := &BlockValidator{
 		config: config,
 		engine: engine,
