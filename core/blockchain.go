@@ -116,6 +116,16 @@ type BlockChain struct {
 	atxi *AtxiT
 }
 
+// // Engine implements vm.ChainContext interface.
+// func (bc *BlockChain) Engine() consensus.Engine {
+// 	panic("implement me")
+// }
+//
+// // GetHeader implements vm.ChainContext interface.
+// func (bc *BlockChain) GetHeader(common.Hash, uint64) *types.Header {
+// 	panic("implement me")
+// }
+
 type ChainInsertResult struct {
 	ChainInsertEvent
 	Index int
