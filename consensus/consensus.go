@@ -37,7 +37,9 @@ type ChainReader interface {
 	CurrentHeader() *types.Header
 
 	// GetHeader retrieves a block header from the database by hash and number.
-	GetHeader(hash common.Hash, number uint64) *types.Header
+	// GetHeader(hash common.Hash, number uint64) *types.Header
+	// TODO:batcher
+	GetHeader(hash common.Hash) *types.Header
 
 	// GetHeaderByNumber retrieves a block header from the database by number.
 	GetHeaderByNumber(number uint64) *types.Header

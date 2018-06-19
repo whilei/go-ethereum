@@ -32,7 +32,10 @@ type ChainContext interface {
 	Engine() consensus.Engine
 
 	// GetHeader returns the hash corresponding to their hash.
-	GetHeader(common.Hash, uint64) *types.Header
+	// PTAL Here's a fork in the road. Walking down the (common.Hash, uint64) path leads to batch db with sequential keys.
+	// TODO(whilei), but if we can break off that hunk then I think we should.
+	// GetHeader(common.Hash, uint64) *types.Header
+	GetHeader(common.Hash) *types.Header
 }
 
 // NewEVMContext creates a new context for use in the EVM.
@@ -74,7 +77,8 @@ func GetHashFn(ref *types.Header, chain ChainContext) func(n uint64) common.Hash
 			return hash
 		}
 		// Not cached, iterate the blocks and cache the hashes
-		for header := chain.GetHeader(ref.ParentHash, ref.Number.Uint64()-1); header != nil; header = chain.GetHeader(header.ParentHash, header.Number.Uint64()-1) {
+		// for header := chain.GetHeader(ref.ParentHash, ref.Number.Uint64()-1); header != nil; header = chain.GetHeader(header.ParentHash, header.Number.Uint64()-1) {
+		for header := chain.GetHeader(ref.ParentHash); header != nil; header = chain.GetHeader(header.ParentHash) {
 			cache[header.Number.Uint64()-1] = header.ParentHash
 			if n == header.Number.Uint64()-1 {
 				return header.ParentHash

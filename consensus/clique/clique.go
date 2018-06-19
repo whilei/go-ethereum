@@ -339,7 +339,9 @@ func (c *Clique) verifyCascadingFields(chain consensus.ChainReader, header *type
 	if len(parents) > 0 {
 		parent = parents[len(parents)-1]
 	} else {
-		parent = chain.GetHeader(header.ParentHash, number-1)
+		// parent = chain.GetHeader(header.ParentHash, number-1)
+		// TODO:batcher
+		parent = chain.GetHeader(header.ParentHash)
 	}
 	if parent == nil || parent.Number.Uint64() != number-1 || parent.Hash() != header.ParentHash {
 		return consensus.ErrUnknownAncestor
@@ -416,7 +418,9 @@ func (c *Clique) snapshot(chain consensus.ChainReader, number uint64, hash commo
 			parents = parents[:len(parents)-1]
 		} else {
 			// No explicit parents (or no more left), reach out to the database
-			header = chain.GetHeader(hash, number)
+			// header = chain.GetHeader(hash, number)
+			// TODO:batcher
+			header = chain.GetHeader(hash)
 			if header == nil {
 				return nil, consensus.ErrUnknownAncestor
 			}
@@ -556,7 +560,9 @@ func (c *Clique) Prepare(chain consensus.ChainReader, header *types.Header) erro
 	header.MixDigest = common.Hash{}
 
 	// Ensure the timestamp has the correct delay
-	parent := chain.GetHeader(header.ParentHash, number-1)
+	// parent := chain.GetHeader(header.ParentHash, number-1)
+	// TODO:batcher
+	parent := chain.GetHeader(header.ParentHash)
 	if parent == nil {
 		return consensus.ErrUnknownAncestor
 	}

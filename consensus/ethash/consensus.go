@@ -75,10 +75,14 @@ func (ethash *Ethash) VerifyHeader(chain consensus.ChainReader, header *types.He
 	}
 	// Short circuit if the header is known, or it's parent not
 	number := header.Number.Uint64()
-	if chain.GetHeader(header.Hash(), number) != nil {
+	// if chain.GetHeader(header.Hash(), number) != nil {
+	// TODO:batcher
+	if chain.GetHeader(header.Hash()) != nil {
 		return nil
 	}
-	parent := chain.GetHeader(header.ParentHash, number-1)
+	// parent := chain.GetHeader(header.ParentHash, number-1)
+	// TODO:batcher
+	parent := chain.GetHeader(header.ParentHash)
 	if parent == nil {
 		return consensus.ErrUnknownAncestor
 	}
@@ -154,14 +158,18 @@ func (ethash *Ethash) VerifyHeaders(chain consensus.ChainReader, headers []*type
 func (ethash *Ethash) verifyHeaderWorker(chain consensus.ChainReader, headers []*types.Header, seals []bool, index int) error {
 	var parent *types.Header
 	if index == 0 {
-		parent = chain.GetHeader(headers[0].ParentHash, headers[0].Number.Uint64()-1)
+		// parent = chain.GetHeader(headers[0].ParentHash, headers[0].Number.Uint64()-1)
+		// TODO:batcher
+		parent = chain.GetHeader(headers[0].ParentHash)
 	} else if headers[index-1].Hash() == headers[index].ParentHash {
 		parent = headers[index-1]
 	}
 	if parent == nil {
 		return consensus.ErrUnknownAncestor
 	}
-	if chain.GetHeader(headers[index].Hash(), headers[index].Number.Uint64()) != nil {
+	// if chain.GetHeader(headers[index].Hash(), headers[index].Number.Uint64()) != nil {
+	// TODO: batcher
+	if chain.GetHeader(headers[index].Hash()) != nil {
 		return nil // known block
 	}
 	return ethash.verifyHeader(chain, headers[index], parent, false, seals[index])
@@ -631,7 +639,9 @@ func (ethash *Ethash) VerifySeal(chain consensus.ChainReader, header *types.Head
 // Prepare implements consensus.Engine, initializing the difficulty field of a
 // header to conform to the ethash protocol. The changes are done inline.
 func (ethash *Ethash) Prepare(chain consensus.ChainReader, header *types.Header) error {
-	parent := chain.GetHeader(header.ParentHash, header.Number.Uint64()-1)
+	// parent := chain.GetHeader(header.ParentHash, header.Number.Uint64()-1)
+	// TODO:batcher
+	parent := chain.GetHeader(header.ParentHash)
 	if parent == nil {
 		return consensus.ErrUnknownAncestor
 	}

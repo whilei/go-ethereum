@@ -22,9 +22,11 @@ import (
 	"time"
 
 	"github.com/ethereumproject/go-ethereum/common"
+	"github.com/ethereumproject/go-ethereum/consensus"
 	"github.com/ethereumproject/go-ethereum/core/state"
 	"github.com/ethereumproject/go-ethereum/core/types"
 	"github.com/ethereumproject/go-ethereum/logger/glog"
+	"github.com/ethereumproject/go-ethereum/params"
 	"github.com/ethereumproject/go-ethereum/pow"
 	"gopkg.in/fatih/set.v0"
 )
@@ -56,9 +58,9 @@ type DifficultyConfig struct {
 // BlockValidator implements Validator.
 type BlockValidator struct {
 	config *params.ChainConfig // Chain configuration options
-	bc     *BlockChain  // Canonical block chain
+	bc     *BlockChain         // Canonical block chain
 	engine consensus.Engine
-	Pow    pow.PoW      // Proof of work used for validating
+	Pow    pow.PoW // Proof of work used for validating
 }
 
 // NewBlockValidator returns a new block validator which is safe for re-use
@@ -77,11 +79,15 @@ func NewBlockValidator(config *params.ChainConfig, blockchain *BlockChain, engin
 // validated at this point.
 func (v *BlockValidator) ValidateBody(block *types.Block) error {
 	// Check whether the block's known, and if not, that it's linkable
-	if v.bc.HasBlockAndState(block.Hash(), block.NumberU64()) {
-		return ErrKnownBlock
+	// if v.bc.HasBlockAndState(block.Hash(), block.NumberU64()) {
+	// PTAL TODO:batcher
+	if v.bc.HasBlockAndState(block.Hash()) {
+		return &KnownBlockError{block.Number(), block.Hash()}
 	}
-	if !v.bc.HasBlockAndState(block.ParentHash(), block.NumberU64()-1) {
-		if !v.bc.HasBlock(block.ParentHash(), block.NumberU64()-1) {
+	// if !v.bc.HasBlock(block.ParentHash(), block.NumberU64()-1) {
+	if !v.bc.HasBlockAndState(block.ParentHash()) {
+		// TODO:batcher
+		if !v.bc.HasBlock(block.ParentHash()) {
 			return consensus.ErrUnknownAncestor
 		}
 		return consensus.ErrPrunedAncestor
@@ -210,7 +216,6 @@ func CalcGasLimit(parent *types.Block) *big.Int {
 	}
 	return gl
 }
-
 
 // // VerifyUncles verifies the given block's uncles and applies the Ethereum
 // // consensus rules to the various block headers included; it will return an
