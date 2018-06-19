@@ -48,16 +48,20 @@ var (
 // state from one point to another.
 //
 // StateProcessor implements Processor.
+// TODO(r8d8): consensus engine here
 type StateProcessor struct {
 	config *params.ChainConfig
 	bc     *BlockChain
+	// engine consensus.Engine
 }
 
 // NewStateProcessor initialises a new StateProcessor.
 func NewStateProcessor(config *params.ChainConfig, bc *BlockChain) *StateProcessor {
+	// func NewStateProcessor(config *params.ChainConfig, bc *BlockChain, engine consensus.Engine) *StateProcessor {
 	return &StateProcessor{
 		config: config,
 		bc:     bc,
+		// engine consensus.Engine
 	}
 }
 
@@ -68,7 +72,7 @@ func NewStateProcessor(config *params.ChainConfig, bc *BlockChain) *StateProcess
 // Process returns the receipts and logs accumulated during the process and
 // returns the amount of gas that was used in the process. If any of the
 // transactions failed to execute due to insufficient gas it will return an error.
-func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB) (types.Receipts, []*types.Log, *big.Int, error) {
+func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg vm.Config) (types.Receipts, []*types.Log, *big.Int, error) {
 	var (
 		receipts     types.Receipts
 		totalUsedGas = big.NewInt(0)
@@ -90,7 +94,8 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB) (ty
 		}
 		statedb.StartRecord(tx.Hash(), block.Hash(), i)
 		if !UseSputnikVM {
-			receipt, _, err := ApplyTransaction(p.config, p.bc, gp, statedb, header, tx, totalUsedGas)
+			// (config *params.ChainConfig, bc ChainContext, author *common.Address, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64, cfg vm.Config)
+			receipt, _, err := ApplyTransaction(p.config, p.bc, nil, gp, statedb, header, tx, totalUsedGas, cfg)
 			if err != nil {
 				return nil, nil, totalUsedGas, err
 			}
@@ -138,7 +143,7 @@ func (p *StateProcessor) ReplayTransaction(txHash common.Hash, statedb *state.St
 	}
 	//statedb.StartRecord(tx.Hash(), block.Hash(), i)
 	if !UseSputnikVM {
-		receipt, _, _, err := ApplyTransaction(p.config, p.bc, gp, statedb, header, tx, totalUsedGas)
+		receipt, _, err := ApplyTransaction(p.config, p.bc, gp, statedb, header, tx, totalUsedGas)
 		if err != nil {
 			return nil, err
 		}
