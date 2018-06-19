@@ -19,10 +19,10 @@ package core
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereumproject/go-ethereum/common"
+	"github.com/ethereumproject/go-ethereum/consensus"
+	"github.com/ethereumproject/go-ethereum/core/types"
+	"github.com/ethereumproject/go-ethereum/core/vm"
 )
 
 // ChainContext supports retrieving headers and consensus parameters from the
@@ -53,7 +53,7 @@ func NewEVMContext(msg Message, header *types.Header, chain ChainContext, author
 		BlockNumber: new(big.Int).Set(header.Number),
 		Time:        new(big.Int).Set(header.Time),
 		Difficulty:  new(big.Int).Set(header.Difficulty),
-		GasLimit:    header.GasLimit,
+		GasLimit:    header.GasLimit.Uint64(),
 		GasPrice:    new(big.Int).Set(msg.GasPrice()),
 	}
 }
