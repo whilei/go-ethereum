@@ -118,6 +118,11 @@ type BlockChain struct {
 	atxi *AtxiT
 }
 
+// Engine implements vm ChainContext interface.
+func (bc *BlockChain) Engine() consensus.Engine {
+	return bc.engine
+}
+
 // // Engine implements vm.ChainContext interface.
 // func (bc *BlockChain) Engine() consensus.Engine {
 // 	panic("implement me")
@@ -178,9 +183,8 @@ func NewBlockChain(chainDb ethdb.Database, config *params.ChainConfig, engine co
 	bc.SetValidator(NewBlockValidator(config, bc, engine))
 	bc.SetProcessor(NewStateProcessor(config, bc, engine))
 
-	gv := func() HeaderValidator { return bc.Validator() }
 	var err error
-	bc.hc, err = NewHeaderChain(chainDb, config, mux, gv, bc.getProcInterrupt)
+	bc.hc, err = NewHeaderChain(chainDb, config, mux, engine, bc.getProcInterrupt)
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +210,8 @@ func NewBlockChain(chainDb ethdb.Database, config *params.ChainConfig, engine co
 	return bc, nil
 }
 
-func NewBlockChainDryrun(chainDb ethdb.Database, config *params.ChainConfig, pow pow.PoW, mux *event.TypeMux) (*BlockChain, error) {
+// NewBlockChainDryrun behaves like NewBlockchain, EXCEPT that it doesn't loadLastState or begin update() subroutine.
+func NewBlockChainDryrun(chainDb ethdb.Database, config *params.ChainConfig, engine consensus.Engine, mux *event.TypeMux, vmConfig vm.Config) (*BlockChain, error) {
 	bodyCache, _ := lru.New(bodyCacheLimit)
 	bodyRLPCache, _ := lru.New(bodyCacheLimit)
 	blockCache, _ := lru.New(blockCacheLimit)
@@ -221,14 +226,14 @@ func NewBlockChainDryrun(chainDb ethdb.Database, config *params.ChainConfig, pow
 		bodyRLPCache: bodyRLPCache,
 		blockCache:   blockCache,
 		futureBlocks: futureBlocks,
-		pow:          pow,
+		engine:       engine,
+		vmConfig:     vmConfig,
 	}
-	bc.SetValidator(NewBlockValidator(config, bc, pow))
-	bc.SetProcessor(NewStateProcessor(config, bc))
+	bc.SetValidator(NewBlockValidator(config, bc, engine))
+	bc.SetProcessor(NewStateProcessor(config, bc, engine))
 
-	gv := func() HeaderValidator { return bc.Validator() }
 	var err error
-	bc.hc, err = NewHeaderChain(chainDb, config, mux, gv, bc.getProcInterrupt)
+	bc.hc, err = NewHeaderChain(chainDb, config, mux, engine, bc.getProcInterrupt)
 	if err != nil {
 		return nil, err
 	}
@@ -238,9 +243,10 @@ func NewBlockChainDryrun(chainDb ethdb.Database, config *params.ChainConfig, pow
 		return nil, ErrNoGenesis
 	}
 
-	//if err := bc.loadLastState(); err != nil {
-	//	return nil, err
-	//}
+	// NOTE: skip
+	// if err := bc.LoadLastState(false); err != nil {
+	// 	return nil, err
+	// }
 	// Check the current state of the block hashes and make sure that we do not have any of the bad blocks in our chain
 	for i := range config.BadHashes {
 		if header := bc.GetHeader(config.BadHashes[i].Hash); header != nil && header.Number.Cmp(config.BadHashes[i].Block) == 0 {
@@ -249,8 +255,9 @@ func NewBlockChainDryrun(chainDb ethdb.Database, config *params.ChainConfig, pow
 			glog.V(logger.Error).Infoln("Chain rewind was successful, resuming normal operation")
 		}
 	}
-	// // Take ownership of this particular state
-	//go bc.update()
+	// NOTE: skip
+	// Take ownership of this particular state
+	// go bc.update()
 	return bc, nil
 }
 

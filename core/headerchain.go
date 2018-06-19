@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/ethereumproject/go-ethereum/common"
+	"github.com/ethereumproject/go-ethereum/consensus"
 	"github.com/ethereumproject/go-ethereum/core/types"
 	"github.com/ethereumproject/go-ethereum/ethdb"
 	"github.com/ethereumproject/go-ethereum/event"
@@ -56,19 +57,16 @@ type HeaderChain struct {
 
 	procInterrupt func() bool
 
-	rand         *mrand.Rand
-	getValidator getHeaderValidatorFn
-	eventMux     *event.TypeMux
+	rand     *mrand.Rand
+	eventMux *event.TypeMux
+	engine   consensus.Engine
 }
-
-// getHeaderValidatorFn returns a HeaderValidator interface
-type getHeaderValidatorFn func() HeaderValidator
 
 // NewHeaderChain creates a new HeaderChain structure.
 //  getValidator should return the parent's validator
 //  procInterrupt points to the parent's interrupt semaphore
 //  wg points to the parent's shutdown wait group
-func NewHeaderChain(chainDb ethdb.Database, config *params.ChainConfig, mux *event.TypeMux, getValidator getHeaderValidatorFn, procInterrupt func() bool) (*HeaderChain, error) {
+func NewHeaderChain(chainDb ethdb.Database, config *params.ChainConfig, mux *event.TypeMux, engine consensus.Engine, procInterrupt func() bool) (*HeaderChain, error) {
 	headerCache, _ := lru.New(headerCacheLimit)
 	tdCache, _ := lru.New(tdCacheLimit)
 
@@ -86,9 +84,13 @@ func NewHeaderChain(chainDb ethdb.Database, config *params.ChainConfig, mux *eve
 		tdCache:       tdCache,
 		procInterrupt: procInterrupt,
 		rand:          mrand.New(mrand.NewSource(seed.Int64())),
-		getValidator:  getValidator,
+		engine:        engine,
 	}
 
+	// PTAL-// Note this stuff is different..
+	// Maybe we can get rid of the WriteGenesisBlock stuff eventually. It seems out of place here.
+	// TODO, come back to this.
+	// PTAL-
 	gen := params.DefaultConfigMainnet.Genesis
 	genname := "mainnet"
 	// Check if ChainConfig is mainnet or testnet and write genesis accordingly.

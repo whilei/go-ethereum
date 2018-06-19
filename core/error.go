@@ -33,6 +33,9 @@ var (
 	// ErrNonceTooHigh is returned if the nonce of a transaction is higher than the
 	// next one expected based on the local chain.
 	ErrNonceTooHigh = errors.New("nonce too high")
+
+	// ErrKnownBlock is returned when a block to import is already known locally.
+	ErrKnownBlock = errors.New("block already known")
 )
 
 // Parent error. In case a parent is unknown this error will be thrown

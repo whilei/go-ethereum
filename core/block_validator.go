@@ -18,17 +18,11 @@ package core
 
 import (
 	"fmt"
-	"math/big"
-	"time"
 
-	"github.com/ethereumproject/go-ethereum/common"
 	"github.com/ethereumproject/go-ethereum/consensus"
 	"github.com/ethereumproject/go-ethereum/core/state"
 	"github.com/ethereumproject/go-ethereum/core/types"
-	"github.com/ethereumproject/go-ethereum/logger/glog"
 	"github.com/ethereumproject/go-ethereum/params"
-	"github.com/ethereumproject/go-ethereum/pow"
-	"gopkg.in/fatih/set.v0"
 )
 
 // BlockValidator is responsible for validating block headers, uncles and
@@ -56,11 +50,17 @@ func NewBlockValidator(config *params.ChainConfig, blockchain *BlockChain, engin
 // validated at this point.
 func (v *BlockValidator) ValidateBody(block *types.Block) error {
 	// Check whether the block's known, and if not, that it's linkable
-	if v.bc.HasBlockAndState(block.Hash(), block.NumberU64()) {
+	// if v.bc.HasBlockAndState(block.Hash(), block.NumberU64()) {
+	// TODO:batcher
+	if v.bc.HasBlockAndState(block.Hash()) {
 		return ErrKnownBlock
 	}
-	if !v.bc.HasBlockAndState(block.ParentHash(), block.NumberU64()-1) {
-		if !v.bc.HasBlock(block.ParentHash(), block.NumberU64()-1) {
+	// if !v.bc.HasBlockAndState(block.ParentHash(), block.NumberU64()-1) {
+	// TODO:batcher
+	if !v.bc.HasBlockAndState(block.ParentHash()) {
+		// if !v.bc.HasBlock(block.ParentHash(), block.NumberU64()-1) {
+		// TODO:batcher
+		if !v.bc.HasBlock(block.ParentHash()) {
 			return consensus.ErrUnknownAncestor
 		}
 		return consensus.ErrPrunedAncestor
@@ -85,7 +85,7 @@ func (v *BlockValidator) ValidateBody(block *types.Block) error {
 // otherwise nil and an error is returned.
 func (v *BlockValidator) ValidateState(block, parent *types.Block, statedb *state.StateDB, receipts types.Receipts, usedGas uint64) error {
 	header := block.Header()
-	if block.GasUsed() != usedGas {
+	if block.GasUsed().Uint64() != usedGas {
 		return fmt.Errorf("invalid gas used (remote: %d local: %d)", block.GasUsed(), usedGas)
 	}
 	// Validate the received block's bloom with the one derived from the generated receipts.
@@ -111,9 +111,9 @@ func (v *BlockValidator) ValidateState(block, parent *types.Block, statedb *stat
 // This is miner strategy, not consensus protocol.
 func CalcGasLimit(parent *types.Block) uint64 {
 	// contrib = (parentGasUsed * 3 / 2) / 1024
-	contrib := (parent.GasUsed() + parent.GasUsed()/2) / params.GasLimitBoundDivisor
+	contrib := (parent.GasUsed().Uint64() + parent.GasUsed().Uint64()/2) / params.GasLimitBoundDivisor
 	// decay = parentGasLimit / 1024 -1
-	decay := parent.GasLimit()/params.GasLimitBoundDivisor - 1
+	decay := parent.GasLimit().Uint64()/params.GasLimitBoundDivisor - 1
 	/*
 		strategy: gasLimit of block-to-mine is set based on parent's
 		gasUsed value.  if parentGasUsed > parentGasLimit * (2/3) then we
@@ -121,14 +121,14 @@ func CalcGasLimit(parent *types.Block) uint64 {
 		at that usage) the amount increased/decreased depends on how far away
 		from parentGasLimit * (2/3) parentGasUsed is.
 	*/
-	limit := parent.GasLimit() - decay + contrib
+	limit := parent.GasLimit().Uint64() - decay + contrib
 	if limit < params.MinGasLimit {
 		limit = params.MinGasLimit
 	}
 	// however, if we're now below the target (TargetGasLimit) we increase the
 	// limit as much as we can (parentGasLimit / 1024 -1)
 	if limit < params.TargetGasLimit {
-		limit = parent.GasLimit() + decay
+		limit = parent.GasLimit().Uint64() + decay
 		if limit > params.TargetGasLimit {
 			limit = params.TargetGasLimit
 		}
