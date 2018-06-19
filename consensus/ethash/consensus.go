@@ -248,22 +248,22 @@ func (ethash *Ethash) verifyHeader(chain consensus.ChainReader, header, parent *
 	}
 	// Verify that the gas limit is <= 2^63-1
 	cap := uint64(0x7fffffffffffffff)
-	if header.GasLimit > cap {
+	if header.GasLimit.Uint64() > cap {
 		return fmt.Errorf("invalid gasLimit: have %v, max %v", header.GasLimit, cap)
 	}
 	// Verify that the gasUsed is <= gasLimit
-	if header.GasUsed > header.GasLimit {
+	if header.GasUsed.Uint64() > header.GasLimit.Uint64() {
 		return fmt.Errorf("invalid gasUsed: have %d, gasLimit %d", header.GasUsed, header.GasLimit)
 	}
 
 	// Verify that the gas limit remains within allowed bounds
-	diff := int64(parent.GasLimit) - int64(header.GasLimit)
+	diff := parent.GasLimit.Uint64() - header.GasLimit.Uint64()
 	if diff < 0 {
 		diff *= -1
 	}
-	limit := parent.GasLimit / params.GasLimitBoundDivisor
+	limit := parent.GasLimit.Uint64() / params.GasLimitBoundDivisor
 
-	if uint64(diff) >= limit || header.GasLimit < params.MinGasLimit {
+	if uint64(diff) >= limit || header.GasLimit.Uint64() < params.MinGasLimit {
 		return fmt.Errorf("invalid gas limit: have %d, want %d += %d", header.GasLimit, parent.GasLimit, limit)
 	}
 	// Verify that the block number is parent's +1
@@ -300,7 +300,8 @@ func CalcDifficulty(config *core.ChainConfig, time uint64, parent *types.Header)
 	next := new(big.Int).Add(parent.Number, big1)
 	switch {
 	case config.IsExplosion(next):
-		return calcDifficultyExplosion(time, parent)
+		// (time uint64, parentTime uint64, parentNumber *big.Int, parentDiff *big.Int, delayBlock *big.Int, continueBlock *big.Int)
+		return calcDifficultyExplosion(time, parent.Time.Uint64(), parent.Difficulty.Uint64())
 	case config.IsDiehard(next):
 		return calcDifficultyDiehard(time, parent)
 	case config.IsDefused(next):
@@ -393,13 +394,13 @@ func calcDifficultyDiehard(time, parentTime uint64, parentDiff *big.Int, diehard
 	}
 
 	// (parent_diff + parent_diff // 2048 * max(1 - (block_timestamp - parent_timestamp) // 10, -99))
-	y.Div(parentDiff, DifficultyBoundDivisor)
+	y.Div(parentDiff, params.DifficultyBoundDivisor)
 	x.Mul(y, x)
 	x.Add(parentDiff, x)
 
 	// minimum difficulty can ever be (before exponential factor)
-	if x.Cmp(MinimumDifficulty) < 0 {
-		x.Set(MinimumDifficulty)
+	if x.Cmp(params.MinimumDifficulty) < 0 {
+		x.Set(params.MinimumDifficulty)
 	}
 
 	// for the exponential factor

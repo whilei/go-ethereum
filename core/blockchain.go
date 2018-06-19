@@ -35,6 +35,7 @@ import (
 	"encoding/binary"
 
 	"github.com/ethereumproject/go-ethereum/common"
+	"github.com/ethereumproject/go-ethereum/consensus"
 	"github.com/ethereumproject/go-ethereum/core/state"
 	"github.com/ethereumproject/go-ethereum/core/types"
 	"github.com/ethereumproject/go-ethereum/core/vm"
@@ -82,7 +83,7 @@ const (
 // included in the canonical one where as GetBlockByNumber always represents the
 // canonical chain.
 type BlockChain struct {
-	config *ChainConfig // chain & network configuration
+	config *params.ChainConfig // chain & network configuration
 
 	hc           *HeaderChain
 	chainDb      ethdb.Database
@@ -108,7 +109,7 @@ type BlockChain struct {
 	procInterrupt int32          // interrupt signaler for block processing
 	wg            sync.WaitGroup // chain processing wait group for shutting down
 
-	engine Engine 
+	engine    Engine
 	processor Processor // block processor interface
 	validator Validator // block and state validator interface
 
