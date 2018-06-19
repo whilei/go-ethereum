@@ -145,7 +145,7 @@ type ChainConfig struct {
 
 	ByzantiumBlock *big.Int `json:"-"` // Byzantium switch block (nil = no fork, 0 = already on byzantium)
 	// ConstantinopleBlock *big.Int `json:"-"` // Constantinople switch block (nil = no fork, 0 = already activated)
-
+	Clique *CliqueConfig `json:"clique,omitempty"`
 }
 
 func (c *ChainConfig) SetForkBlockVals() {

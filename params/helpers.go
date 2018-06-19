@@ -1,12 +1,12 @@
 // +build !windows
 
-package core
+package params
 
 import (
 	"fmt"
 	"io"
 
-	"github.com/ethereumproject/go-ethereum/core/assets"
+	"github.com/ethereumproject/go-ethereum/params/assets"
 )
 
 func assetsOpen(path string) (io.ReadCloser, error) {

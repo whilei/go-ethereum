@@ -13,12 +13,15 @@ func init() {
 
 	var err error
 
-	DefaultConfigMainnet, err = parseExternalChainConfig("/core/config/mainnet.json", assetsOpen)
+	DefaultConfigMainnet, err = parseExternalChainConfig("/params/config/mainnet.json", assetsOpen)
 	if err != nil {
 		glog.Fatal("Error parsing mainnet defaults from JSON:", err)
 	}
-	DefaultConfigMorden, err = parseExternalChainConfig("/core/config/morden.json", assetsOpen)
+	DefaultConfigMainnet.ChainConfig.SetForkBlockVals()
+
+	DefaultConfigMorden, err = parseExternalChainConfig("/params/config/morden.json", assetsOpen)
 	if err != nil {
 		glog.Fatal("Error parsing morden defaults from JSON:", err)
 	}
+	DefaultConfigMorden.ChainConfig.SetForkBlockVals()
 }
