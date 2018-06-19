@@ -60,6 +60,25 @@ type HeaderChain struct {
 	engine   consensus.Engine
 }
 
+// Config implements consensus.ChainReader interface.
+func (hc *HeaderChain) Config() *params.ChainConfig {
+	return hc.config
+}
+
+// GetHeaderByHash implements consensus.ChainReader interface.
+func (hc *HeaderChain) GetHeaderByHash(hash common.Hash) *types.Header {
+	return hc.GetHeader(hash)
+}
+
+// GetBlock implements consensus.ChainReader, and returns nil for every input as
+// a header chain does not have blocks available for retrieval.
+func (hc *HeaderChain) GetBlock(hash common.Hash) *types.Block {
+	return nil
+}
+
+// Engine retrieves the header chain's consensus engine.
+func (hc *HeaderChain) Engine() consensus.Engine { return hc.engine }
+
 // NewHeaderChain creates a new HeaderChain structure.
 //  getValidator should return the parent's validator
 //  procInterrupt points to the parent's interrupt semaphore
