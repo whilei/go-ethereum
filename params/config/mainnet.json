@@ -95,6 +95,18 @@
                         }
                     }
                 ]
+            },
+            {
+                "name": "Busybee",
+                "block": 6850000,
+                "features": [
+                    {
+                        "id": "newopcodes-placholderid",
+                        "options": {
+                            "enabled": "maybe these should be an array of opcode names with bool vals? or maybe that's overkill..."
+                        }
+                    }
+                ]
             }
         ],
         "badHashes": [

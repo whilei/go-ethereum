@@ -141,101 +141,101 @@ func (c *CliqueConfig) String() string {
 // 	return isForked(c.HomesteadBlock, num)
 // }
 
-// IsDAOFork returns whether num is either equal to the DAO fork block or greater.
-func (c *ChainConfig) IsDAOFork(num *big.Int) bool {
-	return isForked(c.DAOForkBlock, num)
-}
+// // IsDAOFork returns whether num is either equal to the DAO fork block or greater.
+// func (c *ChainConfig) IsDAOFork(num *big.Int) bool {
+// 	return isForked(c.DAOForkBlock, num)
+// }
 
-// IsEIP150 returns whether num is either equal to the EIP150 fork block or greater.
-func (c *ChainConfig) IsEIP150(num *big.Int) bool {
-	return isForked(c.EIP150Block, num)
-}
+// // IsEIP150 returns whether num is either equal to the EIP150 fork block or greater.
+// func (c *ChainConfig) IsEIP150(num *big.Int) bool {
+// 	return isForked(c.EIP150Block, num)
+// }
 
-// IsEIP155 returns whether num is either equal to the EIP155 fork block or greater.
-func (c *ChainConfig) IsEIP155(num *big.Int) bool {
-	return isForked(c.EIP155Block, num)
-}
+// // IsEIP155 returns whether num is either equal to the EIP155 fork block or greater.
+// func (c *ChainConfig) IsEIP155(num *big.Int) bool {
+// 	return isForked(c.EIP155Block, num)
+// }
 
-// IsEIP158 returns whether num is either equal to the EIP158 fork block or greater.
-func (c *ChainConfig) IsEIP158(num *big.Int) bool {
-	return isForked(c.EIP158Block, num)
-}
+// // IsEIP158 returns whether num is either equal to the EIP158 fork block or greater.
+// func (c *ChainConfig) IsEIP158(num *big.Int) bool {
+// 	return isForked(c.EIP158Block, num)
+// }
 
-// IsByzantium returns whether num is either equal to the Byzantium fork block or greater.
-func (c *ChainConfig) IsByzantium(num *big.Int) bool {
-	return isForked(c.ByzantiumBlock, num)
-}
+// // IsByzantium returns whether num is either equal to the Byzantium fork block or greater.
+// func (c *ChainConfig) IsByzantium(num *big.Int) bool {
+// 	return isForked(c.ByzantiumBlock, num)
+// }
 
-// IsConstantinople returns whether num is either equal to the Constantinople fork block or greater.
-func (c *ChainConfig) IsConstantinople(num *big.Int) bool {
-	return isForked(c.ConstantinopleBlock, num)
-}
+// // IsConstantinople returns whether num is either equal to the Constantinople fork block or greater.
+// func (c *ChainConfig) IsConstantinople(num *big.Int) bool {
+// 	return isForked(c.ConstantinopleBlock, num)
+// }
 
-// GasTable returns the gas table corresponding to the current phase (homestead or homestead reprice).
+// // GasTable returns the gas table corresponding to the current phase (homestead or homestead reprice).
+// //
+// // The returned GasTable's fields shouldn't, under any circumstances, be changed.
+// func (c *ChainConfig) GasTable(num *big.Int) GasTable {
+// 	if num == nil {
+// 		return GasTableHomestead
+// 	}
+// 	switch {
+// 	case c.IsEIP158(num):
+// 		return GasTableEIP158
+// 	case c.IsEIP150(num):
+// 		return GasTableEIP150
+// 	default:
+// 		return GasTableHomestead
+// 	}
+// }
+
+// // CheckCompatible checks whether scheduled fork transitions have been imported
+// // with a mismatching chain configuration.
+// func (c *ChainConfig) CheckCompatible(newcfg *ChainConfig, height uint64) *ConfigCompatError {
+// 	bhead := new(big.Int).SetUint64(height)
 //
-// The returned GasTable's fields shouldn't, under any circumstances, be changed.
-func (c *ChainConfig) GasTable(num *big.Int) GasTable {
-	if num == nil {
-		return GasTableHomestead
-	}
-	switch {
-	case c.IsEIP158(num):
-		return GasTableEIP158
-	case c.IsEIP150(num):
-		return GasTableEIP150
-	default:
-		return GasTableHomestead
-	}
-}
+// 	// Iterate checkCompatible to find the lowest conflict.
+// 	var lasterr *ConfigCompatError
+// 	for {
+// 		err := c.checkCompatible(newcfg, bhead)
+// 		if err == nil || (lasterr != nil && err.RewindTo == lasterr.RewindTo) {
+// 			break
+// 		}
+// 		lasterr = err
+// 		bhead.SetUint64(err.RewindTo)
+// 	}
+// 	return lasterr
+// }
 
-// CheckCompatible checks whether scheduled fork transitions have been imported
-// with a mismatching chain configuration.
-func (c *ChainConfig) CheckCompatible(newcfg *ChainConfig, height uint64) *ConfigCompatError {
-	bhead := new(big.Int).SetUint64(height)
-
-	// Iterate checkCompatible to find the lowest conflict.
-	var lasterr *ConfigCompatError
-	for {
-		err := c.checkCompatible(newcfg, bhead)
-		if err == nil || (lasterr != nil && err.RewindTo == lasterr.RewindTo) {
-			break
-		}
-		lasterr = err
-		bhead.SetUint64(err.RewindTo)
-	}
-	return lasterr
-}
-
-func (c *ChainConfig) checkCompatible(newcfg *ChainConfig, head *big.Int) *ConfigCompatError {
-	if isForkIncompatible(c.HomesteadBlock, newcfg.HomesteadBlock, head) {
-		return newCompatError("Homestead fork block", c.HomesteadBlock, newcfg.HomesteadBlock)
-	}
-	if isForkIncompatible(c.DAOForkBlock, newcfg.DAOForkBlock, head) {
-		return newCompatError("DAO fork block", c.DAOForkBlock, newcfg.DAOForkBlock)
-	}
-	if c.IsDAOFork(head) && c.DAOForkSupport != newcfg.DAOForkSupport {
-		return newCompatError("DAO fork support flag", c.DAOForkBlock, newcfg.DAOForkBlock)
-	}
-	if isForkIncompatible(c.EIP150Block, newcfg.EIP150Block, head) {
-		return newCompatError("EIP150 fork block", c.EIP150Block, newcfg.EIP150Block)
-	}
-	if isForkIncompatible(c.EIP155Block, newcfg.EIP155Block, head) {
-		return newCompatError("EIP155 fork block", c.EIP155Block, newcfg.EIP155Block)
-	}
-	if isForkIncompatible(c.EIP158Block, newcfg.EIP158Block, head) {
-		return newCompatError("EIP158 fork block", c.EIP158Block, newcfg.EIP158Block)
-	}
-	if c.IsEIP158(head) && !configNumEqual(c.ChainID, newcfg.ChainID) {
-		return newCompatError("EIP158 chain ID", c.EIP158Block, newcfg.EIP158Block)
-	}
-	if isForkIncompatible(c.ByzantiumBlock, newcfg.ByzantiumBlock, head) {
-		return newCompatError("Byzantium fork block", c.ByzantiumBlock, newcfg.ByzantiumBlock)
-	}
-	if isForkIncompatible(c.ConstantinopleBlock, newcfg.ConstantinopleBlock, head) {
-		return newCompatError("Constantinople fork block", c.ConstantinopleBlock, newcfg.ConstantinopleBlock)
-	}
-	return nil
-}
+// func (c *ChainConfig) checkCompatible(newcfg *ChainConfig, head *big.Int) *ConfigCompatError {
+// 	if isForkIncompatible(c.HomesteadBlock, newcfg.HomesteadBlock, head) {
+// 		return newCompatError("Homestead fork block", c.HomesteadBlock, newcfg.HomesteadBlock)
+// 	}
+// 	if isForkIncompatible(c.DAOForkBlock, newcfg.DAOForkBlock, head) {
+// 		return newCompatError("DAO fork block", c.DAOForkBlock, newcfg.DAOForkBlock)
+// 	}
+// 	if c.IsDAOFork(head) && c.DAOForkSupport != newcfg.DAOForkSupport {
+// 		return newCompatError("DAO fork support flag", c.DAOForkBlock, newcfg.DAOForkBlock)
+// 	}
+// 	if isForkIncompatible(c.EIP150Block, newcfg.EIP150Block, head) {
+// 		return newCompatError("EIP150 fork block", c.EIP150Block, newcfg.EIP150Block)
+// 	}
+// 	if isForkIncompatible(c.EIP155Block, newcfg.EIP155Block, head) {
+// 		return newCompatError("EIP155 fork block", c.EIP155Block, newcfg.EIP155Block)
+// 	}
+// 	if isForkIncompatible(c.EIP158Block, newcfg.EIP158Block, head) {
+// 		return newCompatError("EIP158 fork block", c.EIP158Block, newcfg.EIP158Block)
+// 	}
+// 	if c.IsEIP158(head) && !configNumEqual(c.ChainID, newcfg.ChainID) {
+// 		return newCompatError("EIP158 chain ID", c.EIP158Block, newcfg.EIP158Block)
+// 	}
+// 	if isForkIncompatible(c.ByzantiumBlock, newcfg.ByzantiumBlock, head) {
+// 		return newCompatError("Byzantium fork block", c.ByzantiumBlock, newcfg.ByzantiumBlock)
+// 	}
+// 	if isForkIncompatible(c.ConstantinopleBlock, newcfg.ConstantinopleBlock, head) {
+// 		return newCompatError("Constantinople fork block", c.ConstantinopleBlock, newcfg.ConstantinopleBlock)
+// 	}
+// 	return nil
+// }
 
 // isForkIncompatible returns true if a fork scheduled at s1 cannot be rescheduled to
 // block s2 because head is already past the fork.
@@ -305,7 +305,7 @@ type Rules struct {
 
 // Rules ensures c's ChainID is not nil.
 func (c *ChainConfig) Rules(num *big.Int) Rules {
-	chainID := c.ChainID
+	chainID := c.GetChainID()
 	if chainID == nil {
 		chainID = new(big.Int)
 	}

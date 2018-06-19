@@ -31,14 +31,26 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ethereumproject/go-ethereum/params"
-
 	"github.com/ethereumproject/go-ethereum/common"
 	"github.com/ethereumproject/go-ethereum/core/types"
 	"github.com/ethereumproject/go-ethereum/logger"
 	"github.com/ethereumproject/go-ethereum/logger/glog"
 	"github.com/ethereumproject/go-ethereum/p2p/discover"
 )
+
+// PTAL TODO(whilei): get rid or move this 'validateError' stuff
+// validateError signals a block validation failure.
+type validateError string
+
+func (err validateError) Error() string {
+	return string(err)
+}
+
+// IsValidateError eturns whether err is a validation error.
+func IsValidateError(err error) bool {
+	_, ok := err.(validateError)
+	return ok
+}
 
 var (
 	ErrChainConfigNotFound     = errors.New("chain config not found")
@@ -272,9 +284,64 @@ func (c *ChainConfig) IsHomestead(num *big.Int) bool {
 	return num.Cmp(c.ForkByName("Homestead").Block) >= 0
 }
 
+// IsEIP150 returns whether num is greater than or equal to the Diehard block, but less than explosion.
+func (c *ChainConfig) IsEIP150(num *big.Int) bool {
+	fork := c.ForkByName("GasReprice")
+	if fork.Block == nil || num == nil {
+		return false
+	}
+	return num.Cmp(fork.Block) >= 0
+}
+
 // IsDiehard returns whether num is greater than or equal to the Diehard block, but less than explosion.
 func (c *ChainConfig) IsDiehard(num *big.Int) bool {
 	fork := c.ForkByName("Diehard")
+	if fork.Block == nil || num == nil {
+		return false
+	}
+	return num.Cmp(fork.Block) >= 0
+}
+
+// IsEIP155 returns whether EIP155 is configured at or behind a given block number
+func (c *ChainConfig) IsEIP155(num *big.Int) bool {
+	fork := c.ForkByName("Diehard")
+	if fork.Block == nil || num == nil {
+		return false
+	}
+	if num.Cmp(fork.Block) >= 0 {
+		return c.GetChainID().Cmp(new(big.Int)) > 0
+	}
+	return false
+}
+
+// IsEIP158 returns whether EIP158 is configured at or behind a given block number
+func (c *ChainConfig) IsEIP158(num *big.Int) bool {
+	ff, fork, ok := c.GetFeature(num, "gastable")
+	if fork == nil || !ok {
+		return false
+	}
+	t, ok := ff.GetString("type")
+	if !ok {
+		return false
+	}
+	return t == "eip160" // PTAL again, hm.
+}
+
+func (c *ChainConfig) IsByzantium(num *big.Int) bool {
+	ff, fork, ok := c.GetFeature(num, "newopcodes-placholderid") // PTAL just noting placeholder
+	if fork == nil || !ok {
+		return false
+	}
+	t, ok := ff.GetString("enabled")
+	if !ok {
+		return false
+	}
+	return t != ""
+}
+
+// IsDAOFork returns whether num is greater than or equal DAO Fork
+func (c *ChainConfig) IsDAOFork(num *big.Int) bool {
+	fork := c.ForkByName("The DAO Hard Fork")
 	if fork.Block == nil || num == nil {
 		return false
 	}
@@ -412,10 +479,10 @@ func (c *ChainConfig) GetSigner(blockNumber *big.Int) types.Signer {
 
 // GasTable returns the gas table corresponding to the current fork
 // The returned GasTable's fields shouldn't, under any circumstances, be changed.
-func (c *ChainConfig) GasTable(num *big.Int) *params.GasTable {
+func (c *ChainConfig) GasTable(num *big.Int) *GasTable {
 	f, _, configured := c.GetFeature(num, "gastable")
 	if !configured {
-		return &params.GasTableHomestead
+		return &GasTableHomestead
 	}
 	name, ok := f.GetString("type")
 	if !ok {
@@ -423,11 +490,11 @@ func (c *ChainConfig) GasTable(num *big.Int) *params.GasTable {
 	} // will wall to default panic
 	switch name {
 	case "homestead":
-		return &params.GasTableHomestead
+		return &GasTableHomestead
 	case "eip150":
-		return &params.GasTableEIP150
+		return &GasTableEIP150
 	case "eip160":
-		return &params.GasTableEIP158 // PTAL Hm.
+		return &GasTableEIP158 // PTAL Hm.
 	default:
 		panic(fmt.Errorf("Unsupported gastable value '%v' at block: %v", name, num))
 	}
