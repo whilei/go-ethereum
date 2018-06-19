@@ -54,7 +54,7 @@ func newTestProtocolManager(mode downloader.SyncMode, blocks int, generator func
 		pow         = new(core.FakePow)
 		db, _       = ethdb.NewMemDatabase()
 		genesis     = core.WriteGenesisBlockForTesting(db, testBank)
-		chainConfig = &core.ChainConfig{
+		chainConfig = &core.ClassicChainConfig{
 			Forks: []*core.Fork{
 				{
 					Name:  "Homestead",

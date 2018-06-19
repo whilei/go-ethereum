@@ -58,7 +58,7 @@ const (
 )
 
 type Config struct {
-	ChainConfig *core.ChainConfig // chain configuration
+	ChainConfig *core.ClassicChainConfig // chain configuration
 
 	NetworkId int // Network ID to use for selecting peers to connect to
 	Genesis   *core.GenesisDump
@@ -97,7 +97,7 @@ type Config struct {
 
 type Ethereum struct {
 	config      *Config
-	chainConfig *core.ChainConfig
+	chainConfig *core.ClassicChainConfig
 	// Channel for shutting down the ethereum
 	shutdownChan chan bool
 
@@ -424,14 +424,14 @@ func (s *Ethereum) Miner() *miner.Miner { return s.miner }
 func (s *Ethereum) AccountManager() *accounts.Manager  { return s.accountManager }
 func (s *Ethereum) BlockChain() *core.BlockChain       { return s.blockchain }
 func (s *Ethereum) TxPool() *core.TxPool               { return s.txPool }
-func (s *Ethereum) EventMux() *event.TypeMux           { return s.eventMux }
-func (s *Ethereum) ChainDb() ethdb.Database            { return s.chainDb }
-func (s *Ethereum) DappDb() ethdb.Database             { return s.dappDb }
-func (s *Ethereum) IsListening() bool                  { return true } // Always listening
-func (s *Ethereum) EthVersion() int                    { return int(s.protocolManager.SubProtocols[0].Version) }
-func (s *Ethereum) NetVersion() int                    { return s.netVersionId }
-func (s *Ethereum) ChainConfig() *core.ChainConfig     { return s.chainConfig }
-func (s *Ethereum) Downloader() *downloader.Downloader { return s.protocolManager.downloader }
+func (s *Ethereum) EventMux() *event.TypeMux              { return s.eventMux }
+func (s *Ethereum) ChainDb() ethdb.Database               { return s.chainDb }
+func (s *Ethereum) DappDb() ethdb.Database                { return s.dappDb }
+func (s *Ethereum) IsListening() bool                     { return true } // Always listening
+func (s *Ethereum) EthVersion() int                       { return int(s.protocolManager.SubProtocols[0].Version) }
+func (s *Ethereum) NetVersion() int                       { return s.netVersionId }
+func (s *Ethereum) ChainConfig() *core.ClassicChainConfig { return s.chainConfig }
+func (s *Ethereum) Downloader() *downloader.Downloader    { return s.protocolManager.downloader }
 
 // Protocols implements node.Service, returning all the currently configured
 // network protocols to start.

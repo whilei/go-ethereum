@@ -281,7 +281,7 @@ func CalcGasLimit(parent *types.Block) *big.Int {
 // // Validates a header. Returns an error if the header is invalid.
 // //
 // // See YP section 4.3.4. "Block Header Validity"
-// func ValidateHeader(config *ChainConfig, pow pow.PoW, header *types.Header, parent *types.Header, checkPow, uncle bool) error {
+// func ValidateHeader(config *ClassicChainConfig, pow pow.PoW, header *types.Header, parent *types.Header, checkPow, uncle bool) error {
 // 	if len(header.Extra) > types.HeaderExtraMax {
 // 		return fmt.Errorf("extra data size %d exceeds limit of %d", len(header.Extra), types.HeaderExtraMax)
 // 	}

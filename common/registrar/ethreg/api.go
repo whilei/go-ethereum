@@ -37,7 +37,7 @@ import (
 
 // registryAPIBackend is a backend for an Ethereum Registry.
 type registryAPIBackend struct {
-	config  *core.ChainConfig
+	config  *core.ClassicChainConfig
 	bc      *core.BlockChain
 	chainDb ethdb.Database
 	txPool  *core.TxPool
@@ -46,12 +46,12 @@ type registryAPIBackend struct {
 
 // PrivateRegistarAPI offers various functions to access the Ethereum registry.
 type PrivateRegistarAPI struct {
-	config *core.ChainConfig
+	config *core.ClassicChainConfig
 	be     *registryAPIBackend
 }
 
 // NewPrivateRegistarAPI creates a new PrivateRegistarAPI instance.
-func NewPrivateRegistarAPI(config *core.ChainConfig, bc *core.BlockChain, chainDb ethdb.Database, txPool *core.TxPool, am *accounts.Manager) *PrivateRegistarAPI {
+func NewPrivateRegistarAPI(config *core.ClassicChainConfig, bc *core.BlockChain, chainDb ethdb.Database, txPool *core.TxPool, am *accounts.Manager) *PrivateRegistarAPI {
 	return &PrivateRegistarAPI{
 		config: config,
 		be: &registryAPIBackend{

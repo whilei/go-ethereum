@@ -788,7 +788,7 @@ func logChainConfiguration(ctx *cli.Context, config *core.SufficientChainConfig)
 }
 
 // MustMakeChainConfigFromDefaults reads the chain configuration from hardcode.
-func MustMakeChainConfigFromDefaults(ctx *cli.Context) *core.ChainConfig {
+func MustMakeChainConfigFromDefaults(ctx *cli.Context) *core.ClassicChainConfig {
 	c := core.DefaultConfigMainnet.ChainConfig
 	if chainIsMorden(ctx) {
 		c = core.DefaultConfigMorden.ChainConfig

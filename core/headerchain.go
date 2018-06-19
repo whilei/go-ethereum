@@ -90,7 +90,7 @@ func NewHeaderChain(chainDb ethdb.Database, config *ChainConfig, mux *event.Type
 
 	gen := DefaultConfigMainnet.Genesis
 	genname := "mainnet"
-	// Check if ChainConfig is mainnet or testnet and write genesis accordingly.
+	// Check if ClassicChainConfig is mainnet or testnet and write genesis accordingly.
 	// If it's neither (custom), write default (this will be overwritten or avoided,
 	// but maintains consistent implementation.
 	if config == DefaultConfigMorden.ChainConfig {

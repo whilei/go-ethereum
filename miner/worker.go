@@ -59,7 +59,7 @@ type uint64RingBuffer struct {
 // environment is the workers current environment and holds
 // all of the current state information
 type Work struct {
-	config             *core.ChainConfig
+	config             *core.ClassicChainConfig
 	signer             types.Signer
 	state              *state.StateDB // apply state changes here
 	ancestors          *set.Set       // ancestor set (used for checking uncle parent validity)
@@ -89,7 +89,7 @@ type Result struct {
 
 // worker is the main object which takes care of applying messages to the new state
 type worker struct {
-	config *core.ChainConfig
+	config *core.ClassicChainConfig
 
 	mu sync.Mutex
 
@@ -124,7 +124,7 @@ type worker struct {
 	fullValidation bool
 }
 
-func newWorker(config *core.ChainConfig, coinbase common.Address, eth core.Backend) *worker {
+func newWorker(config *core.ClassicChainConfig, coinbase common.Address, eth core.Backend) *worker {
 	worker := &worker{
 		config:         config,
 		eth:            eth,

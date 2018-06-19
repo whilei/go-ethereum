@@ -238,7 +238,7 @@ func TestMakeGenesisDump2(t *testing.T) {
 	}
 }
 
-func getDefaultChainConfigSorted() *ChainConfig {
+func getDefaultChainConfigSorted() *ClassicChainConfig {
 	return DefaultConfigMainnet.ChainConfig.SortForks()
 }
 
@@ -351,7 +351,7 @@ func TestChainConfig_GetChainID(t *testing.T) {
 	}
 
 	// If no chainID (config is empty) returns 0.
-	c := &ChainConfig{}
+	c := &ClassicChainConfig{}
 	cid := c.GetChainID()
 	// check is zero
 	if cid.Cmp(new(big.Int)) != 0 {
@@ -707,7 +707,7 @@ func TestResolvePath(t *testing.T) {
 	}
 }
 
-func makeOKSufficientChainConfig(dump *GenesisDump, config *ChainConfig) *SufficientChainConfig {
+func makeOKSufficientChainConfig(dump *GenesisDump, config *ClassicChainConfig) *SufficientChainConfig {
 	// Setup.
 	whole := &SufficientChainConfig{}
 	whole.Identity = "testID"
@@ -733,7 +733,7 @@ func makeOKSufficientChainConfig(dump *GenesisDump, config *ChainConfig) *Suffic
 // TestSufficientChainConfig_IsValid tests against defaulty dumps and chainconfigs.
 func TestSufficientChainConfig_IsValid(t *testing.T) {
 	dumps := []*GenesisDump{DefaultConfigMainnet.Genesis, DefaultConfigMorden.Genesis}
-	configs := []*ChainConfig{DefaultConfigMainnet.ChainConfig, DefaultConfigMorden.ChainConfig}
+	configs := []*ClassicChainConfig{DefaultConfigMainnet.ChainConfig, DefaultConfigMorden.ChainConfig}
 
 	for i, dump := range dumps {
 		for j, config := range configs {
