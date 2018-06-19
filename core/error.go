@@ -29,6 +29,10 @@ var (
 	BlockFutureErr   = errors.New("block time is in the future")
 	BlockTSTooBigErr = errors.New("block time too big")
 	BlockEqualTSErr  = errors.New("block time stamp equal to previous")
+
+	// ErrNonceTooHigh is returned if the nonce of a transaction is higher than the
+	// next one expected based on the local chain.
+	ErrNonceTooHigh = errors.New("nonce too high")
 )
 
 // Parent error. In case a parent is unknown this error will be thrown

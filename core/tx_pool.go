@@ -44,6 +44,9 @@ var (
 	ErrIntrinsicGas       = errors.New("Intrinsic gas too low")
 	ErrGasLimit           = errors.New("Exceeds block gas limit")
 	ErrNegativeValue      = errors.New("Negative value")
+	// ErrNonceTooLow is returned if the nonce of a transaction is lower than the
+	// one present in the local chain.
+	ErrNonceTooLow = errors.New("nonce too low")
 )
 
 const (
