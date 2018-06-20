@@ -1222,7 +1222,7 @@ func TestChainTxReorgsAtxi(t *testing.T) {
 }
 
 func testChainTxReorgs(t *testing.T, db ethdb.Database, withATXI bool) {
-	MinGasLimit = big.NewInt(125000)
+	params.MinGasLimit = big.NewInt(125000)
 
 	key1, err := crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
 	if err != nil {
@@ -1244,7 +1244,7 @@ func testChainTxReorgs(t *testing.T, db ethdb.Database, withATXI bool) {
 		signer = types.NewChainIdSigner(big.NewInt(63))
 	)
 	genesis := WriteGenesisBlockForTesting(db,
-		params.params.GenesisAccount{addr1, big.NewInt(1000000)},
+		params.GenesisAccount{addr1, big.NewInt(1000000)},
 		params.GenesisAccount{addr2, big.NewInt(1000000)},
 		params.GenesisAccount{addr3, big.NewInt(1000000)},
 	)
