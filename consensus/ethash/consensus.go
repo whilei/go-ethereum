@@ -28,12 +28,11 @@ import (
 	"github.com/ethereumproject/go-ethereum/common/math"
 	"github.com/ethereumproject/go-ethereum/consensus"
 	"github.com/ethereumproject/go-ethereum/consensus/misc"
-	"github.com/ethereumproject/go-ethereum/core"
 	"github.com/ethereumproject/go-ethereum/core/state"
 	"github.com/ethereumproject/go-ethereum/core/types"
 	"github.com/ethereumproject/go-ethereum/logger/glog"
 	"github.com/ethereumproject/go-ethereum/params"
-	set "gopkg.in/fatih/set.v0"
+	"gopkg.in/fatih/set.v0"
 )
 
 // Ethash proof-of-work protocol constants.
@@ -306,7 +305,7 @@ func (ethash *Ethash) CalcDifficulty(chain consensus.ChainReader, time uint64, p
 // CalcDifficulty is the difficulty adjustment algorithm. It returns
 // the difficulty that a new block should have when created at time
 // given the parent block's time and difficulty.
-func CalcDifficulty(config *core.ClassicChainConfig, time uint64, parent *types.Header) *big.Int {
+func CalcDifficulty(config *params.ChainConfig, time uint64, parent *types.Header) *big.Int {
 	next := new(big.Int).Add(parent.Number, big1)
 	switch {
 	case config.IsExplosion(next):
@@ -337,7 +336,7 @@ var (
 // CalcDifficulty is the difficulty adjustment algorithm. It returns
 // the difficulty that a new block should have when created at time
 // given the parent block's time and difficulty.
-func CalcDifficulty(config *core.ClassicChainConfig, time, parentTime uint64, parentNumber, parentDiff *big.Int) *big.Int {
+func CalcDifficulty(config *params.ChainConfig, time, parentTime uint64, parentNumber, parentDiff *big.Int) *big.Int {
 	if config == nil {
 		glog.Fatalln("missing chain configuration, cannot calculate difficulty")
 	}
