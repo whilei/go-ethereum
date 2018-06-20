@@ -45,6 +45,7 @@ import (
 	"github.com/ethereumproject/go-ethereum/miner"
 	"github.com/ethereumproject/go-ethereum/node"
 	"github.com/ethereumproject/go-ethereum/p2p"
+	"github.com/ethereumproject/go-ethereum/params"
 	"github.com/ethereumproject/go-ethereum/rlp"
 	"github.com/ethereumproject/go-ethereum/rpc"
 )
@@ -61,7 +62,7 @@ type Config struct {
 	ChainConfig *params.ChainConfig // chain configuration
 
 	NetworkId int // Network ID to use for selecting peers to connect to
-	Genesis   *core.GenesisDump
+	Genesis   *params.GenesisDump
 	FastSync  bool // Enables the state download based fast synchronisation algorithm
 	MaxPeers  int
 
@@ -424,14 +425,14 @@ func (s *Ethereum) Miner() *miner.Miner { return s.miner }
 func (s *Ethereum) AccountManager() *accounts.Manager  { return s.accountManager }
 func (s *Ethereum) BlockChain() *core.BlockChain       { return s.blockchain }
 func (s *Ethereum) TxPool() *core.TxPool               { return s.txPool }
-func (s *Ethereum) EventMux() *event.TypeMux              { return s.eventMux }
-func (s *Ethereum) ChainDb() ethdb.Database               { return s.chainDb }
-func (s *Ethereum) DappDb() ethdb.Database                { return s.dappDb }
-func (s *Ethereum) IsListening() bool                     { return true } // Always listening
-func (s *Ethereum) EthVersion() int                       { return int(s.protocolManager.SubProtocols[0].Version) }
-func (s *Ethereum) NetVersion() int                       { return s.netVersionId }
-func (s *Ethereum) ChainConfig() *params.ChainConfig { return s.chainConfig }
-func (s *Ethereum) Downloader() *downloader.Downloader    { return s.protocolManager.downloader }
+func (s *Ethereum) EventMux() *event.TypeMux           { return s.eventMux }
+func (s *Ethereum) ChainDb() ethdb.Database            { return s.chainDb }
+func (s *Ethereum) DappDb() ethdb.Database             { return s.dappDb }
+func (s *Ethereum) IsListening() bool                  { return true } // Always listening
+func (s *Ethereum) EthVersion() int                    { return int(s.protocolManager.SubProtocols[0].Version) }
+func (s *Ethereum) NetVersion() int                    { return s.netVersionId }
+func (s *Ethereum) ChainConfig() *params.ChainConfig   { return s.chainConfig }
+func (s *Ethereum) Downloader() *downloader.Downloader { return s.protocolManager.downloader }
 
 // Protocols implements node.Service, returning all the currently configured
 // network protocols to start.
