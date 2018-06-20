@@ -18,24 +18,23 @@ package core
 
 import (
 	"bytes"
+	"crypto/ecdsa"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/big"
 	"os"
 	"strconv"
-	"testing"
-
-	"crypto/ecdsa"
-	"encoding/binary"
 	"strings"
+	"testing"
 
 	"github.com/ethereumproject/go-ethereum/common"
 	"github.com/ethereumproject/go-ethereum/core/types"
-	"github.com/ethereumproject/go-ethereum/core/vm"
 	"github.com/ethereumproject/go-ethereum/crypto"
 	"github.com/ethereumproject/go-ethereum/crypto/sha3"
 	"github.com/ethereumproject/go-ethereum/ethdb"
+	"github.com/ethereumproject/go-ethereum/params"
 	"github.com/ethereumproject/go-ethereum/rlp"
 )
 
@@ -87,27 +86,28 @@ func (d *diffTest) UnmarshalJSON(b []byte) (err error) {
 	return nil
 }
 
-func TestDifficultyFrontier(t *testing.T) {
-	file, err := os.Open("../tests/files/BasicTests/difficulty.json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer file.Close()
-
-	tests := make(map[string]diffTest)
-	err = json.NewDecoder(file).Decode(&tests)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for name, test := range tests {
-		number := new(big.Int).Sub(test.CurrentBlocknumber, big.NewInt(1))
-		diff := calcDifficultyFrontier(test.CurrentTimestamp, test.ParentTimestamp, number, test.ParentDifficulty)
-		if diff.Cmp(test.CurrentDifficulty) != 0 {
-			t.Error(name, "failed. Expected", test.CurrentDifficulty, "and calculated", diff)
-		}
-	}
-}
+// This belongs with the consensus stuff.
+// func TestDifficultyFrontier(t *testing.T) {
+// 	file, err := os.Open("../tests/files/BasicTests/difficulty.json")
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+// 	defer file.Close()
+//
+// 	tests := make(map[string]diffTest)
+// 	err = json.NewDecoder(file).Decode(&tests)
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+//
+// 	for name, test := range tests {
+// 		number := new(big.Int).Sub(test.CurrentBlocknumber, big.NewInt(1))
+// 		diff := calcDifficultyFrontier(test.CurrentTimestamp, test.ParentTimestamp, number, test.ParentDifficulty)
+// 		if diff.Cmp(test.CurrentDifficulty) != 0 {
+// 			t.Error(name, "failed. Expected", test.CurrentDifficulty, "and calculated", diff)
+// 		}
+// 	}
+// }
 
 // Tests block header storage and retrieval operations.
 func TestHeaderStorage(t *testing.T) {
@@ -651,8 +651,8 @@ func TestReceiptStorage(t *testing.T) {
 		PostState:         []byte{0x01},
 		CumulativeGasUsed: big.NewInt(1),
 		Logs: []*types.Log{
-			&vm.Log{Address: common.BytesToAddress([]byte{0x11})},
-			&vm.Log{Address: common.BytesToAddress([]byte{0x01, 0x11})},
+			&types.Log{Address: common.BytesToAddress([]byte{0x11})},
+			&types.Log{Address: common.BytesToAddress([]byte{0x01, 0x11})},
 		},
 		TxHash:          common.BytesToHash([]byte{0x11, 0x11}),
 		ContractAddress: common.BytesToAddress([]byte{0x01, 0x11, 0x11}),
@@ -662,8 +662,8 @@ func TestReceiptStorage(t *testing.T) {
 		PostState:         []byte{0x02},
 		CumulativeGasUsed: big.NewInt(2),
 		Logs: []*types.Log{
-			&vm.Log{Address: common.BytesToAddress([]byte{0x22})},
-			&vm.Log{Address: common.BytesToAddress([]byte{0x02, 0x22})},
+			&types.Log{Address: common.BytesToAddress([]byte{0x22})},
+			&types.Log{Address: common.BytesToAddress([]byte{0x02, 0x22})},
 		},
 		TxHash:          common.BytesToHash([]byte{0x22, 0x22}),
 		ContractAddress: common.BytesToAddress([]byte{0x02, 0x22, 0x22}),
@@ -710,8 +710,8 @@ func TestBlockReceiptStorage(t *testing.T) {
 		PostState:         []byte{0x01},
 		CumulativeGasUsed: big.NewInt(1),
 		Logs: []*types.Log{
-			&vm.Log{Address: common.BytesToAddress([]byte{0x11})},
-			&vm.Log{Address: common.BytesToAddress([]byte{0x01, 0x11})},
+			&types.Log{Address: common.BytesToAddress([]byte{0x11})},
+			&types.Log{Address: common.BytesToAddress([]byte{0x01, 0x11})},
 		},
 		TxHash:          common.BytesToHash([]byte{0x11, 0x11}),
 		ContractAddress: common.BytesToAddress([]byte{0x01, 0x11, 0x11}),
@@ -721,8 +721,8 @@ func TestBlockReceiptStorage(t *testing.T) {
 		PostState:         []byte{0x02},
 		CumulativeGasUsed: big.NewInt(2),
 		Logs: []*types.Log{
-			&vm.Log{Address: common.BytesToAddress([]byte{0x22})},
-			&vm.Log{Address: common.BytesToAddress([]byte{0x02, 0x22})},
+			&types.Log{Address: common.BytesToAddress([]byte{0x22})},
+			&types.Log{Address: common.BytesToAddress([]byte{0x02, 0x22})},
 		},
 		TxHash:          common.BytesToHash([]byte{0x22, 0x22}),
 		ContractAddress: common.BytesToAddress([]byte{0x02, 0x22, 0x22}),
@@ -763,13 +763,13 @@ func TestMipmapBloom(t *testing.T) {
 
 	receipt1 := new(types.Receipt)
 	receipt1.Logs = []*types.Log{
-		&vm.Log{Address: common.BytesToAddress([]byte("test"))},
-		&vm.Log{Address: common.BytesToAddress([]byte("address"))},
+		&types.Log{Address: common.BytesToAddress([]byte("test"))},
+		&types.Log{Address: common.BytesToAddress([]byte("address"))},
 	}
 	receipt2 := new(types.Receipt)
 	receipt2.Logs = []*types.Log{
-		&vm.Log{Address: common.BytesToAddress([]byte("test"))},
-		&vm.Log{Address: common.BytesToAddress([]byte("address1"))},
+		&types.Log{Address: common.BytesToAddress([]byte("test"))},
+		&types.Log{Address: common.BytesToAddress([]byte("address1"))},
 	}
 
 	WriteMipmapBloom(db, 1, types.Receipts{receipt1})
@@ -786,13 +786,13 @@ func TestMipmapBloom(t *testing.T) {
 	db, _ = ethdb.NewMemDatabase()
 	receipt := new(types.Receipt)
 	receipt.Logs = []*types.Log{
-		&vm.Log{Address: common.BytesToAddress([]byte("test"))},
+		&types.Log{Address: common.BytesToAddress([]byte("test"))},
 	}
 	WriteMipmapBloom(db, 999, types.Receipts{receipt1})
 
 	receipt = new(types.Receipt)
 	receipt.Logs = []*types.Log{
-		&vm.Log{Address: common.BytesToAddress([]byte("test 1"))},
+		&types.Log{Address: common.BytesToAddress([]byte("test 1"))},
 	}
 	WriteMipmapBloom(db, 1000, types.Receipts{receipt})
 
@@ -824,9 +824,9 @@ func TestMipmapChain(t *testing.T) {
 		var receipts types.Receipts
 		switch i {
 		case 1:
-			receipt := types.NewReceipt(nil, new(big.Int))
+			receipt := types.NewReceipt(nil, false, new(big.Int))
 			receipt.Logs = []*types.Log{
-				&vm.Log{
+				&types.Log{
 					Address: addr,
 					Topics:  []common.Hash{hash1},
 				},
@@ -834,8 +834,8 @@ func TestMipmapChain(t *testing.T) {
 			gen.AddUncheckedReceipt(receipt)
 			receipts = types.Receipts{receipt}
 		case 1000:
-			receipt := types.NewReceipt(nil, new(big.Int))
-			receipt.Logs = []*types.Log{&vm.Log{Address: addr2}}
+			receipt := types.NewReceipt(nil, false, new(big.Int))
+			receipt.Logs = []*types.Log{&types.Log{Address: addr2}}
 			gen.AddUncheckedReceipt(receipt)
 			receipts = types.Receipts{receipt}
 

@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/ethereumproject/ethash"
+	"github.com/ethereumproject/go-ethereum/params"
 
 	"github.com/ethereumproject/go-ethereum/common"
 	"github.com/ethereumproject/go-ethereum/core/state"
@@ -31,21 +32,21 @@ import (
 )
 
 func testChainConfig() *params.ChainConfig {
-	return &ChainConfig{
-		Forks: []*Fork{
+	return &params.ChainConfig{
+		Forks: []*params.Fork{
 			{
 				Name:  "Homestead",
 				Block: big.NewInt(0),
-				Features: []*ForkFeature{
+				Features: []*params.ForkFeature{
 					{
 						ID: "gastable",
-						Options: ChainFeatureConfigOptions{
+						Options: params.ChainFeatureConfigOptions{
 							"type": "homestead",
 						},
 					},
 					{
 						ID: "difficulty",
-						Options: ChainFeatureConfigOptions{
+						Options: params.ChainFeatureConfigOptions{
 							"type": "homestead",
 						},
 					},
@@ -54,22 +55,22 @@ func testChainConfig() *params.ChainConfig {
 			{
 				Name:  "Diehard",
 				Block: big.NewInt(5),
-				Features: []*ForkFeature{
+				Features: []*params.ForkFeature{
 					{
 						ID: "eip155",
-						Options: ChainFeatureConfigOptions{
+						Options: params.ChainFeatureConfigOptions{
 							"chainID": 62,
 						},
 					},
 					{ // ecip1010 bomb delay
 						ID: "gastable",
-						Options: ChainFeatureConfigOptions{
+						Options: params.ChainFeatureConfigOptions{
 							"type": "eip160",
 						},
 					},
 					{ // ecip1010 bomb delay
 						ID: "difficulty",
-						Options: ChainFeatureConfigOptions{
+						Options: params.ChainFeatureConfigOptions{
 							"type":   "ecip1010",
 							"length": 2000000,
 						},
@@ -137,7 +138,7 @@ func TestPutReceipt(t *testing.T) {
 	hash[0] = 2
 
 	receipt := new(types.Receipt)
-	receipt.Logs = []*types.Log{&vm.Log{
+	receipt.Logs = []*types.Log{&types.Log{
 		Address:     addr,
 		Topics:      []common.Hash{hash},
 		Data:        []byte("hi"),

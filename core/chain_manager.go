@@ -21,10 +21,13 @@ import (
 	"math/big"
 
 	"github.com/ethereumproject/go-ethereum/common"
+	"github.com/ethereumproject/go-ethereum/consensus/ethash"
 	"github.com/ethereumproject/go-ethereum/core/state"
 	"github.com/ethereumproject/go-ethereum/core/types"
+	"github.com/ethereumproject/go-ethereum/core/vm"
 	"github.com/ethereumproject/go-ethereum/ethdb"
 	"github.com/ethereumproject/go-ethereum/event"
+	"github.com/ethereumproject/go-ethereum/params"
 	"github.com/ethereumproject/go-ethereum/pow"
 )
 
@@ -34,15 +37,15 @@ import (
 
 // MakeChainConfig returns a new ChainConfig with the ethereum default chain settings.
 func MakeChainConfig() *params.ChainConfig {
-	return &ChainConfig{
-		Forks: []*Fork{
+	return &params.ChainConfig{
+		Forks: []*params.Fork{
 			{
 				Name:  "Homestead",
 				Block: big.NewInt(0),
-				Features: []*ForkFeature{
+				Features: []*params.ForkFeature{
 					{
 						ID: "difficulty",
-						Options: ChainFeatureConfigOptions{
+						Options: params.ChainFeatureConfigOptions{
 							"type": "homestead",
 						},
 					},
@@ -53,27 +56,27 @@ func MakeChainConfig() *params.ChainConfig {
 }
 
 func MakeDiehardChainConfig() *params.ChainConfig {
-	return &ChainConfig{
-		Forks: []*Fork{
+	return &params.ChainConfig{
+		Forks: []*params.Fork{
 			{
 				Name:  "Diehard",
 				Block: big.NewInt(0),
-				Features: []*ForkFeature{
+				Features: []*params.ForkFeature{
 					{
 						ID: "eip155",
-						Options: ChainFeatureConfigOptions{
+						Options: params.ChainFeatureConfigOptions{
 							"chainID": 63,
 						},
 					},
 					{ // ecip1010 bomb delay
 						ID: "gastable",
-						Options: ChainFeatureConfigOptions{
+						Options: params.ChainFeatureConfigOptions{
 							"type": "eip160",
 						},
 					},
 					{ // ecip1010 bomb delay
 						ID: "difficulty",
-						Options: ChainFeatureConfigOptions{
+						Options: params.ChainFeatureConfigOptions{
 							"type":   "ecip1010",
 							"length": 2000000,
 						},
@@ -148,7 +151,8 @@ func (b *BlockGen) AddTx(tx *types.Transaction) {
 		b.SetCoinbase(common.Address{})
 	}
 	b.statedb.StartRecord(tx.Hash(), common.Hash{}, len(b.txs))
-	receipt, _, _, err := ApplyTransaction(b.config, nil, b.gasPool, b.statedb, b.header, tx, b.header.GasUsed)
+	gas := b.header.GasUsed.Uint64()
+	receipt, _, err := ApplyTransaction(b.config, nil, nil, b.gasPool, b.statedb, b.header, tx, &gas, vm.Config{})
 	if err != nil {
 		panic(err)
 	}
@@ -292,7 +296,7 @@ func newCanonical(config *params.ChainConfig, n int, full bool) (ethdb.Database,
 		return nil, nil, err
 	}
 
-	blockchain, err := NewBlockChain(db, MakeChainConfig(), FakePow{}, evmux)
+	blockchain, err := NewBlockChain(db, MakeChainConfig(), ethash.NewFaker(), evmux, vm.Config{})
 	if err != nil {
 		return nil, nil, err
 	}
