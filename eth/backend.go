@@ -28,7 +28,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereumproject/ethash"
+	"github.com/ethereumproject/go-ethereum/consensus"
+	"github.com/ethereumproject/go-ethereum/consensus/clique"
+	"github.com/ethereumproject/go-ethereum/consensus/ethash"
 	"github.com/ethereumproject/go-ethereum/accounts"
 	"github.com/ethereumproject/go-ethereum/common"
 	"github.com/ethereumproject/go-ethereum/common/compiler"
@@ -36,6 +38,7 @@ import (
 	"github.com/ethereumproject/go-ethereum/common/registrar/ethreg"
 	"github.com/ethereumproject/go-ethereum/core"
 	"github.com/ethereumproject/go-ethereum/core/types"
+	"github.com/ethereumproject/go-ethereum/core/vm"
 	"github.com/ethereumproject/go-ethereum/eth/downloader"
 	"github.com/ethereumproject/go-ethereum/eth/filters"
 	"github.com/ethereumproject/go-ethereum/ethdb"
@@ -218,19 +221,19 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 		GpobaseCorrectionFactor: config.GpobaseCorrectionFactor,
 		httpclient:              httpclient.New(config.DocRoot),
 	}
+
+	// TODO shift this to the CreateConsensusEngine below
+	var engine = ethash.New()
 	switch {
 	case config.PowTest:
 		glog.V(logger.Info).Infof("Consensus: ethash used in test mode")
-		eth.pow, err = ethash.NewForTesting()
-		if err != nil {
-			return nil, err
-		}
+		engine = ethash.NewTester()
 	case config.PowShared:
 		glog.V(logger.Info).Infof("Consensus: ethash used in shared mode")
-		eth.pow = ethash.NewShared()
+		engine = ethash.NewShared()
 
 	default:
-		eth.pow = ethash.New()
+		engine =
 	}
 
 	// Initialize indexes db if enabled
@@ -281,7 +284,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 
 	eth.chainConfig = config.ChainConfig
 
-	eth.blockchain, err = core.NewBlockChain(chainDb, eth.chainConfig, eth.pow, eth.EventMux())
+	eth.blockchain, err = core.NewBlockChain(chainDb, eth.chainConfig, engine, eth.EventMux(), vm.Config{})
 	if err != nil {
 		if err == core.ErrNoGenesis {
 			return nil, fmt.Errorf(`No chain found. Please initialise a new chain using the "init" subcommand.`)
@@ -314,6 +317,38 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 
 	return eth, nil
 }
+
+// CreateConsensusEngine creates the required type of consensus engine instance for an Ethereum service
+func CreateConsensusEngine(ctx *node.ServiceContext, config *ethash.Config, chainConfig *params.ChainConfig, db ethdb.Database) consensus.Engine {
+	// If proof-of-authority is requested, set it up
+	if chainConfig.Clique != nil {
+		return clique.New(chainConfig.Clique, db)
+	}
+	// Otherwise assume proof-of-work
+	switch config.PowMode {
+	case ethash.ModeFake:
+		log.Warn("Ethash used in fake mode")
+		return ethash.NewFaker()
+	case ethash.ModeTest:
+		log.Warn("Ethash used in test mode")
+		return ethash.NewTester()
+	case ethash.ModeShared:
+		log.Warn("Ethash used in shared mode")
+		return ethash.NewShared()
+	default:
+		engine := ethash.New(ethash.Config{
+			CacheDir:       ctx.ResolvePath(config.CacheDir),
+			CachesInMem:    config.CachesInMem,
+			CachesOnDisk:   config.CachesOnDisk,
+			DatasetDir:     config.DatasetDir,
+			DatasetsInMem:  config.DatasetsInMem,
+			DatasetsOnDisk: config.DatasetsOnDisk,
+		})
+		engine.SetThreads(-1) // Disable CPU mining
+		return engine
+	}
+}
+
 
 // APIs returns the collection of RPC services the ethereum package offers.
 // NOTE, some of these services probably need to be moved to somewhere else.
