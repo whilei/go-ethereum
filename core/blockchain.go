@@ -95,7 +95,7 @@ type BlockChain struct {
 	currentBlock     *types.Block // Current head of the block chain
 	currentFastBlock *types.Block // Current head of the fast-sync chain (may be above the block chain!)
 
-	stateCache   *state.StateDB // State database to reuse between imports (contains state cache)
+	stateCache   state.Database //*state.StateDB // State database to reuse between imports (contains state cache)
 	bodyCache    *lru.Cache     // Cache for the most recent block bodies
 	bodyRLPCache *lru.Cache     // Cache for the most recent block bodies in RLP encoded format
 	blockCache   *lru.Cache     // Cache for the most recent entire blocks
@@ -208,7 +208,7 @@ func NewBlockChain(chainDb ethdb.Database, config *params.ChainConfig, engine co
 }
 
 // NewBlockChainDryrun behaves like NewBlockchain, EXCEPT that it doesn't loadLastState or begin update() subroutine.
-func NewBlockChainDryrun(chainDb ethdb.Database, config *params.ChainConfig, engine consensus.Engine, mux *event.TypeMux, vmConfig vm.Config) (*BlockChain, error) {
+func NewBlockChainDryrun(db ethdb.Database, config *params.ChainConfig, engine consensus.Engine, mux *event.TypeMux, vmConfig vm.Config) (*BlockChain, error) {
 	bodyCache, _ := lru.New(bodyCacheLimit)
 	bodyRLPCache, _ := lru.New(bodyCacheLimit)
 	blockCache, _ := lru.New(blockCacheLimit)
@@ -216,7 +216,7 @@ func NewBlockChainDryrun(chainDb ethdb.Database, config *params.ChainConfig, eng
 
 	bc := &BlockChain{
 		config:       config,
-		chainDb:      chainDb,
+		chainDb:      db,
 		eventMux:     mux,
 		quit:         make(chan struct{}),
 		bodyCache:    bodyCache,
@@ -225,12 +225,13 @@ func NewBlockChainDryrun(chainDb ethdb.Database, config *params.ChainConfig, eng
 		futureBlocks: futureBlocks,
 		engine:       engine,
 		vmConfig:     vmConfig,
+		stateCache:   state.NewDatabase(db),
 	}
 	bc.SetValidator(NewBlockValidator(config, bc, engine))
 	bc.SetProcessor(NewStateProcessor(config, bc, engine))
 
 	var err error
-	bc.hc, err = NewHeaderChain(chainDb, config, mux, engine, bc.getProcInterrupt)
+	bc.hc, err = NewHeaderChain(db, config, mux, engine, bc.getProcInterrupt)
 	if err != nil {
 		return nil, err
 	}
@@ -741,13 +742,6 @@ func (bc *BlockChain) LoadLastState(dryrun bool) error {
 		glog.V(logger.Error).Errorf("Found unaccompanied headerchain (headers > 0 && current|fast ==0), attempting reset with recovery...")
 	}
 
-	// Initialize a statedb cache to ensure singleton account bloom filter generation
-	statedb, err := state.New(bc.currentBlock.Root(), state.NewDatabase(bc.chainDb))
-	if err != nil {
-		return err
-	}
-	bc.stateCache = statedb
-
 	// Issue a status log and return
 	headerTd := bc.GetTd(bc.hc.CurrentHeader().Hash())
 	blockTd := bc.GetTd(bc.currentBlock.Hash())
@@ -987,7 +981,7 @@ func (bc *BlockChain) State() (*state.StateDB, error) {
 
 // StateAt returns a new mutable state based on a particular point in time.
 func (bc *BlockChain) StateAt(root common.Hash) (*state.StateDB, error) {
-	return state.New(root, state.NewDatabase(bc.chainDb))
+	return state.New(root, bc.stateCache)
 }
 
 // Reset purges the entire blockchain, restoring it to its genesis state.
@@ -1127,19 +1121,6 @@ func (bc *BlockChain) GetBodyRLP(hash common.Hash) rlp.RawValue {
 // it if present.
 func (bc *BlockChain) HasBlock(hash common.Hash) bool {
 	return bc.GetBlock(hash) != nil
-}
-
-// HasBlockAndState checks if a block and associated state trie is fully present
-// in the database or not, caching it if present.
-func (bc *BlockChain) HasBlockAndState(hash common.Hash) bool {
-	// Check first that the block itbc is known
-	block := bc.GetBlock(hash)
-	if block == nil {
-		return false
-	}
-	// Ensure the associated state is also present
-	_, err := state.New(block.Root(), state.NewDatabase(bc.chainDb))
-	return err == nil
 }
 
 // GetBlock retrieves a block from the database by hash, caching it if found.
@@ -1563,10 +1544,19 @@ func (bc *BlockChain) WriteBlockWithoutState(block *types.Block, td *big.Int) (e
 
 // HasState checks if state trie is fully present in the database or not.
 func (bc *BlockChain) HasState(hash common.Hash) bool {
-	// PTAL FIXME
-	// _, err := bc.stateCache.OpenTrie(hash)
-	return bc.stateCache.Empty(common.BytesToAddress(hash.Bytes()))
-	// return err == nil
+	_, err := bc.stateCache.OpenTrie(hash)
+	return err == nil
+}
+
+// HasBlockAndState checks if a block and associated state trie is fully present
+// in the database or not, caching it if present.
+func (bc *BlockChain) HasBlockAndState(hash common.Hash) bool {
+	// Check first that the block itself is known
+	block := bc.GetBlock(hash)
+	if block == nil {
+		return false
+	}
+	return bc.HasState(block.Root())
 }
 
 // InsertChain inserts the given chain into the canonical chain or, otherwise, create a fork.
@@ -1718,28 +1708,26 @@ blocks:
 		var parent *types.Block
 		if i == 0 {
 			parent = bc.GetBlock(block.ParentHash())
-			err = bc.stateCache.Reset(bc.GetBlock(block.ParentHash()).Root())
 		} else {
 			parent = chain[i-1]
-			err = bc.stateCache.Reset(chain[i-1].Root())
 		}
-		// state, err := state.New(parent.Root(), bc.stateCache)
+		state, err := state.New(parent.Root(), bc.stateCache)
 		res.Error = err
 		if err != nil {
 			return
 		}
-		receipts, logs, usedGas, err := bc.processor.Process(block, bc.stateCache, bc.vmConfig)
+		receipts, logs, usedGas, err := bc.processor.Process(block, state, bc.vmConfig)
 		if err != nil {
 			res.Error = err
 			return
 		}
-		err = bc.Validator().ValidateState(block, parent, bc.stateCache, receipts, usedGas)
+		err = bc.Validator().ValidateState(block, parent, state, receipts, usedGas)
 		if err != nil {
 			res.Error = err
 			return
 		}
-		// Write state changes to database
-		_, err = bc.stateCache.CommitTo(bc.chainDb, false)
+
+		_, err = state.CommitTo(bc.chainDb, false)
 		if err != nil {
 			res.Error = err
 			return
