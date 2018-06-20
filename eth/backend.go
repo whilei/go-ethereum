@@ -58,7 +58,7 @@ const (
 )
 
 type Config struct {
-	ChainConfig *core.ClassicChainConfig // chain configuration
+	ChainConfig *params.ChainConfig // chain configuration
 
 	NetworkId int // Network ID to use for selecting peers to connect to
 	Genesis   *core.GenesisDump
@@ -97,7 +97,7 @@ type Config struct {
 
 type Ethereum struct {
 	config      *Config
-	chainConfig *core.ClassicChainConfig
+	chainConfig *params.ChainConfig
 	// Channel for shutting down the ethereum
 	shutdownChan chan bool
 
@@ -430,7 +430,7 @@ func (s *Ethereum) DappDb() ethdb.Database                { return s.dappDb }
 func (s *Ethereum) IsListening() bool                     { return true } // Always listening
 func (s *Ethereum) EthVersion() int                       { return int(s.protocolManager.SubProtocols[0].Version) }
 func (s *Ethereum) NetVersion() int                       { return s.netVersionId }
-func (s *Ethereum) ChainConfig() *core.ClassicChainConfig { return s.chainConfig }
+func (s *Ethereum) ChainConfig() *params.ChainConfig { return s.chainConfig }
 func (s *Ethereum) Downloader() *downloader.Downloader    { return s.protocolManager.downloader }
 
 // Protocols implements node.Service, returning all the currently configured

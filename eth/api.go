@@ -556,7 +556,7 @@ func (s *PrivateAccountAPI) SignAndSendTransaction(args SendTxArgs, passwd strin
 // PublicBlockChainAPI provides an API to access the Ethereum blockchain.
 // It offers only methods that operate on public data that is freely available to anyone.
 type PublicBlockChainAPI struct {
-	config                  *core.ClassicChainConfig
+	config                  *params.ChainConfig
 	bc                      *core.BlockChain
 	chainDb                 ethdb.Database
 	indexesDb               ethdb.Database
@@ -569,7 +569,7 @@ type PublicBlockChainAPI struct {
 }
 
 // NewPublicBlockChainAPI creates a new Etheruem blockchain API.
-func NewPublicBlockChainAPI(config *core.ClassicChainConfig, bc *core.BlockChain, m *miner.Miner, chainDb ethdb.Database, gpo *GasPriceOracle, eventMux *event.TypeMux, am *accounts.Manager) *PublicBlockChainAPI {
+func NewPublicBlockChainAPI(config *params.ChainConfig, bc *core.BlockChain, m *miner.Miner, chainDb ethdb.Database, gpo *GasPriceOracle, eventMux *event.TypeMux, am *accounts.Manager) *PublicBlockChainAPI {
 	api := &PublicBlockChainAPI{
 		config:   config,
 		bc:       bc,
