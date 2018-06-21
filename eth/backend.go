@@ -222,19 +222,19 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 		httpclient:              httpclient.New(config.DocRoot),
 	}
 
-	// TODO shift this to the CreateConsensusEngine below
-	var engine = ethash.New()
-	switch {
-	case config.PowTest:
-		glog.V(logger.Info).Infof("Consensus: ethash used in test mode")
-		engine = ethash.NewTester()
-	case config.PowShared:
-		glog.V(logger.Info).Infof("Consensus: ethash used in shared mode")
-		engine = ethash.NewShared()
-
-	default:
-		engine =
-	}
+	// // TODO shift this to the CreateConsensusEngine below
+	// var engine = ethash.New()
+	// switch {
+	// case config.PowTest:
+	// 	glog.V(logger.Info).Infof("Consensus: ethash used in test mode")
+	// 	engine = ethash.NewTester()
+	// case config.PowShared:
+	// 	glog.V(logger.Info).Infof("Consensus: ethash used in shared mode")
+	// 	engine = ethash.NewShared()
+	//
+	// default:
+	// 	engine =
+	// }
 
 	// Initialize indexes db if enabled
 	// Blockchain will be assigned the db and atx enabled after blockchain is initialized below.
