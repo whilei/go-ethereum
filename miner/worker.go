@@ -567,7 +567,7 @@ func (env *Work) commitTransactions(mux *event.TypeMux, txs *types.TransactionsB
 
 		case core.ErrNonceTooHigh:
 			// Reorg notification data race between the transaction pool and miner, skip account =
-			glog.V(logger.Detail).Infoln("Skipping account with hight nonce", "sender", from, "nonce", tx.Nonce())
+			glog.V(logger.Detail).Infoln("Skipping account with high nonce", "sender", from, "nonce", tx.Nonce())
 			txs.Pop()
 
 		case nil:
