@@ -28,6 +28,8 @@ import (
 	"github.com/ethereumproject/go-ethereum/consensus/ethash"
 	"github.com/ethereumproject/go-ethereum/core/types"
 	"github.com/ethereumproject/go-ethereum/log"
+	"github.com/ethereumproject/go-ethereum/logger"
+	"github.com/ethereumproject/go-ethereum/logger/glog"
 )
 
 type hashrate struct {
@@ -141,7 +143,7 @@ func (a *RemoteAgent) SubmitWork(nonce types.BlockNonce, mixDigest, hash common.
 	// Make sure the work submitted is present
 	work := a.work[hash]
 	if work == nil {
-		log.Info("Work submitted but none pending", "hash", hash)
+		glog.V(logger.Info).Infoln("Work submitted but none pending", "hash", hash)
 		return false
 	}
 	// Make sure the Engine solutions is indeed valid
@@ -150,7 +152,7 @@ func (a *RemoteAgent) SubmitWork(nonce types.BlockNonce, mixDigest, hash common.
 	result.MixDigest = mixDigest
 
 	if err := a.engine.VerifySeal(a.chain, result); err != nil {
-		log.Warn("Invalid proof-of-work submitted", "hash", hash, "err", err)
+		glog.V(logger.Warn).Warnln("Invalid proof-of-work submitted", "hash", hash, "err", err)
 		return false
 	}
 	block := work.Block.WithSeal(result)
