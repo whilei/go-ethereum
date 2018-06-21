@@ -31,6 +31,9 @@ type TxPreEvent struct{ Tx *types.Transaction }
 // TxPostEvent is posted when a transaction has been processed.
 type TxPostEvent struct{ Tx *types.Transaction }
 
+// NewTxsEvent is posted when a batch of transactions enter the transaction pool.
+type NewTxsEvent struct{ Txs []*types.Transaction }
+
 // PendingLogsEvent is posted pre mining and notifies of pending logs.
 type PendingLogsEvent struct {
 	Logs []*types.Log
