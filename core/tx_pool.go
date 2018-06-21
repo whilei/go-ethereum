@@ -223,7 +223,7 @@ func NewTxPool(config TxPoolConfig, chainconfig *params.ChainConfig, chain block
 		config:      config,
 		chainconfig: chainconfig,
 		chain:       chain,
-		signer:      types.NewEIP155Signer(chainconfig.ChainID),
+		signer:      types.NewChainIdSigner(chainconfig.GetChainID()),
 		pending:     make(map[common.Address]*txList),
 		queue:       make(map[common.Address]*txList),
 		beats:       make(map[common.Address]time.Time),
@@ -408,7 +408,7 @@ func (pool *TxPool) reset(oldHead, newHead *types.Header) {
 	}
 	pool.currentState = statedb
 	pool.pendingState = state.ManageState(statedb)
-	pool.currentMaxGas = newHead.GasLimit
+	pool.currentMaxGas = newHead.GasLimit.Uint64()
 
 	// Inject any transactions discarded due to reorgs
 	glog.V(logger.Debug).Infoln("Reinjecting stale transactions", "count", len(reinject))
@@ -564,7 +564,7 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		return ErrNegativeValue
 	}
 	// Ensure the transaction doesn't exceed the current block limit gas.
-	if pool.currentMaxGas < tx.Gas() {
+	if pool.currentMaxGas < tx.Gas().Uint64() {
 		return ErrGasLimit
 	}
 	// Make sure the transaction is signed properly
@@ -590,7 +590,7 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	if err != nil {
 		return err
 	}
-	if tx.Gas() < intrGas {
+	if tx.Gas().Uint64() < intrGas {
 		return ErrIntrinsicGas
 	}
 	return nil
