@@ -8,6 +8,12 @@
   revision = "593e01cfc4f3353585015321e01951d4a907d3ef"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/aristanetworks/goarista"
+  packages = ["monotime"]
+  revision = "06cfa1db77dae2425e143980408e642f7a9d5b09"
+
+[[projects]]
   name = "github.com/boltdb/bolt"
   packages = ["."]
   revision = "2f1ce7a837dcb8da3ec595b1dac9d0632f0f99e8"
@@ -24,6 +30,18 @@
   packages = ["."]
   revision = "2777226d0340d8da18b49993ce2b4aeb9c1c6929"
   version = "v0.8.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/edsrzf/mmap-go"
+  packages = ["."]
+  revision = "0bce6a6887123b67a60366d2c9fe2dfb74289d2e"
+
+[[projects]]
+  name = "github.com/ethereum/go-ethereum"
+  packages = ["common","common/hexutil","crypto/bn256/cloudflare","crypto/bn256/google","crypto/sha3"]
+  revision = "dea1ce052a10cd7d401a5c04f83f371a06fe293c"
+  version = "v1.8.11"
 
 [[projects]]
   branch = "master"
@@ -140,6 +158,12 @@
   revision = "3681c2a912330352991ecdd642f257efe5b85518"
 
 [[projects]]
+  name = "github.com/pmezard/go-difflib"
+  packages = ["difflib"]
+  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
+  version = "v1.0.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/rcrowley/go-metrics"
   packages = ["."]
@@ -167,6 +191,12 @@
   packages = [".","mem"]
   revision = "63644898a8da0bc22138abf860edaf5277b6102e"
   version = "v1.1.0"
+
+[[projects]]
+  name = "github.com/stretchr/testify"
+  packages = ["assert","require"]
+  revision = "f35b8ab0b5a2cef36673838d662e249dd9c94686"
+  version = "v1.2.2"
 
 [[projects]]
   branch = "master"
@@ -236,6 +266,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "fb11e36e96a973694e730c71620a8585f7a3b4ca1e89541abd89dcbf4f067b21"
+  inputs-digest = "e3b04e5bb9f56090bb1531d8fe5e90fa3610fb5046d34a0f0b2678c0fa1cbd33"
   solver-name = "gps-cdcl"
   solver-version = 1
