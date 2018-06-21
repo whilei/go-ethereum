@@ -199,7 +199,7 @@ func BuildAddrTxIndex(bc *BlockChain, chainDB, indexDB ethdb.Database, startInde
 	if block == nil {
 		err := fmt.Errorf("block %d is nil", blockIndex)
 		bc.atxi.Progress.LastError = err
-		glog.Error(err)
+		gglog.V(logger.Error).Errorln(err)
 		return err
 	}
 	// sigc is a single-val channel for listening to program interrupt

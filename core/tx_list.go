@@ -485,7 +485,7 @@ func (l *txPricedList) Underpriced(tx *types.Transaction, local *accountSet) boo
 	}
 	// Check if the transaction is underpriced or not
 	if len(*l.items) == 0 {
-		log.Error("Pricing query for empty pool") // This cannot happen, print to catch programming errors
+		glog.V(logger.Error).Errorln("Pricing query for empty pool") // This cannot happen, print to catch programming errors
 		return false
 	}
 	cheapest := []*types.Transaction(*l.items)[0]

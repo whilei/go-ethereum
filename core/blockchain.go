@@ -1751,7 +1751,7 @@ blocks:
 		switch status {
 		case CanonStatTy:
 			if glog.V(logger.Debug) {
-				glog.Infof("[%v] inserted block #%d (%d TXs %v G %d UNCs) [%s]. Took %v\n", time.Now().UnixNano(), block.Number(), len(block.Transactions()), block.GasUsed(), len(block.Uncles()), block.Hash().Hex(), time.Since(bstart))
+				gglog.V(logger.Info).Infolnf("[%v] inserted block #%d (%d TXs %v G %d UNCs) [%s]. Took %v\n", time.Now().UnixNano(), block.Number(), len(block.Transactions()), block.GasUsed(), len(block.Uncles()), block.Hash().Hex(), time.Since(bstart))
 			}
 			events = append(events, ChainEvent{block, block.Hash(), logs})
 
@@ -1788,7 +1788,7 @@ blocks:
 			}
 		case SideStatTy:
 			if glog.V(logger.Detail) {
-				glog.Infof("inserted forked block #%d (TD=%v) (%d TXs %d UNCs) [%s]. Took %v\n", block.Number(), block.Difficulty(), len(block.Transactions()), len(block.Uncles()), block.Hash().Hex(), time.Since(bstart))
+				gglog.V(logger.Info).Infolnf("inserted forked block #%d (TD=%v) (%d TXs %d UNCs) [%s]. Took %v\n", block.Number(), block.Difficulty(), len(block.Transactions()), len(block.Uncles()), block.Hash().Hex(), time.Since(bstart))
 			}
 			events = append(events, ChainSideEvent{block, logs})
 		}
@@ -1914,7 +1914,7 @@ func (bc *BlockChain) reorg(oldBlock, newBlock *types.Block) error {
 
 	commonHash := commonBlock.Hash()
 	if glog.V(logger.Debug) {
-		glog.Infof("Chain split detected @ [%s]. Reorganising chain from #%v %s to %s", commonHash.Hex(), numSplit, oldStart.Hash().Hex(), newStart.Hash().Hex())
+		gglog.V(logger.Info).Infolnf("Chain split detected @ [%s]. Reorganising chain from #%v %s to %s", commonHash.Hex(), numSplit, oldStart.Hash().Hex(), newStart.Hash().Hex())
 	}
 	if logger.MlogEnabled() {
 		mlogBlockchainReorgBlocks.AssignDetails(
