@@ -297,12 +297,11 @@ func (self *worker) wait() {
 					continue
 				}
 
-				// auxValidator := self.eth.BlockChain().AuxValidator()
-				// if err := core.ValidateHeader(self.config, auxValidator, block.Header(), parent.Header(), true, false); err != nil && err != core.BlockFutureErr {
-				// 	glog.V(logger.Error).Infoln("Invalid header on mined block:", err)
-				// 	continue
-				// }
-				self.engine.V
+				err := self.engine.VerifyHeader(self.chain, block.Header(), true) // PTAL TODO(whilei): seal again, what it is
+				if err != nil {
+					glog.V(logger.Error).Infoln("Invalid header on mined block:", err)
+					continue
+				}
 
 				stat, err := self.chain.WriteBlock(block)
 				if err != nil {
@@ -634,7 +633,7 @@ func (self *worker) commitUncle(work *Work, uncle *types.Header) error {
 func (env *Work) commitTransactions(mux *event.TypeMux, transactions types.Transactions, gasPrice *big.Int, bc *core.BlockChain) {
 	gp := new(core.GasPool).AddGas(env.header.GasLimit)
 
-	var coalescedLogs vm.Logs
+	var coalescedLogs []*types.Log
 	for _, tx := range transactions {
 		// Error may be ignored here. The error has already been checked
 		// during transaction acceptance is the transaction pool.
@@ -702,7 +701,7 @@ func (env *Work) commitTransactions(mux *event.TypeMux, transactions types.Trans
 
 	}
 	if len(coalescedLogs) > 0 || env.tcount > 0 {
-		go func(logs vm.Logs, tcount int) {
+		go func(logs []*types.Log, tcount int) {
 			if len(logs) > 0 {
 				mux.Post(core.PendingLogsEvent{Logs: logs})
 			}
@@ -713,10 +712,10 @@ func (env *Work) commitTransactions(mux *event.TypeMux, transactions types.Trans
 	}
 }
 
-func (env *Work) commitTransaction(tx *types.Transaction, bc *core.BlockChain, gp *core.GasPool) (error, vm.Logs) {
+func (env *Work) commitTransaction(tx *types.Transaction, bc *core.BlockChain, gp *core.GasPool) (error, []*types.Log) {
 	snap := env.state.Snapshot()
-
-	receipt, logs, _, err := core.ApplyTransaction(env.config, bc, gp, env.state, env.header, tx, env.header.GasUsed)
+	gas := env.header.GasUsed.Uint64()
+	receipt, _, err := core.ApplyTransaction(env.config, bc, nil, gp, env.state, env.header, tx, &gas, vm.Config{})
 
 	if logger.MlogEnabled() {
 		defer func() {
@@ -735,7 +734,7 @@ func (env *Work) commitTransaction(tx *types.Transaction, bc *core.BlockChain, g
 	env.txs = append(env.txs, tx)
 	env.receipts = append(env.receipts, receipt)
 
-	return nil, logs
+	return nil, receipt.Logs
 }
 
 // TODO: remove or use
