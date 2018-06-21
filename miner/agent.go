@@ -18,11 +18,11 @@ package miner
 
 import (
 	"sync"
-
 	"sync/atomic"
 
 	"github.com/ethereumproject/go-ethereum/consensus"
-	"github.com/ethereumproject/go-ethereum/log"
+	"github.com/ethereumproject/go-ethereum/logger"
+	"github.com/ethereumproject/go-ethereum/logger/glog"
 )
 
 type CpuAgent struct {
