@@ -207,11 +207,6 @@ func (sub *feedSub) Err() <-chan error {
 	return sub.err
 }
 
-func (sub *feedSub) Chan() <-chan *Event {
-	panic("not implemented")
-	return nil
-}
-
 type caseList []reflect.SelectCase
 
 // find returns the index of a case containing the given channel.
