@@ -167,7 +167,7 @@ func (r RuleSet) GasTable(num *big.Int) *params.GasTable {
 			Calls:           uint64(40),
 			Suicide:         uint64(0),
 			ExpByte:         uint64(10),
-			CreateBySuicide: nil,
+			CreateBySuicide: 0,
 		}
 	}
 	if r.DiehardBlock == nil || num == nil || num.Cmp(r.DiehardBlock) < 0 {
@@ -201,7 +201,7 @@ type Env struct {
 	state        *state.StateDB
 	skipTransfer bool
 	initial      bool
-	Gas          *big.Int
+	Gas          uint64
 
 	origin   common.Address
 	parent   common.Hash
@@ -223,6 +223,36 @@ func NewEnv(ruleSet RuleSet, state *state.StateDB) *Env {
 		state:   state,
 	}
 	return env
+}
+
+func vmTestBlockHash(n uint64) common.Hash {
+	return common.BytesToHash(crypto.Keccak256([]byte(big.NewInt(int64(n)).String())))
+}
+
+func newEVM(env *Env, state *state.StateDB) *vm.EVM {
+	initialCall := true
+	canTransfer := func(db vm.StateDB, address common.Address, amount *big.Int) bool {
+		if initialCall {
+			initialCall = false
+			return true
+		}
+		return core.CanTransfer(db, address, amount)
+	}
+	transfer := func(db vm.StateDB, sender, recipient common.Address, amount *big.Int) {}
+	// env.evm = vm.New(env)
+	evm := vm.NewEVM(vm.Context{
+		CanTransfer: canTransfer,
+		Transfer:    transfer,
+		GetHash:     vmTestBlockHash, // TODO
+		Origin:      env.origin,
+		// GasPrice:    nil,
+		Coinbase:    env.coinbase,
+		GasLimit:    env.gasLimit.Uint64(),
+		BlockNumber: env.number,
+		Time:        env.time,
+		Difficulty:  env.difficulty,
+	}, state, params.DefaultConfigMorden.ChainConfig, vm.Config{NoRecursion: true})
+	return evm
 }
 
 func NewEnvFromMap(ruleSet RuleSet, state *state.StateDB, envValues map[string]string, exeValues map[string]string) *Env {
@@ -247,21 +277,9 @@ func NewEnvFromMap(ruleSet RuleSet, state *state.StateDB, envValues map[string]s
 	if env.gasLimit == nil {
 		panic("malformed current gas limit")
 	}
-	env.Gas = new(big.Int)
+	env.Gas = uint64(0)
 
-	// env.evm = vm.New(env)
-	vm.NewEVM(vm.Context{
-		CanTransfer: core.CanTransfer,
-		Transfer:    core.Transfer,
-		GetHash:     core.GetHashFn(nil, nil), // TODO
-		Origin:      env.origin,
-		// GasPrice:    nil,
-		Coinbase:    env.coinbase,
-		GasLimit:    env.gasLimit.Uint64(),
-		BlockNumber: env.number,
-		Time:        env.time,
-		Difficulty:  env.difficulty,
-	}, state, params.DefaultConfigMorden.ChainConfig, vm.Config{})
+	env.evm = newEVM(env, state)
 
 	return env
 }
@@ -316,67 +334,97 @@ func (self *Env) Transfer(from, to vm.AccountRef, amount *big.Int) {
 }
 
 func (self *Env) Call(caller vm.ContractRef, addr common.Address, data []byte, gas uint64, price, value *big.Int) ([]byte, error) {
-	ctc := vm.NewContract(caller, addr, value, gas)
 	if self.vmTest && self.depth > 0 {
-		caller.ReturnGas(gas, price)
-
-		return nil, nil
+		self.state.AddRefund(gas)
+		self.state.Finalise(false)
 	}
-	ret, err := core.Call(self, caller, addr, data, gas, price, value)
-	self.Gas = gas
-
+	// if self.vmTest && self.depth > 0 {
+	// 	// ReturnGas adds the given gas back to itself.
+	// 	// func (c *Contract) ReturnGas(gas, price *big.Int) {
+	// 	// // Return the gas to the context
+	// 	// c.Gas.Add(c.Gas, gas)
+	// 	// c.UsedGas.Sub(c.UsedGas, gas)
+	// 	// }
+	// 	// 	// self.state.AddBalance(caller.Address(), new(big.Int).SetUint64(gas))
+	// 	self.state.
+	// 	return nil, nil
+	// }
+	ret, _, err := self.evm.Call(caller, addr, data, gas, value)
 	return ret, err
-
 }
 func (self *Env) CallCode(caller vm.ContractRef, addr common.Address, data []byte, gas, price, value *big.Int) ([]byte, error) {
 	if self.vmTest && self.depth > 0 {
-		caller.ReturnGas(gas, price)
-
-		return nil, nil
+		self.state.AddRefund(gas.Uint64())
+		self.state.Finalise(false)
 	}
-	return core.CallCode(self, caller, addr, data, gas, price, value)
+	ret, _, err := self.evm.CallCode(caller, addr, data, gas.Uint64(), value)
+	return ret, err
+	// if self.vmTest && self.depth > 0 {
+	// 	caller.ReturnGas(gas, price)
+	//
+	// 	return nil, nil
+	// }
+	// return core.CallCode(self, caller, addr, data, gas, price, value)
 }
 
 func (self *Env) DelegateCall(caller vm.ContractRef, addr common.Address, data []byte, gas, price *big.Int) ([]byte, error) {
 	if self.vmTest && self.depth > 0 {
-		caller.ReturnGas(gas, price)
-
-		return nil, nil
+		self.state.AddRefund(gas.Uint64())
+		self.state.Finalise(false)
 	}
-	return core.DelegateCall(self, caller, addr, data, gas, price)
+	ret, _, err := self.evm.DelegateCall(caller, addr, data, gas.Uint64())
+	return ret, err
+	// if self.vmTest && self.depth > 0 {
+	// 	caller.ReturnGas(gas, price)
+	//
+	// 	return nil, nil
+	// }
+	// return core.DelegateCall(self, caller, addr, data, gas, price)
 }
 
 func (self *Env) Create(caller vm.ContractRef, data []byte, gas, price, value *big.Int) ([]byte, common.Address, error) {
 	if self.vmTest {
-		caller.ReturnGas(gas, price)
+		self.state.AddRefund(gas.Uint64())
+		self.state.Finalise(false)
 
 		nonce := self.state.GetNonce(caller.Address())
 		obj := self.state.GetOrNewStateObject(crypto.CreateAddress(caller.Address(), nonce))
-
 		return nil, obj.Address(), nil
-	} else {
-		return core.Create(self, caller, data, gas, price, value)
 	}
+	ret, a, _, err := self.evm.Create(caller, data, gas.Uint64(), value)
+	return ret, a, err
+	// if self.vmTest {
+	// 	caller.ReturnGas(gas, price)
+	//
+	// 	nonce := self.state.GetNonce(caller.Address())
+	// 	obj := self.state.GetOrNewStateObject(crypto.CreateAddress(caller.Address(), nonce))
+	//
+	// 	return nil, obj.Address(), nil
+	// } else {
+	// 	return core.Create(self, caller, data, gas, price, value)
+	// }
 }
 
 type Message struct {
-	from              common.Address
-	to                *common.Address
-	value, gas, price *big.Int
-	data              []byte
-	nonce             uint64
+	from         common.Address
+	to           *common.Address
+	gas          uint64
+	value, price *big.Int
+	data         []byte
+	nonce        uint64
 }
 
-func NewMessage(from common.Address, to *common.Address, data []byte, value, gas, price *big.Int, nonce uint64) Message {
-	return Message{from, to, value, gas, price, data, nonce}
+func NewMessage(from common.Address, to *common.Address, data []byte, value *big.Int, gas uint64, price *big.Int, nonce uint64) Message {
+	return Message{from, to, gas, value, price, data, nonce}
 }
 
+func (self Message) CheckNonce() bool                      { return true }
 func (self Message) Hash() []byte                          { return nil }
-func (self Message) From() (common.Address, error)         { return self.from, nil }
+func (self Message) From() common.Address                  { return self.from }
 func (self Message) FromFrontier() (common.Address, error) { return self.from, nil }
 func (self Message) To() *common.Address                   { return self.to }
 func (self Message) GasPrice() *big.Int                    { return self.price }
-func (self Message) Gas() *big.Int                         { return self.gas }
+func (self Message) Gas() uint64                           { return self.gas }
 func (self Message) Value() *big.Int                       { return self.value }
 func (self Message) Nonce() uint64                         { return self.nonce }
 func (self Message) Data() []byte                          { return self.data }

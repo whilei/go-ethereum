@@ -224,7 +224,7 @@ func RunVm(state *state.StateDB, env, exec map[string]string) ([]byte, []*types.
 	vmenv.vmTest = true
 	vmenv.skipTransfer = true
 	vmenv.initial = true
-	ret, err := vmenv.Call(caller, to, data, gas, price, value)
+	ret, err := vmenv.Call(caller, to, data, gas.Uint64(), price, value)
 
-	return ret, vmenv.state.Logs(), vmenv.Gas, err
+	return ret, vmenv.state.Logs(), new(big.Int).SetUint64(vmenv.Gas), err
 }
