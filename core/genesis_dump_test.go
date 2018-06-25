@@ -12,7 +12,7 @@ import (
 func TestMakeGenesisDump(t *testing.T) {
 	// setup so we have a genesis block in this test db
 	db, _ := ethdb.NewMemDatabase()
-	genesisDump := &params.GenesisDump{
+	genesisDump := &params.Genesis{
 		Nonce:      "0x0000000000000042",
 		Timestamp:  "0x0000000000000000000000000000000000000000000000000000000000000000",
 		Coinbase:   "0x0000000000000000000000000000000000000000",
@@ -80,7 +80,7 @@ func TestMakeGenesisDump(t *testing.T) {
 
 func TestMakeGenesisDump2(t *testing.T) {
 	// setup so we have a genesis block in this test db
-	for i, gen := range []*params.GenesisDump{params.DefaultConfigMainnet.Genesis, params.DefaultConfigMorden.Genesis} {
+	for i, gen := range []*params.Genesis{params.DefaultConfigMainnet.Genesis, params.DefaultConfigMorden.Genesis} {
 		db, _ := ethdb.NewMemDatabase()
 		genesisDump := gen
 		gBlock1, err := WriteGenesisBlock(db, genesisDump)
@@ -114,7 +114,7 @@ func TestMakeGenesisDump2(t *testing.T) {
 	}
 }
 
-func sameGenesisDumpAllocationsBalances(gd1, gd2 *params.GenesisDump) bool {
+func sameGenesisDumpAllocationsBalances(gd1, gd2 *params.Genesis) bool {
 	for address, alloc := range gd2.Alloc {
 		if gd1.Alloc[address] != nil {
 			bal1, _ := new(big.Int).SetString(gd1.Alloc[address].Balance, 0)

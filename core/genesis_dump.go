@@ -16,7 +16,7 @@ import (
 )
 
 // MakeGenesisDump makes a genesis dump
-func MakeGenesisDump(chaindb ethdb.Database) (*params.GenesisDump, error) {
+func MakeGenesisDump(chaindb ethdb.Database) (*params.Genesis, error) {
 	genesis := GetBlock(chaindb, GetCanonicalHash(chaindb, 0))
 	if genesis == nil {
 		return nil, nil
@@ -31,7 +31,7 @@ func MakeGenesisDump(chaindb ethdb.Database) (*params.GenesisDump, error) {
 	difficulty := common.BigToHash(genesisHeader.Difficulty).Hex()
 	mixHash := genesisHeader.MixDigest.Hex()
 	coinbase := genesisHeader.Coinbase.Hex()
-	var dump = &params.GenesisDump{
+	var dump = &params.Genesis{
 		Nonce:      params.PrefixedHex(nonce), // common.ToHex(n)), // common.ToHex(
 		Timestamp:  params.PrefixedHex(time),
 		ParentHash: params.PrefixedHex(parentHash),
@@ -66,7 +66,7 @@ func MakeGenesisDump(chaindb ethdb.Database) (*params.GenesisDump, error) {
 }
 
 // WriteGenesisBlock writes the genesis block to the database as block number 0
-func WriteGenesisBlock(chainDb ethdb.Database, genesis *params.GenesisDump) (*types.Block, error) {
+func WriteGenesisBlock(chainDb ethdb.Database, genesis *params.Genesis) (*types.Block, error) {
 	statedb, err := state.New(common.Hash{}, state.NewDatabase(chainDb))
 	if err != nil {
 		return nil, err
@@ -146,7 +146,7 @@ func WriteGenesisBlock(chainDb ethdb.Database, genesis *params.GenesisDump) (*ty
 }
 
 func WriteGenesisBlockForTesting(db ethdb.Database, accounts ...params.GenesisAccount) *types.Block {
-	dump := params.GenesisDump{
+	dump := params.Genesis{
 		GasLimit:   "0x47E7C4",
 		Difficulty: "0x020000",
 		Alloc:      make(map[params.Hex]*params.GenesisDumpAlloc, len(accounts)),
@@ -165,8 +165,8 @@ func WriteGenesisBlockForTesting(db ethdb.Database, accounts ...params.GenesisAc
 	return block
 }
 
-// Makeparams.GenesisDump makes a genesis dump
-func GenesisDump(chaindb ethdb.Database) (*params.GenesisDump, error) {
+// Makeparams.Genesis makes a genesis dump
+func GenesisDump(chaindb ethdb.Database) (*params.Genesis, error) {
 
 	genesis := GetBlock(chaindb, GetCanonicalHash(chaindb, 0))
 	if genesis == nil {
@@ -183,7 +183,7 @@ func GenesisDump(chaindb ethdb.Database) (*params.GenesisDump, error) {
 	mixHash := genesisHeader.MixDigest.Hex()
 	coinbase := genesisHeader.Coinbase.Hex()
 
-	var dump = &params.GenesisDump{
+	var dump = &params.Genesis{
 		Nonce:      params.PrefixedHex(nonce), // common.ToHex(n)), // common.ToHex(
 		Timestamp:  params.PrefixedHex(time),
 		ParentHash: params.PrefixedHex(parentHash),

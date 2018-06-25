@@ -6,9 +6,9 @@ import (
 	"github.com/ethereumproject/go-ethereum/common"
 )
 
-// GenesisDump is the geth JSON format.
+// Genesis is the geth JSON format.
 // https://github.com/ethereumproject/wiki/wiki/Ethereum-Chain-Spec-Format#subformat-genesis
-type GenesisDump struct {
+type Genesis struct {
 	Nonce      PrefixedHex `json:"nonce"`
 	Timestamp  PrefixedHex `json:"timestamp"`
 	ParentHash PrefixedHex `json:"parentHash"`
@@ -24,7 +24,7 @@ type GenesisDump struct {
 	AllocFile string `json:"alloc_file"`
 }
 
-// GenesisDumpAlloc is a GenesisDump.Alloc entry.
+// GenesisDumpAlloc is a Genesis.Alloc entry.
 type GenesisDumpAlloc struct {
 	Code    PrefixedHex `json:"-"` // skip field for json encode
 	Storage map[Hex]Hex `json:"-"`

@@ -109,7 +109,7 @@ type SufficientChainConfig struct {
 	State           *StateConfig     `json:"state"`     // don't omitempty for clarity of potential custom options
 	Network         int              `json:"network"`   // eth.NetworkId (mainnet=1, morden=2)
 	Consensus       string           `json:"consensus"` // pow type (ethash OR ethash-test)
-	Genesis         *GenesisDump     `json:"genesis"`
+	Genesis         *Genesis         `json:"genesis"`
 	ChainConfig     *ChainConfig     `json:"chainConfig"`
 	Bootstrap       []string         `json:"bootstrap"`
 	ParsedBootstrap []*discover.Node `json:"-"`
@@ -150,6 +150,8 @@ type ChainConfig struct {
 	Clique *CliqueConfig `json:"clique,omitempty"`
 }
 
+// SetForkBlockVals assigns fork block values, like 'EIP150Block' from 'Forks' config field.
+// This is a convenience helper to adapt ETC -> ETH configuration code.
 func (c *ChainConfig) SetForkBlockVals() *ChainConfig {
 	for _, f := range c.Forks {
 		switch f.Name {
@@ -292,7 +294,7 @@ func (c *SufficientChainConfig) IsValid() (string, bool) {
 }
 
 // Header returns the mapping.
-func (g *GenesisDump) Header() (*types.Header, error) {
+func (g *Genesis) Header() (*types.Header, error) {
 	var h types.Header
 
 	var err error

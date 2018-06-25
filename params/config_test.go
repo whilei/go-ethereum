@@ -582,7 +582,7 @@ func TestResolvePath(t *testing.T) {
 	}
 }
 
-func makeOKSufficientChainConfig(dump *GenesisDump, config *ChainConfig) *SufficientChainConfig {
+func makeOKSufficientChainConfig(dump *Genesis, config *ChainConfig) *SufficientChainConfig {
 	// Setup.
 	whole := &SufficientChainConfig{}
 	whole.Identity = "testID"
@@ -607,7 +607,7 @@ func makeOKSufficientChainConfig(dump *GenesisDump, config *ChainConfig) *Suffic
 
 // TestSufficientChainConfig_IsValid tests against defaulty dumps and chainconfigs.
 func TestSufficientChainConfig_IsValid(t *testing.T) {
-	dumps := []*GenesisDump{DefaultConfigMainnet.Genesis, DefaultConfigMorden.Genesis}
+	dumps := []*Genesis{DefaultConfigMainnet.Genesis, DefaultConfigMorden.Genesis}
 	configs := []*ChainConfig{DefaultConfigMainnet.ChainConfig, DefaultConfigMorden.ChainConfig}
 
 	for i, dump := range dumps {

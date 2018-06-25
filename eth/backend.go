@@ -62,7 +62,7 @@ type Config struct {
 	ChainConfig *params.ChainConfig // chain configuration
 
 	NetworkId int // Network ID to use for selecting peers to connect to
-	Genesis   *params.GenesisDump
+	Genesis   *params.Genesis
 	FastSync  bool // Enables the state download based fast synchronisation algorithm
 	MaxPeers  int
 

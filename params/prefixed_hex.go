@@ -10,7 +10,7 @@ import (
 /*
 PTAL-
 This is here only for lazily maintaining compatibility with the config.json implementation
-GenesisDump json encoding mechanisms.
+Genesis json encoding mechanisms.
 
 This file and everything in it should die as soon as possible.
 */
