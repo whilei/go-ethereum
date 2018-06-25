@@ -170,7 +170,21 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 
 	// Load up any custom genesis block if requested
 	if config.Genesis != nil {
-		_, err := core.WriteGenesisBlock(chainDb, config.Genesis)
+		dgen := config.Genesis
+		gen := &core.Genesis{
+			Nonce:      dgen.Nonce,
+			Timestamp:  dgen.Timestamp,
+			ExtraData:  dgen.ExtraData,
+			GasLimit:   dgen.GasLimit,
+			Difficulty: dgen.Difficulty,
+			Mixhash:    dgen.Mixhash,
+			Coinbase:   dgen.Coinbase,
+			Alloc:      dgen.Alloc,
+			// Number:     dgen,
+			// GasUsed:    0,
+			// ParentHash: common.Hash{},
+		}
+		_, err := gen.Commit(chainDb)
 		if err != nil {
 			return nil, err
 		}
@@ -255,7 +269,21 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 	// block is present in the database.
 	genesis := core.GetBlock(chainDb, core.GetCanonicalHash(chainDb, 0))
 	if genesis == nil {
-		genesis, err = core.WriteGenesisBlock(chainDb, params.DefaultConfigMainnet.Genesis)
+		dgen := params.DefaultConfigMainnet.Genesis
+		gen := &core.Genesis{
+			Nonce:      dgen.Nonce,
+			Timestamp:  dgen.Timestamp,
+			ExtraData:  dgen.ExtraData,
+			GasLimit:   dgen.GasLimit,
+			Difficulty: dgen.Difficulty,
+			Mixhash:    dgen.Mixhash,
+			Coinbase:   dgen.Coinbase,
+			Alloc:      dgen.Alloc,
+			// Number:     dgen,
+			// GasUsed:    0,
+			// ParentHash: common.Hash{},
+		}
+		genesis, err := gen.Commit(chainDb)
 		if err != nil {
 			return nil, err
 		}

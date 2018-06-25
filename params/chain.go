@@ -51,8 +51,23 @@ var (
 // //
 // // This configuration is intentionally not using keyed fields to force anyone
 // // adding flags to the config to also have to set these fields.
-// AllEthashProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, new(EthashConfig), nil}
+// var AllEthashProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, new(EthashConfig), nil}
 //
+var AllEthashProtocolChanges = &ChainConfig{
+	Forks:          nil,
+	BadHashes:      nil,
+	ChainID:        big.NewInt(1337),
+	HomesteadBlock: big.NewInt(0),
+	DAOForkBlock:   big.NewInt(0),
+	DAOForkSupport: false,
+	EIP150Block:    big.NewInt(0),
+	EIP150Hash:     common.Hash{},
+	EIP155Block:    big.NewInt(0),
+	EIP158Block:    big.NewInt(0),
+	ByzantiumBlock: big.NewInt(0),
+	Clique:         nil,
+}
+
 // // AllCliqueProtocolChanges contains every protocol change (EIPs) introduced
 // // and accepted by the Ethereum core developers into the Clique consensus.
 // //
