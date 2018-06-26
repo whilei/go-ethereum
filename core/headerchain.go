@@ -101,7 +101,7 @@ func NewHeaderChain(chainDb ethdb.Database, config *params.ChainConfig, mux *eve
 
 	hc.genesisHeader = hc.GetHeaderByNumber(0)
 	if hc.genesisHeader == nil {
-		genesisBlock, err := WriteGenesisBlock(chainDb, gen)
+		genesisBlock, err := CommitGenesis(chainDb, gen)
 		if err != nil {
 			return nil, err
 		}

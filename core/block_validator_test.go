@@ -85,7 +85,7 @@ func proc(t testing.TB) (Validator, *BlockChain) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = WriteGenesisBlock(db, params.DefaultConfigMorden.Genesis)
+	_, err = CommitGenesis(db, params.DefaultConfigMorden.Genesis)
 	if err != nil {
 		t.Fatal(err)
 	}

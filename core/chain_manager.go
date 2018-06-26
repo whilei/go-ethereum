@@ -301,7 +301,7 @@ func newCanonical(config *params.ChainConfig, n int, full bool) (ethdb.Database,
 	evmux := &event.TypeMux{}
 
 	// Initialize a fresh chain with only a genesis block
-	genesis, err := WriteGenesisBlock(db, params.DefaultConfigMorden.Genesis)
+	genesis, err := CommitGenesis(db, params.DefaultConfigMorden.Genesis)
 	if err != nil {
 		return nil, nil, err
 	}

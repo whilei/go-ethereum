@@ -265,9 +265,9 @@ func (bc *BlockChain) blockIsGenesis(b *types.Block) bool {
 	if bc.Genesis() != nil {
 		return reflect.DeepEqual(b, bc.Genesis())
 	}
-	ht, _ := params.DefaultConfigMorden.Genesis.Header()
-	hm, _ := params.DefaultConfigMainnet.Genesis.Header()
-	return b.Hash() == ht.Hash() || b.Hash() == hm.Hash()
+	mag := GenesisToBlock(nil, params.DefaultConfigMainnet.Genesis)
+	mog := GenesisToBlock(nil, params.DefaultConfigMorden.Genesis)
+	return b.Hash() == mog.Hash() || b.Hash() == mag.Hash()
 
 }
 

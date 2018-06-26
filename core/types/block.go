@@ -389,6 +389,9 @@ func (b *Block) WithBody(transactions []*Transaction, uncles []*Header) *Block {
 // Implement pow.Block
 
 func (b *Block) Hash() common.Hash {
+	// return rlpHash(b.header)
+	// }
+
 	if hash := b.hash.Load(); hash != nil {
 		return hash.(common.Hash)
 	}

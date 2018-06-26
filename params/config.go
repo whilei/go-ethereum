@@ -269,18 +269,18 @@ func (c *SufficientChainConfig) IsValid() (string, bool) {
 	if c.Genesis == nil {
 		return "genesis", false
 	}
-	if len(c.Genesis.Nonce) == 0 {
-		return "genesis.nonce", false
-	}
-	if len(c.Genesis.GasLimit) == 0 {
-		return "genesis.gasLimit", false
-	}
-	if len(c.Genesis.Difficulty) == 0 {
-		return "genesis.difficulty", false
-	}
-	if _, e := c.Genesis.Header(); e != nil {
-		return "genesis.header(): " + e.Error(), false
-	}
+	// if len(c.Genesis.Nonce) == 0 {
+	// 	return "genesis.nonce", false
+	// }
+	// if len(c.Genesis.GasLimit) == 0 {
+	// 	return "genesis.gasLimit", false
+	// }
+	// if len(c.Genesis.Difficulty) == 0 {
+	// 	return "genesis.difficulty", false
+	// }
+	// if _, e := c.Genesis.Header(); e != nil {
+	// 	return "genesis.header(): " + e.Error(), false
+	// }
 
 	if c.ChainConfig == nil {
 		return "chainConfig", false
@@ -293,40 +293,41 @@ func (c *SufficientChainConfig) IsValid() (string, bool) {
 	return "", true
 }
 
-// Header returns the mapping.
-func (g *Genesis) Header() (*types.Header, error) {
-	var h types.Header
-
-	var err error
-	if err = g.Nonce.Decode(h.Nonce[:]); err != nil {
-		return nil, fmt.Errorf("malformed nonce: %s", err)
-	}
-	if h.Time, err = g.Timestamp.Int(); err != nil {
-		return nil, fmt.Errorf("malformed timestamp: %s", err)
-	}
-	if err = g.ParentHash.Decode(h.ParentHash[:]); err != nil {
-		return nil, fmt.Errorf("malformed parentHash: %s", err)
-	}
-	if h.Extra, err = g.ExtraData.Bytes(); err != nil {
-		return nil, fmt.Errorf("malformed extraData: %s", err)
-	}
-	if gl, err := g.GasLimit.Int(); err != nil {
-		return nil, fmt.Errorf("malformed gasLimit: %s", err)
-	} else {
-		h.GasLimit = gl.Uint64()
-	}
-	if h.Difficulty, err = g.Difficulty.Int(); err != nil {
-		return nil, fmt.Errorf("malformed difficulty: %s", err)
-	}
-	if err = g.Mixhash.Decode(h.MixDigest[:]); err != nil {
-		return nil, fmt.Errorf("malformed mixhash: %s", err)
-	}
-	if err := g.Coinbase.Decode(h.Coinbase[:]); err != nil {
-		return nil, fmt.Errorf("malformed coinbase: %s", err)
-	}
-
-	return &h, nil
-}
+// // Header returns the mapping.
+// func (g *Genesis) Header() (*types.Header, error) {
+// 	var h types.Header
+//
+// 	var err error
+//
+// 	if err = g.Nonce.Decode(h.Nonce[:]); err != nil {
+// 		return nil, fmt.Errorf("malformed nonce: %s", err)
+// 	}
+// 	if h.Time, err = g.Timestamp.Int(); err != nil {
+// 		return nil, fmt.Errorf("malformed timestamp: %s", err)
+// 	}
+// 	if err = g.ParentHash.Decode(h.ParentHash[:]); err != nil {
+// 		return nil, fmt.Errorf("malformed parentHash: %s", err)
+// 	}
+// 	if h.Extra, err = g.ExtraData.Bytes(); err != nil {
+// 		return nil, fmt.Errorf("malformed extraData: %s", err)
+// 	}
+// 	if gl, err := g.GasLimit.Int(); err != nil {
+// 		return nil, fmt.Errorf("malformed gasLimit: %s", err)
+// 	} else {
+// 		h.GasLimit = gl.Uint64()
+// 	}
+// 	if h.Difficulty, err = g.Difficulty.Int(); err != nil {
+// 		return nil, fmt.Errorf("malformed difficulty: %s", err)
+// 	}
+// 	if err = g.Mixhash.Decode(h.MixDigest[:]); err != nil {
+// 		return nil, fmt.Errorf("malformed mixhash: %s", err)
+// 	}
+// 	if err := g.Coinbase.Decode(h.Coinbase[:]); err != nil {
+// 		return nil, fmt.Errorf("malformed coinbase: %s", err)
+// 	}
+//
+// 	return &h, nil
+// }
 
 // SortForks sorts a ChainConfiguration's forks by block number smallest to bigget (chronologically).
 // This should need be called only once after construction
@@ -615,7 +616,7 @@ func parseAllocationFile(config *SufficientChainConfig, open func(string) (io.Re
 	}
 	defer csvFile.Close()
 
-	config.Genesis.Alloc = make(map[Hex]*GenesisDumpAlloc)
+	config.Genesis.Alloc = GenesisAlloc{}
 
 	reader := csv.NewReader(csvFile)
 	line := 1
@@ -630,8 +631,11 @@ func parseAllocationFile(config *SufficientChainConfig, open func(string) (io.Re
 			return fmt.Errorf("invalid number of values in line %d: expected 2, got %d", line, len(row))
 		}
 		line++
-
-		config.Genesis.Alloc[Hex(row[0])] = &GenesisDumpAlloc{Balance: row[1]}
+		bal, ok := new(big.Int).SetString(row[1], 10)
+		if !ok {
+			return fmt.Errorf("error parsing balance from string: %v: %v", row[0], row[1])
+		}
+		config.Genesis.Alloc[common.HexToAddress(row[0])] = GenesisAccount{Balance: bal}
 	}
 
 	config.Genesis.AllocFile = ""
@@ -669,6 +673,14 @@ func parseExternalChainConfig(mainConfigFile string, open func(string) (io.ReadC
 		if err != nil {
 			return fmt.Errorf("failed to read chain configuration file: %s", err)
 		}
+		// var b []byte
+		// _, err = f.Read(b)
+		// if err != nil {
+		// 	return fmt.Errorf("could not read config file bytes: %v", err)
+		// }
+		// if err := json.Unmarshal(b, config); err != nil {
+		// 	return fmt.Errorf("%v: %s", f, err)
+		// }
 		if err := json.NewDecoder(f).Decode(config); err != nil {
 			return fmt.Errorf("%v: %s", f, err)
 		}

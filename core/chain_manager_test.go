@@ -41,7 +41,7 @@ func ExampleGenerateChain() {
 	)
 
 	// Ensure that key1 has some funds in the genesis block.
-	genesis := WriteGenesisBlockForTesting(db, params.GenesisAccount{addr1, big.NewInt(1000000)})
+	genesis := GenesisBlockForTesting(db, addr1, big.NewInt(1000000))
 
 	// This call generates a chain of 5 blocks. The function runs for
 	// each block and adds different features to gen based on the

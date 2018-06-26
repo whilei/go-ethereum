@@ -17,7 +17,6 @@
 package core
 
 import (
-	"fmt"
 	"io/ioutil"
 	"math/big"
 	"math/rand"
@@ -46,27 +45,27 @@ func init() {
 	glog.SetD(0)
 }
 
-// GenesisBlockForTesting creates a block in which addr has the given wei balance.
-// The state trie of the block is written to db. the passed db needs to contain a state root
-func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big.Int) *types.Block {
-	statedb, err := state.New(common.Hash{}, state.NewDatabase(db))
-	if err != nil {
-		panic(err)
-	}
-
-	obj := statedb.GetOrNewStateObject(addr)
-	obj.SetBalance(balance)
-	root, err := statedb.CommitTo(db, false)
-	if err != nil {
-		panic(fmt.Sprintf("cannot write state: %v", err))
-	}
-
-	return types.NewBlock(&types.Header{
-		Difficulty: big.NewInt(131072),
-		GasLimit:   4712388,
-		Root:       root,
-	}, nil, nil, nil)
-}
+// // GenesisBlockForTesting creates a block in which addr has the given wei balance.
+// // The state trie of the block is written to db. the passed db needs to contain a state root
+// func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big.Int) *types.Block {
+// 	statedb, err := state.New(common.Hash{}, state.NewDatabase(db))
+// 	if err != nil {
+// 		panic(err)
+// 	}
+//
+// 	obj := statedb.GetOrNewStateObject(addr)
+// 	obj.SetBalance(balance)
+// 	root, err := statedb.CommitTo(db, false)
+// 	if err != nil {
+// 		panic(fmt.Sprintf("cannot write state: %v", err))
+// 	}
+//
+// 	return types.NewBlock(&types.Header{
+// 		Difficulty: big.NewInt(131072),
+// 		GasLimit:   4712388,
+// 		Root:       root,
+// 	}, nil, nil, nil)
+// }
 
 func theBlockChain(db ethdb.Database, t *testing.T) *BlockChain {
 	pow, err := ethash.NewForTesting()
@@ -75,7 +74,7 @@ func theBlockChain(db ethdb.Database, t *testing.T) *BlockChain {
 	}
 
 	var eventMux event.TypeMux
-	if _, err := WriteGenesisBlock(db, params.DefaultConfigMorden.Genesis); err != nil {
+	if _, err := CommitGenesis(db, params.DefaultConfigMorden.Genesis); err != nil {
 		t.Fatal(err)
 	}
 	blockchain, err := NewBlockChain(db, testChainConfig(), pow, &eventMux)
@@ -555,7 +554,7 @@ func testReorg(t *testing.T, first, second []int, td int64, full bool) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	genesis, err := WriteGenesisBlock(db, params.DefaultConfigMorden.Genesis)
+	genesis, err := CommitGenesis(db, params.DefaultConfigMorden.Genesis)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -603,7 +602,7 @@ func TestInsertHeaderChainBadHash(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	genesis, err := WriteGenesisBlock(db, params.DefaultConfigMorden.Genesis)
+	genesis, err := CommitGenesis(db, params.DefaultConfigMorden.Genesis)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -627,7 +626,7 @@ func TestInsertChainBadHash(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	genesis, err := WriteGenesisBlock(db, params.DefaultConfigMorden.Genesis)
+	genesis, err := CommitGenesis(db, params.DefaultConfigMorden.Genesis)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -657,7 +656,7 @@ func testReorgBadHashes(t *testing.T, full bool) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	genesis, err := WriteGenesisBlock(db, params.DefaultConfigMorden.Genesis)
+	genesis, err := CommitGenesis(db, params.DefaultConfigMorden.Genesis)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -828,7 +827,7 @@ func TestFastVsFullChains(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	WriteGenesisBlockForTesting(archiveDb, params.GenesisAccount{address, funds})
+	GenesisBlockForTesting(archiveDb, address, funds)
 
 	archive, err := NewBlockChain(archiveDb, config, FakePow{}, new(event.TypeMux))
 	if err != nil {
@@ -843,7 +842,7 @@ func TestFastVsFullChains(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	WriteGenesisBlockForTesting(fastDb, params.GenesisAccount{address, funds})
+	GenesisBlockForTesting(fastDb, address, funds)
 	fast, err := NewBlockChain(fastDb, config, FakePow{}, new(event.TypeMux))
 	if err != nil {
 		t.Fatal(err)
@@ -943,10 +942,16 @@ func TestFastVsFullChainsATXI(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		genesis := WriteGenesisBlockForTesting(db,
-			params.GenesisAccount{addr1, big.NewInt(1000000)},
-			params.GenesisAccount{addr2, big.NewInt(1000000)},
-		)
+		genesis := GenesisBlockForTesting(db, addr1, big.NewInt(1000000))
+		sdb, err := state.New(genesis.Root(), state.NewDatabase(db))
+		if err != nil {
+			t.Fatalf("coult not create state: %v", err)
+		}
+		sdb.SetBalance(addr2, big.NewInt(1000000))
+		_, err = sdb.CommitTo(db, false)
+		if err != nil {
+			t.Fatalf("could not commit state: %v", err)
+		}
 		blocks, receipts := GenerateChain(config, genesis, db, 3, func(i int, gen *BlockGen) {
 			if i == 0 {
 				gen.AddTx(t1)
@@ -1056,10 +1061,16 @@ func TestRmAddrTx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	genesis := WriteGenesisBlockForTesting(db,
-		params.GenesisAccount{addr1, big.NewInt(1000000)},
-		params.GenesisAccount{addr2, big.NewInt(1000000)},
-	)
+	genesis := GenesisBlockForTesting(db, addr1, big.NewInt(1000000))
+	sdb, err := state.New(genesis.Root(), state.NewDatabase(db))
+	if err != nil {
+		t.Fatalf("coult not create state: %v", err)
+	}
+	sdb.SetBalance(addr2, big.NewInt(1000000))
+	_, err = sdb.CommitTo(db, false)
+	if err != nil {
+		t.Fatalf("could not commit state: %v", err)
+	}
 	blocks, _ := GenerateChain(config, genesis, db, 3, func(i int, gen *BlockGen) {
 		if i == 0 {
 			gen.AddTx(t1)
@@ -1138,7 +1149,7 @@ func TestLightVsFastVsFullChainHeads(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	WriteGenesisBlockForTesting(archiveDb, params.GenesisAccount{address, funds})
+	GenesisBlockForTesting(archiveDb, address, funds)
 
 	archive, err := NewBlockChain(archiveDb, testChainConfig(), FakePow{}, new(event.TypeMux))
 	if err != nil {
@@ -1157,7 +1168,7 @@ func TestLightVsFastVsFullChainHeads(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	WriteGenesisBlockForTesting(fastDb, params.GenesisAccount{address, funds})
+	GenesisBlockForTesting(fastDb, address, funds)
 	fast, err := NewBlockChain(fastDb, testChainConfig(), FakePow{}, new(event.TypeMux))
 	if err != nil {
 		t.Fatal(err)
@@ -1182,7 +1193,7 @@ func TestLightVsFastVsFullChainHeads(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	WriteGenesisBlockForTesting(lightDb, params.GenesisAccount{address, funds})
+	GenesisBlockForTesting(lightDb, address, funds)
 	light, err := NewBlockChain(lightDb, testChainConfig(), FakePow{}, new(event.TypeMux))
 	if err != nil {
 		t.Fatal(err)
@@ -1241,11 +1252,19 @@ func testChainTxReorgs(t *testing.T, db ethdb.Database, withATXI bool) {
 		addr3  = crypto.PubkeyToAddress(key3.PublicKey)
 		signer = types.NewChainIdSigner(big.NewInt(63))
 	)
-	genesis := WriteGenesisBlockForTesting(db,
-		params.GenesisAccount{addr1, big.NewInt(1000000)},
-		params.GenesisAccount{addr2, big.NewInt(1000000)},
-		params.GenesisAccount{addr3, big.NewInt(1000000)},
-	)
+	genesis := GenesisBlockForTesting(db, addr1, big.NewInt(1000000))
+
+	sdb, err := state.New(genesis.Root(), state.NewDatabase(db))
+	if err != nil {
+		t.Fatalf("could not create state db for genesis block: %v", err)
+	}
+	sdb.SetBalance(addr2, big.NewInt(1000000))
+	sdb.SetBalance(addr3, big.NewInt(1000000))
+	_, err = sdb.CommitTo(db, false)
+	if err != nil {
+		t.Fatalf("could not commit to statedb: %v", err)
+	}
+
 	// Create two transactions shared between the chains:
 	// addr1 -> addr2
 	//  - postponed: transaction included at a later block in the forked chain
@@ -1440,8 +1459,8 @@ func TestLogReorgs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	genesis := WriteGenesisBlockForTesting(db,
-		params.GenesisAccount{addr1, big.NewInt(10000000000000)},
+	genesis := GenesisBlockForTesting(db,
+		addr1, big.NewInt(10000000000000),
 	)
 	chainConfig := MakeDiehardChainConfig()
 
@@ -1497,7 +1516,7 @@ func TestReorgSideEvent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	genesis := WriteGenesisBlockForTesting(db, params.GenesisAccount{addr1, big.NewInt(10000000000000)})
+	genesis := GenesisBlockForTesting(db, addr1, big.NewInt(10000000000000))
 	signer := types.NewChainIdSigner(big.NewInt(63))
 	chainConfig := MakeDiehardChainConfig()
 
@@ -1581,7 +1600,7 @@ func TestCanonicalBlockRetrieval(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	genesis := WriteGenesisBlockForTesting(db)
+	genesis := GenesisBlockForTesting(db, common.Address{}, nil)
 
 	evmux := &event.TypeMux{}
 	blockchain, err := NewBlockChain(db, testChainConfig(), FakePow{}, evmux)
@@ -1630,7 +1649,7 @@ func TestEIP155Transition(t *testing.T) {
 	var (
 		address = crypto.PubkeyToAddress(key.PublicKey)
 		funds   = big.NewInt(1000000000)
-		genesis = WriteGenesisBlockForTesting(db, params.GenesisAccount{address, funds})
+		genesis = GenesisBlockForTesting(db, address, funds)
 		config  = &params.ChainConfig{
 			Forks: []*params.Fork{
 				{

@@ -68,9 +68,14 @@ func (h *Hash) UnmarshalJSON(input []byte) error {
 		input = input[2:]
 	}
 
+	if string(input) == "" {
+		h = &Hash{}
+		return nil
+	}
+
 	// validate the length of the input hash
 	if len(input) != HashLength*2 {
-		return hashJsonLengthErr
+		return fmt.Errorf("%v, input: %v (len=%d)", hashJsonLengthErr, string(input), len(input))
 	}
 	h.SetBytes(FromHex(string(input)))
 	return nil
@@ -196,6 +201,10 @@ func (a Address) MarshalJSON() ([]byte, error) {
 
 // Parse address from raw json data
 func (a *Address) UnmarshalJSON(data []byte) error {
+	if string(data) == `""` {
+		a = &Address{}
+		return nil
+	}
 	if len(data) > 2 && data[0] == '"' && data[len(data)-1] == '"' {
 		data = data[1 : len(data)-1]
 	}
@@ -205,7 +214,7 @@ func (a *Address) UnmarshalJSON(data []byte) error {
 	}
 
 	if len(data) != 2*AddressLength {
-		return fmt.Errorf("Invalid address length, expected %d got %d bytes", 2*AddressLength, len(data))
+		return fmt.Errorf("invalid address length, expected %d got %d bytes, data: %s", 2*AddressLength, len(data), data)
 	}
 
 	n, err := hex.Decode(a[:], data)
@@ -214,7 +223,7 @@ func (a *Address) UnmarshalJSON(data []byte) error {
 	}
 
 	if n != AddressLength {
-		return fmt.Errorf("Invalid address")
+		return fmt.Errorf("invalid address")
 	}
 
 	a.Set(HexToAddress(string(data)))
