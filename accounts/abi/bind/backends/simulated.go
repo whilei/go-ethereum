@@ -59,7 +59,7 @@ func NewSimulatedBackend(accounts ...params.GenesisAccount) *SimulatedBackend {
 	return backend
 }
 
-// Commit imports all the pending transactions as a single block and starts a
+// CommitGenesis imports all the pending transactions as a single block and starts a
 // fresh new state.
 func (b *SimulatedBackend) Commit() {
 	if res := b.blockchain.InsertChain([]*types.Block{b.pendingBlock}); res.Error != nil {
