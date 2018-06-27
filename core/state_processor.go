@@ -77,9 +77,10 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB) (ty
 
 		cfg = vm.Config{}
 	)
+
 	// Iterate over and process the individual transactions
 	for i, tx := range block.Transactions() {
-		// PTAL these seem like "sugary" "pre-flight" safety checks and warnings that are actually redundant to the VM processing. I think we can safely get rid of them.
+		// // PTAL these seem like "sugary" "pre-flight" safety checks and warnings that are actually redundant to the VM processing. I think we can safely get rid of them.
 		if tx.Protected() {
 			chainId := p.config.GetChainID()
 			if chainId.Cmp(new(big.Int)) == 0 {

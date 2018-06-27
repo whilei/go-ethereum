@@ -47,7 +47,7 @@ func TestState(t *testing.T) {
 				if subtest.Fork == "Constantinople" {
 					t.Skip("constantinople not supported yet")
 				}
-				withTrace(t, test.gasLimit(subtest), func(vmconfig vm.Config) error {
+				withTrace(t, test.gasLimit(subtest), subtest, func(vmconfig vm.Config) error {
 					_, err := test.Run(subtest, vmconfig)
 					return st.checkFailure(t, name, err)
 				})
@@ -59,12 +59,12 @@ func TestState(t *testing.T) {
 // Transactions with gasLimit above this value will not get a VM trace on failure.
 const traceErrorLimit = 400000
 
-func withTrace(t *testing.T, gasLimit uint64, test func(vm.Config) error) {
+func withTrace(t *testing.T, gasLimit uint64, subtest StateSubtest, test func(vm.Config) error) {
 	err := test(vm.Config{})
 	if err == nil {
 		return
 	}
-	t.Error(err)
+	t.Errorf("err: '%v'; subtest_index/fork: %d/%s", err, subtest.Index, subtest.Fork)
 	if gasLimit > traceErrorLimit {
 		t.Log("gas limit too high for EVM trace")
 		return

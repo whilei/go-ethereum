@@ -23,6 +23,7 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereumproject/go-ethereum/common"
 	"github.com/ethereumproject/go-ethereum/common/hexutil"
 	"github.com/ethereumproject/go-ethereum/common/math"
@@ -141,14 +142,15 @@ func (t *StateTest) Run(subtest StateSubtest, vmconfig vm.Config) (*state.StateD
 	gaspool := new(core.GasPool)
 	gaspool.AddGas(block.GasLimit())
 	snapshot := statedb.Snapshot()
-	if _, _, _, err := core.ApplyMessage(evm, msg, gaspool); err != nil {
+	_, _, _, err = core.ApplyMessage(evm, msg, gaspool)
+	if err != nil {
 		statedb.RevertToSnapshot(snapshot)
 	}
 	if logs := rlpHash(statedb.Logs()); logs != common.Hash(post.Logs) {
-		return statedb, fmt.Errorf("post state logs hash mismatch: got %x, want %x", logs, post.Logs)
+		return statedb, fmt.Errorf("post state logs hash mismatch: got %x, want %x\n%s", logs, post.Logs, spew.Sprint(statedb.Logs()))
 	}
+	statedb.CommitTo(db, config.IsEIP158(block.Number()))
 	// PTAL This fails on every test. Not sure where `post.Root` comes from either; it doesn't exist hardcoded in the tests and, as far as I can tell, never set in the test runner utils.
-	// root, _ := statedb.CommitTo(db, config.IsEIP158(block.Number()))
 	// if root != common.Hash(post.Root) {
 	// 	return statedb, fmt.Errorf("post state root mismatch: got %x, want %x", root, post.Root)
 	// }
@@ -192,10 +194,6 @@ func (tx *stTransaction) toMessage(ps stPostState) (core.Message, error) {
 	// Derive sender from private key if present.
 	var from common.Address
 	if len(tx.PrivateKey) > 0 {
-		// key, err := crypto.ToECDSA(tx.PrivateKey)
-		// if err != nil {
-		// 	return nil, fmt.Errorf("invalid private key: %v", err)
-		// }
 		key := crypto.ToECDSA(tx.PrivateKey)
 		from = crypto.PubkeyToAddress(key.PublicKey)
 	}
@@ -236,6 +234,7 @@ func (tx *stTransaction) toMessage(ps stPostState) (core.Message, error) {
 	}
 
 	msg := types.NewMessage(from, to, tx.Nonce, value, gasLimit, tx.GasPrice, data, true)
+	// msg.from, err = types.Sender(s, tx)
 	return msg, nil
 }
 

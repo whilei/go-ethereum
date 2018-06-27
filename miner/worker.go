@@ -268,7 +268,7 @@ func (self *worker) wait() {
 				}
 				go self.mux.Post(core.NewMinedBlockEvent{Block: block})
 			} else {
-				work.state.CommitTo(self.chainDb, false)
+				work.state.CommitTo(self.chainDb, self.config.IsEIP158(block.Number()))
 				parent := self.chain.GetBlock(block.ParentHash())
 				if parent == nil {
 					glog.V(logger.Error).Infoln("Invalid block found during mining")
