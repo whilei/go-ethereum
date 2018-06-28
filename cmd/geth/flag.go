@@ -18,6 +18,7 @@ package main
 
 import (
 	"crypto/ecdsa"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -27,8 +28,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-
-	"errors"
 
 	"github.com/ethereumproject/ethash"
 	"github.com/ethereumproject/go-ethereum/accounts"
