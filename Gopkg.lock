@@ -80,6 +80,12 @@
   revision = "4883227f66371e02c4948937d3e2be1664d9be38"
 
 [[projects]]
+  name = "github.com/influxdata/influxdb"
+  packages = ["client","models","pkg/escape"]
+  revision = "4e4e00bc5ab85a3ff5e988c91020cf0399a87026"
+  version = "v1.5.4"
+
+[[projects]]
   name = "github.com/jackpal/go-nat-pmp"
   packages = ["."]
   revision = "c9cfead9f2a36ddf3daa40ba269aa7f4bbba6b62"
@@ -248,6 +254,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1fb827edc1d92940fc0b3e28de8c791bb6687a5b946c9191995bc390de20f839"
+  inputs-digest = "878efc82d2a8ebfeabaca29948aa7c02959d1b679343cf2c36e91380f7e31ae3"
   solver-name = "gps-cdcl"
   solver-version = 1
