@@ -101,7 +101,7 @@ func WriteGenesisBlock(chainDb ethdb.Database, genesis *params.GenesisDump) (*ty
 			statedb.SetState(addr, k, v)
 		}
 	}
-	root, err := statedb.CommitTo(chainDb, false)
+	root, err := statedb.Commit(false)
 	if err != nil {
 		return nil, err
 	}
