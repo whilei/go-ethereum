@@ -11,7 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethereumproject/go-ethereum/log"
+	"github.com/ethereumproject/go-ethereum/logger"
+	"github.com/ethereumproject/go-ethereum/logger/glog"
 )
 
 // Enabled is checked by the constructor functions for all of the
@@ -31,7 +32,7 @@ const DashboardEnabledFlag = "dashboard"
 func init() {
 	for _, arg := range os.Args {
 		if flag := strings.TrimLeft(arg, "-"); flag == MetricsEnabledFlag || flag == DashboardEnabledFlag {
-			log.Info("Enabling metrics collection")
+			glog.V(logger.Info).Infoln("Enabling metrics collection")
 			Enabled = true
 		}
 	}
@@ -64,7 +65,7 @@ func CollectProcessMetrics(refresh time.Duration) {
 		diskWrites = GetOrRegisterMeter("system/disk/writecount", DefaultRegistry)
 		diskWriteBytes = GetOrRegisterMeter("system/disk/writedata", DefaultRegistry)
 	} else {
-		log.Debug("Failed to read disk metrics", "err", err)
+		glog.V(logger.Debug).Infoln("Failed to read disk metrics", "err", err)
 	}
 	// Iterate loading the different stats and updating the meters
 	for i := 1; ; i++ {
