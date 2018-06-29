@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -34,7 +35,6 @@ import (
 	"github.com/ethereumproject/ethash"
 	"github.com/ethereumproject/go-ethereum/common"
 	"github.com/ethereumproject/go-ethereum/core"
-	"github.com/ethereumproject/go-ethereum/core/state"
 	"github.com/ethereumproject/go-ethereum/core/types"
 	"github.com/ethereumproject/go-ethereum/eth"
 	"github.com/ethereumproject/go-ethereum/event"
@@ -45,7 +45,6 @@ import (
 	"github.com/ethereumproject/go-ethereum/pow"
 	"github.com/ethereumproject/go-ethereum/rlp"
 	"gopkg.in/urfave/cli.v1"
-	"math"
 )
 
 const (
@@ -673,7 +672,7 @@ func dumpChainConfig(ctx *cli.Context) error {
 	// so I expect it to be used more frequently than mainnet.
 	genesisDump := params.DefaultConfigMorden.Genesis
 	netId := 2
-	stateConf := &params.StateConfig{StartingNonce: state.DefaultTestnetStartingNonce}
+	stateConf := &params.StateConfig{StartingNonce: params.DefaultConfigMorden.State.StartingNonce}
 	if !chainIsMorden(ctx) {
 		genesisDump = params.DefaultConfigMainnet.Genesis
 		netId = eth.NetworkId
