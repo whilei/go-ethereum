@@ -103,6 +103,8 @@ func (db *MemDatabase) NewBatch() Batch {
 	return &memBatch{db: db}
 }
 
+func (db *MemDatabase) Len() int { return len(db.db) }
+
 type kv struct{ k, v []byte }
 type memBatch struct {
 	db     *MemDatabase

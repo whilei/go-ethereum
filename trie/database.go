@@ -24,7 +24,8 @@ import (
 
 	"github.com/ethereumproject/go-ethereum/common"
 	"github.com/ethereumproject/go-ethereum/ethdb"
-	"github.com/ethereumproject/go-ethereum/log"
+	"github.com/ethereumproject/go-ethereum/logger"
+	"github.com/ethereumproject/go-ethereum/logger/glog"
 	"github.com/ethereumproject/go-ethereum/metrics"
 	"github.com/ethereumproject/go-ethereum/rlp"
 )
@@ -641,11 +642,7 @@ func (db *Database) Commit(node common.Hash, report bool) error {
 	memcacheCommitSizeMeter.Mark(int64(storage - db.nodesSize))
 	memcacheCommitNodesMeter.Mark(int64(nodes - len(db.nodes)))
 
-	logger := glog.V(logger.Info).Infoln
-	if !report {
-		logger = glog.V(logger.Debug).Infoln
-	}
-	logger("Persisted trie from memory database", "nodes", nodes-len(db.nodes)+int(db.flushnodes), "size", storage-db.nodesSize+db.flushsize, "time", time.Since(start)+db.flushtime,
+	glog.V(logger.Debug).Infoln("Persisted trie from memory database", "nodes", nodes-len(db.nodes)+int(db.flushnodes), "size", storage-db.nodesSize+db.flushsize, "time", time.Since(start)+db.flushtime,
 		"gcnodes", db.gcnodes, "gcsize", db.gcsize, "gctime", db.gctime, "livenodes", len(db.nodes), "livesize", db.nodesSize)
 
 	// Reset the garbage collection statistics
