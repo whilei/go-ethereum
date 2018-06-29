@@ -752,7 +752,8 @@ func (s *PublicBlockChainAPI) GetStorageAt(address common.Address, key string, b
 
 // callmsg is the message type used for call transactions.
 type callmsg struct {
-	from     *state.StateObject
+	statedb  *state.StateDB
+	from     common.Address
 	to       *common.Address
 	gas      uint64
 	gasPrice *big.Int
@@ -761,10 +762,10 @@ type callmsg struct {
 }
 
 // accessor boilerplate to implement core.Message
-func (m callmsg) From() common.Address { return m.from.Address() }
+func (m callmsg) From() common.Address { return m.from }
 
-func (m callmsg) FromFrontier() (common.Address, error) { return m.from.Address(), nil }
-func (m callmsg) Nonce() uint64                         { return m.from.Nonce() }
+func (m callmsg) FromFrontier() (common.Address, error) { return m.from, nil }
+func (m callmsg) Nonce() uint64                         { return m.statedb.GetNonce(m.from) }
 func (m callmsg) To() *common.Address                   { return m.to }
 func (m callmsg) GasPrice() *big.Int                    { return m.gasPrice }
 func (m callmsg) Gas() uint64                           { return m.gas }
@@ -791,21 +792,23 @@ func (s *PublicBlockChainAPI) doCall(args CallArgs, blockNr rpc.BlockNumber) (st
 	stateDb = stateDb.Copy()
 
 	// Retrieve the account state object to interact with
-	var from *state.StateObject
+	var from common.Address
 	if args.From == (common.Address{}) {
 		accounts := s.am.Accounts()
 		if len(accounts) == 0 {
-			from = stateDb.GetOrNewStateObject(common.Address{})
+			from = stateDb.GetOrNewStateObject(common.Address{}).Address()
 		} else {
-			from = stateDb.GetOrNewStateObject(accounts[0].Address)
+			from = stateDb.GetOrNewStateObject(accounts[0].Address).Address()
 		}
 	} else {
-		from = stateDb.GetOrNewStateObject(args.From)
+		from = stateDb.GetOrNewStateObject(args.From).Address()
 	}
-	from.SetBalance(common.MaxBig)
+
+	stateDb.SetBalance(from, common.MaxBig)
 
 	// Assemble the CALL invocation
 	msg := callmsg{
+		statedb:  stateDb,
 		from:     from,
 		to:       args.To,
 		gas:      args.Gas.Uint64(),
@@ -2008,18 +2011,18 @@ func (s *PublicBlockChainAPI) TraceCall(args CallArgs, blockNr rpc.BlockNumber) 
 	stateDb = stateDb.Copy()
 
 	// Retrieve the account state object to interact with
-	var from *state.StateObject
+	var from common.Address
 	if args.From == (common.Address{}) {
 		accounts := s.am.Accounts()
 		if len(accounts) == 0 {
-			from = stateDb.GetOrNewStateObject(common.Address{})
+			from = stateDb.GetOrNewStateObject(common.Address{}).Address()
 		} else {
-			from = stateDb.GetOrNewStateObject(accounts[0].Address)
+			from = stateDb.GetOrNewStateObject(accounts[0].Address).Address()
 		}
 	} else {
-		from = stateDb.GetOrNewStateObject(args.From)
+		from = stateDb.GetOrNewStateObject(args.From).Address()
 	}
-	from.SetBalance(common.MaxBig)
+	stateDb.SetBalance(from, common.MaxBig)
 
 	// Assemble the CALL invocation
 	msg := callmsg{
@@ -2092,15 +2095,15 @@ func (s *PublicDebugAPI) computeTxEnv(blockHash common.Hash, txIndex int) (core.
 	for idx, tx := range txs {
 		// Assemble the transaction call message
 		// Retrieve the account state object to interact with
-		var from *state.StateObject
+		var from common.Address
 		fromAddress, e := tx.From()
 		if e != nil {
 			return nil, nil, e
 		}
 		if fromAddress == (common.Address{}) {
-			from = statedb.GetOrNewStateObject(common.Address{})
+			from = statedb.GetOrNewStateObject(common.Address{}).Address()
 		} else {
-			from = statedb.GetOrNewStateObject(fromAddress)
+			from = statedb.GetOrNewStateObject(fromAddress).Address()
 		}
 
 		msg := callmsg{
@@ -2123,7 +2126,6 @@ func (s *PublicDebugAPI) computeTxEnv(blockHash common.Hash, txIndex int) (core.
 		if err != nil {
 			return nil, nil, fmt.Errorf("tx %x failed: %v", tx.Hash(), err)
 		}
-		statedb.DeleteSuicides()
 	}
 	return nil, nil, fmt.Errorf("tx index %d out of range for block %x", txIndex, blockHash)
 }
