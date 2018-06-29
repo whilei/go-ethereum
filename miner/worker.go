@@ -268,7 +268,15 @@ func (self *worker) wait() {
 				}
 				go self.mux.Post(core.NewMinedBlockEvent{Block: block})
 			} else {
-				work.state.CommitTo(self.chainDb, self.config.IsEIP158(block.Number()))
+				root, err := work.state.Commit(self.config.IsEIP158(block.Number()))
+				if err != nil {
+					glog.V(logger.Error).Errorln("could not commit work state: %v", err)
+					continue
+				}
+				if err := work.state.Database().TrieDB().Commit(root, false); err != nil {
+					glog.V(logger.Error).Errorln("could not commit trie db: %v", err)
+					continue
+				}
 				parent := self.chain.GetBlock(block.ParentHash())
 				if parent == nil {
 					glog.V(logger.Error).Infoln("Invalid block found during mining")
