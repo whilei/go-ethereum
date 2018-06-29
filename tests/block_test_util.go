@@ -161,7 +161,7 @@ func runBlockTests(homesteadBlock, gasPriceFork *big.Int, bt map[string]*BlockTe
 
 func runBlockTest(homesteadBlock, gasPriceFork *big.Int, test *BlockTest) error {
 	// import pre accounts & construct test genesis block & state root
-	db, _ := ethdb.NewMemDatabase()
+	db := ethdb.NewMemDatabase()
 	if _, err := test.InsertPreState(db); err != nil {
 		return fmt.Errorf("InsertPreState: %v", err)
 	}

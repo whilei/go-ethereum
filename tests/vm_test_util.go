@@ -89,7 +89,7 @@ func BenchVmTest(p string, conf bconf, b *testing.B) error {
 
 func benchVmTest(test VmTest, env map[string]string, b *testing.B) {
 	b.StopTimer()
-	db, _ := ethdb.NewMemDatabase()
+	db := ethdb.NewMemDatabase()
 	statedb := makePreState(db, test.Pre)
 	b.StartTimer()
 
@@ -133,7 +133,7 @@ func runVmTests(tests map[string]VmTest, skipTests []string) error {
 }
 
 func runVmTest(test VmTest) error {
-	db, _ := ethdb.NewMemDatabase()
+	db := ethdb.NewMemDatabase()
 	statedb := makePreState(db, test.Pre)
 
 	// XXX Yeah, yeah...

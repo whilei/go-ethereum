@@ -46,7 +46,7 @@ type SimulatedBackend struct {
 // NewSimulatedBackend creates a new binding backend using a simulated blockchain
 // for testing purposes.
 func NewSimulatedBackend(accounts ...params.GenesisAccount) *SimulatedBackend {
-	database, _ := ethdb.NewMemDatabase()
+	database := ethdb.NewMemDatabase()
 	core.WriteGenesisBlockForTesting(database, accounts...)
 	blockchain, _ := core.NewBlockChain(database, params.DefaultConfigMorden.ChainConfig, new(core.FakePow), new(event.TypeMux))
 

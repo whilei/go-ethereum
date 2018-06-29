@@ -81,10 +81,8 @@ func testChainConfig() *params.ChainConfig {
 }
 
 func proc(t testing.TB) (Validator, *BlockChain) {
-	db, err := ethdb.NewMemDatabase()
-	if err != nil {
-		t.Fatal(err)
-	}
+	db := ethdb.NewMemDatabase()
+	var err error
 	_, err = WriteGenesisBlock(db, params.DefaultConfigMorden.Genesis)
 	if err != nil {
 		t.Fatal(err)
@@ -126,10 +124,8 @@ func TestNumber(t *testing.T) {
 }
 
 func TestPutReceipt(t *testing.T) {
-	db, err := ethdb.NewMemDatabase()
-	if err != nil {
-		t.Fatal(err)
-	}
+	db  := ethdb.NewMemDatabase()
+
 
 	var addr common.Address
 	addr[0] = 1

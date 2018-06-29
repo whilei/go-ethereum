@@ -40,7 +40,7 @@ type ServiceContext struct {
 // node is an ephemeral one, a memory database is returned.
 func (ctx *ServiceContext) OpenDatabase(name string, cache int, handles int) (ethdb.Database, error) {
 	if ctx.datadir == "" {
-		return ethdb.NewMemDatabase()
+		return ethdb.NewMemDatabase(), nil
 	}
 	return ethdb.NewLDBDatabase(filepath.Join(ctx.datadir, name), cache, handles)
 }

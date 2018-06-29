@@ -217,10 +217,7 @@ func insertChain(done chan bool, blockchain *BlockChain, chain types.Blocks, t *
 }
 
 func TestLastBlock(t *testing.T) {
-	db, err := ethdb.NewMemDatabase()
-	if err != nil {
-		t.Fatal(err)
-	}
+	db := ethdb.NewMemDatabase()
 
 	bchain := theBlockChain(db, t)
 	block := makeBlockChain(bchain.config, bchain.CurrentBlock(), 1, db, 0)[0]
@@ -367,10 +364,7 @@ func testBrokenChain(t *testing.T, full bool) {
 func TestChainInsertions(t *testing.T) {
 	t.Skip("Skipped: outdated test files")
 
-	db, err := ethdb.NewMemDatabase()
-	if err != nil {
-		t.Fatal(err)
-	}
+	db := ethdb.NewMemDatabase()
 
 	chain1, err := loadChain("valid1", t)
 	if err != nil {
@@ -406,10 +400,7 @@ func TestChainInsertions(t *testing.T) {
 func TestChainMultipleInsertions(t *testing.T) {
 	t.Skip("Skipped: outdated test files")
 
-	db, err := ethdb.NewMemDatabase()
-	if err != nil {
-		t.Fatal(err)
-	}
+	db := ethdb.NewMemDatabase()
 
 	const max = 4
 	chains := make([]types.Blocks, max)
@@ -551,10 +542,8 @@ func testReorgShort(t *testing.T, full bool) {
 
 func testReorg(t *testing.T, first, second []int, td int64, full bool) {
 	// Create a pristine block chain
-	db, err := ethdb.NewMemDatabase()
-	if err != nil {
-		t.Fatal(err)
-	}
+	db := ethdb.NewMemDatabase()
+
 	genesis, err := WriteGenesisBlock(db, params.DefaultConfigMorden.Genesis)
 	if err != nil {
 		t.Fatal(err)
@@ -599,10 +588,8 @@ func testReorg(t *testing.T, first, second []int, td int64, full bool) {
 }
 
 func TestInsertHeaderChainBadHash(t *testing.T) {
-	db, err := ethdb.NewMemDatabase()
-	if err != nil {
-		t.Fatal(err)
-	}
+	db := ethdb.NewMemDatabase()
+
 	genesis, err := WriteGenesisBlock(db, params.DefaultConfigMorden.Genesis)
 	if err != nil {
 		t.Fatal(err)
@@ -623,10 +610,8 @@ func TestInsertHeaderChainBadHash(t *testing.T) {
 }
 
 func TestInsertChainBadHash(t *testing.T) {
-	db, err := ethdb.NewMemDatabase()
-	if err != nil {
-		t.Fatal(err)
-	}
+	db := ethdb.NewMemDatabase()
+
 	genesis, err := WriteGenesisBlock(db, params.DefaultConfigMorden.Genesis)
 	if err != nil {
 		t.Fatal(err)
@@ -653,10 +638,8 @@ func TestReorgBadBlockHashes(t *testing.T)  { testReorgBadHashes(t, true) }
 
 func testReorgBadHashes(t *testing.T, full bool) {
 	// Create a pristine block chain
-	db, err := ethdb.NewMemDatabase()
-	if err != nil {
-		t.Fatal(err)
-	}
+	db := ethdb.NewMemDatabase()
+
 	genesis, err := WriteGenesisBlock(db, params.DefaultConfigMorden.Genesis)
 	if err != nil {
 		t.Fatal(err)
@@ -790,10 +773,8 @@ func testInsertNonceError(t *testing.T, full bool) {
 // classical full block processing.
 func TestFastVsFullChains(t *testing.T) {
 	// Configure and generate a sample block chain
-	gendb, err := ethdb.NewMemDatabase()
-	if err != nil {
-		t.Fatal(err)
-	}
+	gendb := ethdb.NewMemDatabase()
+
 	key, err := crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
 	if err != nil {
 		t.Fatal(err)
@@ -824,10 +805,8 @@ func TestFastVsFullChains(t *testing.T) {
 		}
 	})
 	// Import the chain as an archive node for the comparison baseline
-	archiveDb, err := ethdb.NewMemDatabase()
-	if err != nil {
-		t.Fatal(err)
-	}
+	archiveDb := ethdb.NewMemDatabase()
+
 	WriteGenesisBlockForTesting(archiveDb, params.GenesisAccount{address, funds})
 
 	archive, err := NewBlockChain(archiveDb, config, FakePow{}, new(event.TypeMux))
@@ -839,10 +818,8 @@ func TestFastVsFullChains(t *testing.T) {
 		t.Fatalf("failed to process block %d: %v", res.Index, res.Error)
 	}
 	// Fast import the chain as a non-archive node to test
-	fastDb, err := ethdb.NewMemDatabase()
-	if err != nil {
-		t.Fatal(err)
-	}
+	fastDb  := ethdb.NewMemDatabase()
+
 	WriteGenesisBlockForTesting(fastDb, params.GenesisAccount{address, funds})
 	fast, err := NewBlockChain(fastDb, config, FakePow{}, new(event.TypeMux))
 	if err != nil {
@@ -1100,10 +1077,8 @@ func TestRmAddrTx(t *testing.T) {
 // positions.
 func TestLightVsFastVsFullChainHeads(t *testing.T) {
 	// Configure and generate a sample block chain
-	gendb, err := ethdb.NewMemDatabase()
-	if err != nil {
-		t.Fatal(err)
-	}
+	gendb := ethdb.NewMemDatabase()
+
 	key, err := crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
 	if err != nil {
 		t.Fatal(err)
@@ -1134,10 +1109,8 @@ func TestLightVsFastVsFullChainHeads(t *testing.T) {
 		}
 	}
 	// Import the chain as an archive node and ensure all pointers are updated
-	archiveDb, err := ethdb.NewMemDatabase()
-	if err != nil {
-		t.Fatal(err)
-	}
+	archiveDb := ethdb.NewMemDatabase()
+
 	WriteGenesisBlockForTesting(archiveDb, params.GenesisAccount{address, funds})
 
 	archive, err := NewBlockChain(archiveDb, testChainConfig(), FakePow{}, new(event.TypeMux))
@@ -1153,10 +1126,8 @@ func TestLightVsFastVsFullChainHeads(t *testing.T) {
 	assert(t, "archive", archive, height/2, height/2, height/2)
 
 	// Import the chain as a non-archive node and ensure all pointers are updated
-	fastDb, err := ethdb.NewMemDatabase()
-	if err != nil {
-		t.Fatal(err)
-	}
+	fastDb := ethdb.NewMemDatabase()
+
 	WriteGenesisBlockForTesting(fastDb, params.GenesisAccount{address, funds})
 	fast, err := NewBlockChain(fastDb, testChainConfig(), FakePow{}, new(event.TypeMux))
 	if err != nil {
@@ -1178,10 +1149,8 @@ func TestLightVsFastVsFullChainHeads(t *testing.T) {
 	assert(t, "fast", fast, height/2, height/2, 0)
 
 	// Import the chain as a light node and ensure all pointers are updated
-	lightDb, err := ethdb.NewMemDatabase()
-	if err != nil {
-		t.Fatal(err)
-	}
+	lightDb := ethdb.NewMemDatabase()
+
 	WriteGenesisBlockForTesting(lightDb, params.GenesisAccount{address, funds})
 	light, err := NewBlockChain(lightDb, testChainConfig(), FakePow{}, new(event.TypeMux))
 	if err != nil {
@@ -1198,10 +1167,8 @@ func TestLightVsFastVsFullChainHeads(t *testing.T) {
 
 // Tests that chain reorganisations handle transaction removals and reinsertions.
 func TestChainTxReorgs(t *testing.T) {
-	db, err := ethdb.NewMemDatabase()
-	if err != nil {
-		t.Fatal(err)
-	}
+	db := ethdb.NewMemDatabase()
+
 	testChainTxReorgs(t, db, false)
 }
 
@@ -1436,10 +1403,8 @@ func TestLogReorgs(t *testing.T) {
 	// this code generates a log
 	code := common.Hex2Bytes("60606040525b7f24ec1d3ff24c2f6ff210738839dbc339cd45a5294d85c79361016243157aae7b60405180905060405180910390a15b600a8060416000396000f360606040526008565b00")
 	signer := types.NewChainIdSigner(big.NewInt(63))
-	db, err := ethdb.NewMemDatabase()
-	if err != nil {
-		t.Fatal(err)
-	}
+	db := ethdb.NewMemDatabase()
+
 	genesis := WriteGenesisBlockForTesting(db,
 		params.GenesisAccount{addr1, big.NewInt(10000000000000)},
 	)
@@ -1493,10 +1458,8 @@ func TestReorgSideEvent(t *testing.T) {
 		t.Fatal(err)
 	}
 	addr1 := crypto.PubkeyToAddress(key1.PublicKey)
-	db, err := ethdb.NewMemDatabase()
-	if err != nil {
-		t.Fatal(err)
-	}
+	db := ethdb.NewMemDatabase()
+
 	genesis := WriteGenesisBlockForTesting(db, params.GenesisAccount{addr1, big.NewInt(10000000000000)})
 	signer := types.NewChainIdSigner(big.NewInt(63))
 	chainConfig := MakeDiehardChainConfig()
@@ -1577,10 +1540,8 @@ done:
 // Tests if the canonical block can be fetched from the database during chain insertion.
 func TestCanonicalBlockRetrieval(t *testing.T) {
 	t.Skip("Skipped: needs updating")
-	db, err := ethdb.NewMemDatabase()
-	if err != nil {
-		t.Fatal(err)
-	}
+	db := ethdb.NewMemDatabase()
+
 	genesis := WriteGenesisBlockForTesting(db)
 
 	evmux := &event.TypeMux{}
@@ -1619,10 +1580,8 @@ func TestCanonicalBlockRetrieval(t *testing.T) {
 
 func TestEIP155Transition(t *testing.T) {
 	// Configure and generate a sample block chain
-	db, err := ethdb.NewMemDatabase()
-	if err != nil {
-		t.Fatal(err)
-	}
+	db := ethdb.NewMemDatabase()
+
 	key, err := crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
 	if err != nil {
 		t.Fatal(err)

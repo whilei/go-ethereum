@@ -58,10 +58,7 @@ func init() {
 	}
 	testAddress = crypto.PubkeyToAddress(testKey.PublicKey)
 
-	testdb, err = ethdb.NewMemDatabase()
-	if err != nil {
-		panic(err)
-	}
+	testdb = ethdb.NewMemDatabase()
 
 	statedb, err := state.New(common.Hash{}, state.NewDatabase(testdb))
 	if err != nil {

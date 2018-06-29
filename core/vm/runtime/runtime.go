@@ -99,10 +99,7 @@ func Execute(code, input []byte, cfg *Config) ([]byte, *state.StateDB, error) {
 	setDefaults(cfg)
 
 	if cfg.State == nil {
-		memDB, err := ethdb.NewMemDatabase()
-		if err != nil {
-			return nil, nil, err
-		}
+		memDB := ethdb.NewMemDatabase()
 		cfg.State, _ = state.New(common.Hash{}, state.NewDatabase(memDB))
 	}
 	var (
@@ -133,10 +130,7 @@ func Create(input []byte, cfg *Config) ([]byte, common.Address, uint64, error) {
 	setDefaults(cfg)
 
 	if cfg.State == nil {
-		memDB, err := ethdb.NewMemDatabase()
-		if err != nil {
-			return nil, common.Address{}, 0, err
-		}
+		memDB := ethdb.NewMemDatabase()
 		cfg.State, _ = state.New(common.Hash{}, state.NewDatabase(memDB))
 	}
 	var (

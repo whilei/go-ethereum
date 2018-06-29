@@ -26,10 +26,16 @@ import (
 	"github.com/ethereumproject/go-ethereum/common"
 	"github.com/ethereumproject/go-ethereum/core/types"
 	"github.com/ethereumproject/go-ethereum/crypto"
-	"github.com/ethereumproject/go-ethereum/log"
+	"github.com/ethereumproject/go-ethereum/logger"
+	"github.com/ethereumproject/go-ethereum/logger/glog"
 	"github.com/ethereumproject/go-ethereum/rlp"
 	"github.com/ethereumproject/go-ethereum/trie"
 )
+
+var StartingNonce = uint64(0)
+
+// Default StartingNonce for Morden Testnet
+var DefaultTestnetStartingNonce = uint64(1048576)
 
 type revision struct {
 	id           int

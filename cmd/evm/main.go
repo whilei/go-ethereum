@@ -124,7 +124,7 @@ func run(ctx *cli.Context) error {
 	glog.SetToStderr(true)
 	glog.SetV(ctx.GlobalInt(VerbosityFlag.Name))
 
-	db, _ := ethdb.NewMemDatabase()
+	db := ethdb.NewMemDatabase()
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db))
 	statedb.CreateAccount(common.StringToAddress("sender"))
 	sender := statedb.GetOrNewStateObject(common.StringToAddress("sender"))

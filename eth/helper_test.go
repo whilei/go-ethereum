@@ -53,7 +53,7 @@ func newTestProtocolManager(mode downloader.SyncMode, blocks int, generator func
 	var (
 		evmux       = new(event.TypeMux)
 		pow         = new(core.FakePow)
-		db, _       = ethdb.NewMemDatabase()
+		db          = ethdb.NewMemDatabase()
 		genesis     = core.WriteGenesisBlockForTesting(db, testBank)
 		chainConfig = &params.ChainConfig{
 			Forks: []*params.Fork{

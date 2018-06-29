@@ -293,10 +293,7 @@ func makeHeader(config *params.ChainConfig, parent *types.Block, state *state.St
 // header only chain.
 func newCanonical(config *params.ChainConfig, n int, full bool) (ethdb.Database, *BlockChain, error) {
 	// Create the new chain database
-	db, err := ethdb.NewMemDatabase()
-	if err != nil {
-		return nil, nil, err
-	}
+	db := ethdb.NewMemDatabase()
 
 	evmux := &event.TypeMux{}
 

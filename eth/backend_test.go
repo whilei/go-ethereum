@@ -27,7 +27,7 @@ import (
 )
 
 func TestMipmapUpgrade(t *testing.T) {
-	db, _ := ethdb.NewMemDatabase()
+	db := ethdb.NewMemDatabase()
 	addr := common.BytesToAddress([]byte("jeff"))
 	genesis := core.WriteGenesisBlockForTesting(db)
 
