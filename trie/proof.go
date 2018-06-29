@@ -58,7 +58,7 @@ func (t *Trie) Prove(key []byte, fromLevel uint, proofDb ethdb.Putter) error {
 			var err error
 			tn, err = t.resolveHash(n, nil)
 			if err != nil {
-				log.Error(fmt.Sprintf("Unhandled trie error: %v", err))
+				glog.V(logger.Error).Errorln(fmt.Sprintf("Unhandled trie error: %v", err))
 				return err
 			}
 		default:

@@ -445,7 +445,7 @@ func (db *Database) Dereference(root common.Hash) {
 	memcacheGCSizeMeter.Mark(int64(storage - db.nodesSize))
 	memcacheGCNodesMeter.Mark(int64(nodes - len(db.nodes)))
 
-	log.Debug("Dereferenced trie from memory database", "nodes", nodes-len(db.nodes), "size", storage-db.nodesSize, "time", time.Since(start),
+	glog.V(logger.Debug).Infoln("Dereferenced trie from memory database", "nodes", nodes-len(db.nodes), "size", storage-db.nodesSize, "time", time.Since(start),
 		"gcnodes", db.gcnodes, "gcsize", db.gcsize, "gctime", db.gctime, "livenodes", len(db.nodes), "livesize", db.nodesSize)
 }
 
@@ -507,7 +507,7 @@ func (db *Database) Cap(limit common.StorageSize) error {
 	if flushPreimages {
 		for hash, preimage := range db.preimages {
 			if err := batch.Put(db.secureKey(hash[:]), preimage); err != nil {
-				log.Error("Failed to commit preimage from trie database", "err", err)
+				glog.V(logger.Error).Errorln("Failed to commit preimage from trie database", "err", err)
 				db.lock.RUnlock()
 				return err
 			}
@@ -532,7 +532,7 @@ func (db *Database) Cap(limit common.StorageSize) error {
 		// If we exceeded the ideal batch size, commit and reset
 		if batch.ValueSize() >= ethdb.IdealBatchSize {
 			if err := batch.Write(); err != nil {
-				log.Error("Failed to write flush list to disk", "err", err)
+				glog.V(logger.Error).Errorln("Failed to write flush list to disk", "err", err)
 				db.lock.RUnlock()
 				return err
 			}
@@ -547,7 +547,7 @@ func (db *Database) Cap(limit common.StorageSize) error {
 	}
 	// Flush out any remainder data from the last batch
 	if err := batch.Write(); err != nil {
-		log.Error("Failed to write flush list to disk", "err", err)
+		glog.V(logger.Error).Errorln("Failed to write flush list to disk", "err", err)
 		db.lock.RUnlock()
 		return err
 	}
@@ -579,7 +579,7 @@ func (db *Database) Cap(limit common.StorageSize) error {
 	memcacheFlushSizeMeter.Mark(int64(storage - db.nodesSize))
 	memcacheFlushNodesMeter.Mark(int64(nodes - len(db.nodes)))
 
-	log.Debug("Persisted nodes from memory database", "nodes", nodes-len(db.nodes), "size", storage-db.nodesSize, "time", time.Since(start),
+	glog.V(logger.Debug).Infoln("Persisted nodes from memory database", "nodes", nodes-len(db.nodes), "size", storage-db.nodesSize, "time", time.Since(start),
 		"flushnodes", db.flushnodes, "flushsize", db.flushsize, "flushtime", db.flushtime, "livenodes", len(db.nodes), "livesize", db.nodesSize)
 
 	return nil
@@ -602,7 +602,7 @@ func (db *Database) Commit(node common.Hash, report bool) error {
 	// Move all of the accumulated preimages into a write batch
 	for hash, preimage := range db.preimages {
 		if err := batch.Put(db.secureKey(hash[:]), preimage); err != nil {
-			log.Error("Failed to commit preimage from trie database", "err", err)
+			glog.V(logger.Error).Errorln("Failed to commit preimage from trie database", "err", err)
 			db.lock.RUnlock()
 			return err
 		}
@@ -616,13 +616,13 @@ func (db *Database) Commit(node common.Hash, report bool) error {
 	// Move the trie itself into the batch, flushing if enough data is accumulated
 	nodes, storage := len(db.nodes), db.nodesSize
 	if err := db.commit(node, batch); err != nil {
-		log.Error("Failed to commit trie from trie database", "err", err)
+		glog.V(logger.Error).Errorln("Failed to commit trie from trie database", "err", err)
 		db.lock.RUnlock()
 		return err
 	}
 	// Write batch ready, unlock for readers during persistence
 	if err := batch.Write(); err != nil {
-		log.Error("Failed to write trie to disk", "err", err)
+		glog.V(logger.Error).Errorln("Failed to write trie to disk", "err", err)
 		db.lock.RUnlock()
 		return err
 	}
@@ -641,9 +641,9 @@ func (db *Database) Commit(node common.Hash, report bool) error {
 	memcacheCommitSizeMeter.Mark(int64(storage - db.nodesSize))
 	memcacheCommitNodesMeter.Mark(int64(nodes - len(db.nodes)))
 
-	logger := log.Info
+	logger := glog.V(logger.Info).Infoln
 	if !report {
-		logger = log.Debug
+		logger = glog.V(logger.Debug).Infoln
 	}
 	logger("Persisted trie from memory database", "nodes", nodes-len(db.nodes)+int(db.flushnodes), "size", storage-db.nodesSize+db.flushsize, "time", time.Since(start)+db.flushtime,
 		"gcnodes", db.gcnodes, "gcsize", db.gcsize, "gctime", db.gctime, "livenodes", len(db.nodes), "livesize", db.nodesSize)
