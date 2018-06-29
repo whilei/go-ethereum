@@ -157,30 +157,8 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	if g.Difficulty == nil {
 		head.Difficulty = params.GenesisDifficulty
 	}
-
-	_, err := statedb.CommitTo(db, false)
-	if err != nil {
-		panic("err committo statedb " + err.Error())
-	}
-	// sdb, err := state.New(root, state.NewDatabase(db))
-	// if err != nil {
-	// 	panic("err stateNew " + err.Error())
-	// }
-	// _, err = sdb.CommitTo(db, false)
-	// if err != nil {
-	// 	panic("sdb committo " + err.Error())
-	// }
-	// tr, err := statedb.OpenTrie(root)
-	// if err != nil {
-	// 	panic("err open trie " + err.Error())
-	// }
-	// _, err = tr.CommitTo(db)
-	// if err != nil {
-	// 	panic("err commit trie " + err.Error())
-	// }
-	// statedb.Database().OpenTrie()
-	// statedb.Database().TrieDB().Commit(root, true)
-
+	statedb.Commit(false)
+	statedb.Database().TrieDB().Commit(root, true)
 	return types.NewBlock(head, nil, nil, nil)
 }
 
