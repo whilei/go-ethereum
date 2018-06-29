@@ -33,7 +33,6 @@ import (
 	"github.com/ethereumproject/go-ethereum/common"
 	"github.com/ethereumproject/go-ethereum/common/compiler"
 	"github.com/ethereumproject/go-ethereum/common/httpclient"
-	"github.com/ethereumproject/go-ethereum/common/registrar/ethreg"
 	"github.com/ethereumproject/go-ethereum/core"
 	"github.com/ethereumproject/go-ethereum/core/types"
 	"github.com/ethereumproject/go-ethereum/eth/downloader"
@@ -386,7 +385,7 @@ func (s *Ethereum) APIs() []rpc.API {
 		}, {
 			Namespace: "admin",
 			Version:   "1.0",
-			Service:   ethreg.NewPrivateRegistarAPI(s.chainConfig, s.blockchain, s.chainDb, s.txPool, s.accountManager),
+			Service:   NewPrivateAdminAPI(s),
 		}, {
 			Namespace: "geth",
 			Version:   "1.0",
