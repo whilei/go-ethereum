@@ -104,14 +104,14 @@ func (db *LDBDatabase) Path() string {
 }
 
 // Put puts the given key / value to the queue
-func (self *LDBDatabase) Put(key []byte, value []byte) error {
-	return self.db.Put(key, value, nil)
+func (db *LDBDatabase) Put(key []byte, value []byte) error {
+	return db.db.Put(key, value, nil)
 }
 
 // Get returns the given key if it's present.
-func (self *LDBDatabase) Get(key []byte) ([]byte, error) {
+func (db *LDBDatabase) Get(key []byte) ([]byte, error) {
 	// Retrieve the key and increment the miss counter if not found
-	dat, err := self.db.Get(key, nil)
+	dat, err := db.db.Get(key, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -123,31 +123,31 @@ func (db *LDBDatabase) Has(key []byte) (bool, error) {
 }
 
 // Delete deletes the key from the queue and database
-func (self *LDBDatabase) Delete(key []byte) error {
+func (db *LDBDatabase) Delete(key []byte) error {
 	// Execute the actual operation
-	return self.db.Delete(key, nil)
+	return db.db.Delete(key, nil)
 }
 
-func (self *LDBDatabase) NewIterator() iterator.Iterator {
-	return self.db.NewIterator(nil, nil)
+func (db *LDBDatabase) NewIterator() iterator.Iterator {
+	return db.db.NewIterator(nil, nil)
 }
 
-func (self *LDBDatabase) NewIteratorRange(slice *ldbutil.Range) iterator.Iterator {
-	return self.db.NewIterator(slice, nil)
+func (db *LDBDatabase) NewIteratorRange(slice *ldbutil.Range) iterator.Iterator {
+	return db.db.NewIterator(slice, nil)
 }
 
 func NewBytesPrefix(prefix []byte) *ldbutil.Range {
 	return ldbutil.BytesPrefix(prefix)
 }
 
-func (self *LDBDatabase) Close() {
-	if err := self.db.Close(); err != nil {
-		glog.Errorf("eth: DB %s: %s", self.file, err)
+func (db *LDBDatabase) Close() {
+	if err := db.db.Close(); err != nil {
+		glog.Errorf("eth: DB %s: %s", db.file, err)
 	}
 }
 
-func (self *LDBDatabase) LDB() *leveldb.DB {
-	return self.db
+func (db *LDBDatabase) LDB() *leveldb.DB {
+	return db.db
 }
 
 // TODO: remove this stuff and expose leveldb directly
@@ -174,6 +174,11 @@ func (b *ldbBatch) Write() error {
 
 func (b *ldbBatch) ValueSize() int {
 	return b.size
+}
+
+func (b *ldbBatch) Reset() {
+	b.b.Reset()
+	b.size = 0
 }
 
 type table struct {
@@ -234,4 +239,8 @@ func (tb *tableBatch) Write() error {
 
 func (tb *tableBatch) ValueSize() int {
 	return tb.batch.ValueSize()
+}
+
+func (tb *tableBatch) Reset() {
+	tb.batch.Reset()
 }

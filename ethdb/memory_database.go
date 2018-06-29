@@ -81,14 +81,6 @@ func (db *MemDatabase) Keys() [][]byte {
 	return keys
 }
 
-/*
-func (db *MemDatabase) GetKeys() []*common.Key {
-	data, _ := db.Get([]byte("KeyRing"))
-
-	return []*common.Key{common.NewKeyFromBytes(data)}
-}
-*/
-
 func (db *MemDatabase) Delete(key []byte) error {
 	db.lock.Lock()
 	defer db.lock.Unlock()
@@ -106,6 +98,7 @@ func (db *MemDatabase) NewBatch() Batch {
 func (db *MemDatabase) Len() int { return len(db.db) }
 
 type kv struct{ k, v []byte }
+
 type memBatch struct {
 	db     *MemDatabase
 	writes []kv
@@ -130,4 +123,9 @@ func (b *memBatch) Write() error {
 
 func (b *memBatch) ValueSize() int {
 	return b.size
+}
+
+func (b *memBatch) Reset() {
+	b.writes = b.writes[:0]
+	b.size = 0
 }

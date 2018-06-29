@@ -34,9 +34,6 @@ import (
 
 var StartingNonce = uint64(0)
 
-// Default StartingNonce for Morden Testnet
-var DefaultTestnetStartingNonce = uint64(1048576)
-
 type revision struct {
 	id           int
 	journalIndex int

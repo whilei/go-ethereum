@@ -689,7 +689,7 @@ func mustMakeSufficientChainConfig(ctx *cli.Context) *params.SufficientChainConf
 		if chainIsMorden(ctx) {
 			config.Network = 2
 			config.Genesis = params.DefaultConfigMorden.Genesis
-			state.StartingNonce = state.DefaultTestnetStartingNonce // (2**20)
+			state.StartingNonce = params.DefaultConfigMorden.State.StartingNonce // (2**20)
 		}
 		return config
 	}
