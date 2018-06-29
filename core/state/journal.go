@@ -19,7 +19,7 @@ package state
 import (
 	"math/big"
 
-	"github.com/ethereumproject/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // journalEntry is a modification entry in the state change journal that can be
@@ -90,7 +90,7 @@ type (
 		account *common.Address
 	}
 	resetObjectChange struct {
-		prev *StateObject
+		prev *stateObject
 	}
 	suicideChange struct {
 		account     *common.Address
