@@ -94,7 +94,7 @@ type BlockChain struct {
 	currentBlock     *types.Block // Current head of the block chain
 	currentFastBlock *types.Block // Current head of the fast-sync chain (may be above the block chain!)
 
-	stateCache   *state.StateDB // State database to reuse between imports (contains state cache)
+	stateCache   state.Database // State database to reuse between imports (contains state cache)
 	bodyCache    *lru.Cache     // Cache for the most recent block bodies
 	bodyRLPCache *lru.Cache     // Cache for the most recent block bodies in RLP encoded format
 	blockCache   *lru.Cache     // Cache for the most recent entire blocks
@@ -726,13 +726,6 @@ func (bc *BlockChain) LoadLastState(dryrun bool) error {
 		glog.V(logger.Error).Errorf("Found unaccompanied headerchain (headers > 0 && current|fast ==0), attempting reset with recovery...")
 	}
 
-	// Initialize a statedb cache to ensure singleton account bloom filter generation
-	statedb, err := state.New(bc.currentBlock.Root(), state.NewDatabase(bc.chainDb))
-	if err != nil {
-		return err
-	}
-	bc.stateCache = statedb
-
 	// Issue a status log and return
 	headerTd := bc.GetTd(bc.hc.CurrentHeader().Hash())
 	blockTd := bc.GetTd(bc.currentBlock.Hash())
@@ -879,7 +872,7 @@ func (bc *BlockChain) FastSyncCommitHead(hash common.Hash) error {
 	if block == nil {
 		return fmt.Errorf("non existent block [%x…]", hash[:4])
 	}
-	if _, err := trie.NewSecure(block.Root(), bc.chainDb, 0); err != nil {
+	if _, err := trie.NewSecure(block.Root(), bc.stateCache.TrieDB(), 0); err != nil {
 		return err
 	}
 	// If all checks out, manually set the head block
@@ -1633,36 +1626,41 @@ func (bc *BlockChain) InsertChain(chain types.Blocks) (res *ChainInsertResult) {
 
 		// Create a new statedb using the parent block and report an
 		// error if it fails.
-		// var parent *types.Block
-		switch {
-		case i == 0:
-			// parent = bc.GetBlock(block.ParentHash())
-			err = bc.stateCache.Reset(bc.GetBlock(block.ParentHash()).Root())
-		default:
-			// parent = chain[i-1]
-			err = bc.stateCache.Reset(chain[i-1].Root())
+		// Create a new statedb using the parent block and report an
+		// error if it fails.
+		var parent *types.Block
+		if i == 0 {
+			parent = bc.GetBlock(block.ParentHash())
+		} else {
+			parent = chain[i-1]
 		}
+		state, err := state.New(parent.Root(), bc.stateCache)
 		if err != nil {
 			res.Error = err
 			return
 		}
 
 		// Process block using the parent state as reference point.
-		receipts, logs, usedGas, err := bc.processor.Process(block, bc.stateCache)
+		receipts, logs, usedGas, err := bc.processor.Process(block, state)
 		if err != nil {
 			res.Error = err
 			return
 		}
 
 		// Validate the state using the default validator
-		err = bc.Validator().ValidateState(block, bc.GetBlock(block.ParentHash()), bc.stateCache, receipts, usedGas)
+		err = bc.Validator().ValidateState(block, bc.GetBlock(block.ParentHash()), state, receipts, usedGas)
 		if err != nil {
 			res.Error = err
 			return
 		}
 		// Write state changes to database
-		_, err = bc.stateCache.CommitTo(bc.chainDb, bc.Config().IsEIP158(block.Number()))
+		root, err := state.Commit(bc.Config().IsEIP158(block.Number()))
 		if err != nil {
+			res.Error = err
+			return
+		}
+		triedb := bc.stateCache.TrieDB()
+		if err := triedb.Commit(root, false); err != nil {
 			res.Error = err
 			return
 		}
