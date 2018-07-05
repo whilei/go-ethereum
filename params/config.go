@@ -311,7 +311,7 @@ func (g *GenesisDump) Header() (*types.Header, error) {
 	if gl, err := g.GasLimit.Int(); err != nil {
 		return nil, fmt.Errorf("malformed gasLimit: %s", err)
 	} else {
-		h.GasLimit = gl.Uint64()
+		h.GasLimit = gl
 	}
 	if h.Difficulty, err = g.Difficulty.Int(); err != nil {
 		return nil, fmt.Errorf("malformed difficulty: %s", err)
