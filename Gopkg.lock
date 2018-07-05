@@ -8,10 +8,28 @@
   revision = "593e01cfc4f3353585015321e01951d4a907d3ef"
 
 [[projects]]
+  name = "github.com/apex/log"
+  packages = ["."]
+  revision = "0296d6eb16bb28f8a0c55668affcf4876dc269be"
+  version = "v1.0.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/aristanetworks/goarista"
+  packages = ["monotime"]
+  revision = "2c5933638c5ef1bc320b01486100788c81d57b99"
+
+[[projects]]
   name = "github.com/boltdb/bolt"
   packages = ["."]
   revision = "2f1ce7a837dcb8da3ec595b1dac9d0632f0f99e8"
   version = "v1.3.1"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/btcsuite/btcd"
+  packages = ["btcec"]
+  revision = "86fed781132ac890ee03e906e4ecd5d6fa180c64"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -27,8 +45,68 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/edsrzf/mmap-go"
+  packages = ["."]
+  revision = "0bce6a6887123b67a60366d2c9fe2dfb74289d2e"
+
+[[projects]]
+  name = "github.com/ethereum/go-ethereum"
+  packages = [
+    ".",
+    "accounts",
+    "common",
+    "common/bitutil",
+    "common/hexutil",
+    "common/math",
+    "common/mclock",
+    "consensus",
+    "consensus/misc",
+    "core",
+    "core/rawdb",
+    "core/state",
+    "core/types",
+    "core/vm",
+    "crypto",
+    "crypto/bn256",
+    "crypto/bn256/cloudflare",
+    "crypto/bn256/google",
+    "crypto/secp256k1",
+    "crypto/sha3",
+    "ethdb",
+    "event",
+    "log",
+    "metrics",
+    "p2p/netutil",
+    "params",
+    "rlp",
+    "rpc",
+    "trie"
+  ]
+  revision = "37685930d953bcbe023f9bc65b135a8d8b8f1488"
+  version = "v1.8.12"
+
+[[projects]]
+  branch = "master"
   name = "github.com/ethereumproject/benchmark"
-  packages = ["rtprof","rtprof/pprof/driver","rtprof/pprof/internal/binutils","rtprof/pprof/internal/driver","rtprof/pprof/internal/elfexec","rtprof/pprof/internal/graph","rtprof/pprof/internal/measurement","rtprof/pprof/internal/plugin","rtprof/pprof/internal/report","rtprof/pprof/internal/symbolizer","rtprof/pprof/internal/symbolz","rtprof/pprof/measurement","rtprof/pprof/profile","rtprof/pprof/third_party/d3","rtprof/pprof/third_party/d3flamegraph","rtprof/pprof/third_party/d3tip","rtprof/pprof/third_party/svg"]
+  packages = [
+    "rtprof",
+    "rtprof/pprof/driver",
+    "rtprof/pprof/internal/binutils",
+    "rtprof/pprof/internal/driver",
+    "rtprof/pprof/internal/elfexec",
+    "rtprof/pprof/internal/graph",
+    "rtprof/pprof/internal/measurement",
+    "rtprof/pprof/internal/plugin",
+    "rtprof/pprof/internal/report",
+    "rtprof/pprof/internal/symbolizer",
+    "rtprof/pprof/internal/symbolz",
+    "rtprof/pprof/measurement",
+    "rtprof/pprof/profile",
+    "rtprof/pprof/third_party/d3",
+    "rtprof/pprof/third_party/d3flamegraph",
+    "rtprof/pprof/third_party/d3tip",
+    "rtprof/pprof/third_party/svg"
+  ]
   revision = "8eff34efba2579d41fe2fb772fe1a3c89f6496ce"
 
 [[projects]]
@@ -56,6 +134,12 @@
   version = "v2.2.0"
 
 [[projects]]
+  name = "github.com/go-stack/stack"
+  packages = ["."]
+  revision = "259ab82a6cad3992b4e21ff5cac294ccb06474bc"
+  version = "v1.7.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/golang/snappy"
   packages = ["."]
@@ -64,13 +148,24 @@
 [[projects]]
   branch = "master"
   name = "github.com/hashicorp/golang-lru"
-  packages = [".","simplelru"]
+  packages = [
+    ".",
+    "simplelru"
+  ]
   revision = "0a025b7e63adc15a622f29b0b2c4c3848243bbf6"
 
 [[projects]]
   branch = "master"
   name = "github.com/huin/goupnp"
-  packages = [".","dcps/internetgateway1","dcps/internetgateway2","httpu","scpd","soap","ssdp"]
+  packages = [
+    ".",
+    "dcps/internetgateway1",
+    "dcps/internetgateway2",
+    "httpu",
+    "scpd",
+    "soap",
+    "ssdp"
+  ]
   revision = "dceda08e705b2acee36aab47d765ed801f64cfc7"
 
 [[projects]]
@@ -88,7 +183,12 @@
 [[projects]]
   branch = "master"
   name = "github.com/mailru/easyjson"
-  packages = [".","buffer","jlexer","jwriter"]
+  packages = [
+    ".",
+    "buffer",
+    "jlexer",
+    "jwriter"
+  ]
   revision = "32fa128f234d041f196a9f3e0fea5ac9772c08e1"
 
 [[projects]]
@@ -140,6 +240,12 @@
   revision = "3681c2a912330352991ecdd642f257efe5b85518"
 
 [[projects]]
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/rcrowley/go-metrics"
   packages = ["."]
@@ -153,7 +259,15 @@
 [[projects]]
   branch = "master"
   name = "github.com/robertkrimen/otto"
-  packages = [".","ast","dbg","file","parser","registry","token"]
+  packages = [
+    ".",
+    "ast",
+    "dbg",
+    "file",
+    "parser",
+    "registry",
+    "token"
+  ]
   revision = "3b44b4dcb6c00477273595c312908e2412d07da6"
 
 [[projects]]
@@ -164,44 +278,97 @@
 
 [[projects]]
   name = "github.com/spf13/afero"
-  packages = [".","mem"]
+  packages = [
+    ".",
+    "mem"
+  ]
   revision = "63644898a8da0bc22138abf860edaf5277b6102e"
   version = "v1.1.0"
 
 [[projects]]
   branch = "master"
   name = "github.com/syndtr/goleveldb"
-  packages = ["leveldb","leveldb/cache","leveldb/comparer","leveldb/errors","leveldb/filter","leveldb/iterator","leveldb/journal","leveldb/memdb","leveldb/opt","leveldb/storage","leveldb/table","leveldb/util"]
+  packages = [
+    "leveldb",
+    "leveldb/cache",
+    "leveldb/comparer",
+    "leveldb/errors",
+    "leveldb/filter",
+    "leveldb/iterator",
+    "leveldb/journal",
+    "leveldb/memdb",
+    "leveldb/opt",
+    "leveldb/storage",
+    "leveldb/table",
+    "leveldb/util"
+  ]
   revision = "34011bf325bce385408353a30b101fe5e923eb6e"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["pbkdf2","ripemd160","scrypt"]
+  packages = [
+    "pbkdf2",
+    "ripemd160",
+    "scrypt"
+  ]
   revision = "d585fd2cc9195196078f516b69daff6744ef5e84"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["html","html/atom","html/charset","websocket"]
+  packages = [
+    "html",
+    "html/atom",
+    "html/charset",
+    "websocket"
+  ]
   revision = "d866cfc389cec985d6fda2859936a575a55a3ab6"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = ["unix","windows","windows/registry"]
+  packages = [
+    "unix",
+    "windows",
+    "windows/registry"
+  ]
   revision = "83801418e1b59fb1880e363299581ee543af32ca"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
-  packages = ["encoding","encoding/charmap","encoding/htmlindex","encoding/internal","encoding/internal/identifier","encoding/japanese","encoding/korean","encoding/simplifiedchinese","encoding/traditionalchinese","encoding/unicode","internal/gen","internal/tag","internal/triegen","internal/ucd","internal/utf8internal","language","runes","transform","unicode/cldr","unicode/norm"]
+  packages = [
+    "encoding",
+    "encoding/charmap",
+    "encoding/htmlindex",
+    "encoding/internal",
+    "encoding/internal/identifier",
+    "encoding/japanese",
+    "encoding/korean",
+    "encoding/simplifiedchinese",
+    "encoding/traditionalchinese",
+    "encoding/unicode",
+    "internal/gen",
+    "internal/tag",
+    "internal/triegen",
+    "internal/ucd",
+    "internal/utf8internal",
+    "language",
+    "runes",
+    "transform",
+    "unicode/cldr",
+    "unicode/norm"
+  ]
   revision = "e19ae1496984b1c655b8044a65c0300a3c878dd3"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/tools"
-  packages = ["go/ast/astutil","imports"]
+  packages = [
+    "go/ast/astutil",
+    "imports"
+  ]
   revision = "b451b9aaee4dcf75f9f28cddb69b9d0ed17a9752"
 
 [[projects]]
@@ -223,8 +390,17 @@
   revision = "8dcd6a7f4951f6ff3ee9cbb919a06d8925822e57"
 
 [[projects]]
+  branch = "v2"
+  name = "gopkg.in/natefinch/npipe.v2"
+  packages = ["."]
+  revision = "c1b8fa8bdccecb0b8db834ee0b92fdbcfa606dd6"
+
+[[projects]]
   name = "gopkg.in/sourcemap.v1"
-  packages = [".","base64vlq"]
+  packages = [
+    ".",
+    "base64vlq"
+  ]
   revision = "6e83acea0053641eff084973fee085f0c193c61a"
   version = "v1.0.5"
 
@@ -236,6 +412,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "fb11e36e96a973694e730c71620a8585f7a3b4ca1e89541abd89dcbf4f067b21"
+  inputs-digest = "25e778141b902e87b96c372e81618eb7a679a1caec3b28494e7571fb2c8377bf"
   solver-name = "gps-cdcl"
   solver-version = 1
