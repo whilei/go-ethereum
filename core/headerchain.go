@@ -26,13 +26,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereumproject/go-ethereum/common"
 	"github.com/ethereumproject/go-ethereum/core/types"
 	"github.com/ethereumproject/go-ethereum/ethdb"
 	"github.com/ethereumproject/go-ethereum/event"
 	"github.com/ethereumproject/go-ethereum/logger"
 	"github.com/ethereumproject/go-ethereum/logger/glog"
+	"github.com/ethereumproject/go-ethereum/params"
 	"github.com/ethereumproject/go-ethereum/pow"
 	"github.com/hashicorp/golang-lru"
 )
@@ -43,7 +43,7 @@ import (
 // It is not thread safe either, the encapsulating chain structures should do
 // the necessary mutex locking/unlocking.
 type HeaderChain struct {
-	config *ChainConfig
+	config *params.ChainConfig
 
 	chainDb       ethdb.Database
 	genesisHeader *types.Header
@@ -68,7 +68,7 @@ type getHeaderValidatorFn func() HeaderValidator
 //  getValidator should return the parent's validator
 //  procInterrupt points to the parent's interrupt semaphore
 //  wg points to the parent's shutdown wait group
-func NewHeaderChain(chainDb ethdb.Database, config *ChainConfig, mux *event.TypeMux, getValidator getHeaderValidatorFn, procInterrupt func() bool) (*HeaderChain, error) {
+func NewHeaderChain(chainDb ethdb.Database, config *params.ChainConfig, mux *event.TypeMux, getValidator getHeaderValidatorFn, procInterrupt func() bool) (*HeaderChain, error) {
 	headerCache, _ := lru.New(headerCacheLimit)
 	tdCache, _ := lru.New(tdCacheLimit)
 
@@ -89,19 +89,19 @@ func NewHeaderChain(chainDb ethdb.Database, config *ChainConfig, mux *event.Type
 		getValidator:  getValidator,
 	}
 
-	gen := DefaultConfigMainnet.Genesis
+	gen := params.DefaultConfigMainnet.Genesis
 	genname := "mainnet"
 	// Check if ChainConfig is mainnet or testnet and write genesis accordingly.
 	// If it's neither (custom), write default (this will be overwritten or avoided,
 	// but maintains consistent implementation.
-	if config == DefaultConfigMorden.ChainConfig {
-		gen = DefaultConfigMorden.Genesis
+	if config == params.DefaultConfigMorden.ChainConfig {
+		gen = params.DefaultConfigMorden.Genesis
 		genname = "morden testnet"
 	}
 
 	hc.genesisHeader = hc.GetHeaderByNumber(0)
 	if hc.genesisHeader == nil {
-		genesisBlock, err := WriteGenesisBlock(chainDb, gen)
+		genesisBlock, err := CommitGenesis(chainDb, gen)
 		if err != nil {
 			return nil, err
 		}
@@ -429,24 +429,14 @@ func (hc *HeaderChain) WriteTd(hash common.Hash, td *big.Int) error {
 	return nil
 }
 
-// GetHeaderByHash retrieves a block header from the database by hash, caching it if
+// GetHeader retrieves a block header from the database by hash, caching it if
 // found.
-func (hc *HeaderChain) GetHeaderByHash(hash common.Hash) *types.Header {
-	number := hc.GetBlockNumber(hash)
-	if number == nil {
-		return nil
-	}
-	return hc.GetHeader(hash, *number)
-}
-
-// GetHeader retrieves a block header from the database by hash and number,
-// caching it if found.
-func (hc *HeaderChain) GetHeader(hash common.Hash, number uint64) *types.Header {
+func (hc *HeaderChain) GetHeader(hash common.Hash) *types.Header {
 	// Short circuit if the header's already in the cache, retrieve otherwise
 	if header, ok := hc.headerCache.Get(hash); ok {
 		return header.(*types.Header)
 	}
-	header := rawdb.ReadHeader(hc.chainDb, hash, number)
+	header := GetHeader(hc.chainDb, hash)
 	if header == nil {
 		return nil
 	}
@@ -580,7 +570,7 @@ func (hc *HeaderChain) postChainEvents(events []interface{}) {
 //
 // headerValidator implements HeaderValidator.
 type headerValidator struct {
-	config *ChainConfig
+	config *params.ChainConfig
 	hc     *HeaderChain // Canonical header chain
 	Pow    pow.PoW      // Proof of work used for validating
 }
