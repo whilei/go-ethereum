@@ -173,7 +173,13 @@ func testBlockChainImport(chain types.Blocks, blockchain *BlockChain) error {
 		blockchain.mu.Lock()
 		WriteTd(blockchain.chainDb, block.Hash(), new(big.Int).Add(block.Difficulty(), blockchain.GetTd(block.ParentHash())))
 		WriteBlock(blockchain.chainDb, block)
-		statedb.Commit(false)
+		root, err := statedb.Commit(false)
+		if err != nil {
+			panic("commit err " + err.Error())
+		}
+		if err := statedb.Database().TrieDB().Commit(root, false); err != nil {
+			panic("trie commit err: " + err.Error())
+		}
 		blockchain.mu.Unlock()
 	}
 	return nil
