@@ -235,16 +235,20 @@ func (t *BlockTest) InsertPreState(db ethdb.Database) (*state.StateDB, error) {
 		}
 	}
 
-	root, err := statedb.CommitTo(db, false)
+	root, err := statedb.Commit(false)
 	if err != nil {
 		return nil, fmt.Errorf("error writing state: %v", err)
 	}
 	if t.Genesis.Root() != root {
 		return nil, fmt.Errorf("computed state root does not match genesis block: genesis=%x computed=%x", t.Genesis.Root().Bytes()[:4], root.Bytes()[:4])
 	}
+	if err := statedb.Database().TrieDB().Commit(root, false); err != nil {
+		return nil, fmt.Errorf("error committing state trie: %v", err)
+	}
 	return statedb, nil
 }
 
+// TryBlocksInsert comment:
 /* See https://github.com/ethereum/tests/wiki/Blockchain-Tests-II
 
    Whether a block is valid or not is a bit subtle, it's defined by presence of
