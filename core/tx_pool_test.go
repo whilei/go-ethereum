@@ -36,7 +36,7 @@ func transaction(nonce uint64, gaslimit *big.Int, key *ecdsa.PrivateKey) *types.
 
 func setupTxPool() (*TxPool, *ecdsa.PrivateKey) {
 	db := ethdb.NewMemDatabase()
-	statedb := state.New(common.Hash{}, state.NewDatabase(db))
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db))
 
 	var m event.TypeMux
 	key, _ := crypto.GenerateKey()
@@ -174,13 +174,15 @@ func TestNegativeValue(t *testing.T) {
 		t.Error("expected", ErrNegativeValue, "got", err)
 	}
 }
-
 func TestTransactionChainFork(t *testing.T) {
 	pool, key := setupTxPool()
 	addr := crypto.PubkeyToAddress(key.PublicKey)
 	resetState := func() {
 		db := ethdb.NewMemDatabase()
-		statedb := state.New(common.Hash{}, state.NewDatabase(db))
+		statedb, err := state.New(common.Hash{}, state.NewDatabase(db))
+		if err != nil {
+			t.Fatal(err)
+		}
 		pool.currentState = func() (*state.StateDB, error) { return statedb, nil }
 		currentState, _ := pool.currentState()
 		currentState.AddBalance(addr, big.NewInt(100000000000000))
@@ -206,7 +208,10 @@ func TestTransactionDoubleNonce(t *testing.T) {
 	addr := crypto.PubkeyToAddress(key.PublicKey)
 	resetState := func() {
 		db := ethdb.NewMemDatabase()
-		statedb := state.New(common.Hash{}, state.NewDatabase(db))
+		statedb, err := state.New(common.Hash{}, state.NewDatabase(db))
+		if err != nil {
+			t.Fatal(err)
+		}
 		pool.currentState = func() (*state.StateDB, error) { return statedb, nil }
 		currentState, _ := pool.currentState()
 		currentState.AddBalance(addr, big.NewInt(100000000000000))

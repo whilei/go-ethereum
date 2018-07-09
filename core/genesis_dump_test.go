@@ -11,7 +11,7 @@ import (
 // TestMakeGenesisDump is a unit-ish test for MakeGenesisDump()
 func TestMakeGenesisDump(t *testing.T) {
 	// setup so we have a genesis block in this test db
-	db, _ := ethdb.NewMemDatabase()
+	db := ethdb.NewMemDatabase()
 	genesisDump := &params.GenesisDump{
 		Nonce:      "0x0000000000000042",
 		Timestamp:  "0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -81,7 +81,7 @@ func TestMakeGenesisDump(t *testing.T) {
 func TestMakeGenesisDump2(t *testing.T) {
 	// setup so we have a genesis block in this test db
 	for i, gen := range []*params.GenesisDump{params.DefaultConfigMainnet.Genesis, params.DefaultConfigMorden.Genesis} {
-		db, _ := ethdb.NewMemDatabase()
+		db := ethdb.NewMemDatabase()
 		genesisDump := gen
 		gBlock1, err := WriteGenesisBlock(db, genesisDump)
 		if err != nil {

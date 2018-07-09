@@ -170,7 +170,7 @@ func testBlockChainImport(chain types.Blocks, blockchain *BlockChain) error {
 		blockchain.mu.Lock()
 		WriteTd(blockchain.chainDb, block.Hash(), new(big.Int).Add(block.Difficulty(), blockchain.GetTd(block.ParentHash())))
 		WriteBlock(blockchain.chainDb, block)
-		statedb.CommitTo(blockchain.chainDb, false)
+		statedb.Commit(false)
 		blockchain.mu.Unlock()
 	}
 	return nil
@@ -818,7 +818,7 @@ func TestFastVsFullChains(t *testing.T) {
 		t.Fatalf("failed to process block %d: %v", res.Index, res.Error)
 	}
 	// Fast import the chain as a non-archive node to test
-	fastDb  := ethdb.NewMemDatabase()
+	fastDb := ethdb.NewMemDatabase()
 
 	WriteGenesisBlockForTesting(fastDb, params.GenesisAccount{address, funds})
 	fast, err := NewBlockChain(fastDb, config, FakePow{}, new(event.TypeMux))

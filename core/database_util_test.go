@@ -307,7 +307,10 @@ func TestAddrTxStorage(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(dbFilepath)
-	db := ethdb.NewLDBDatabase(dbFilepath, 10, 100)
+	db, err := ethdb.NewLDBDatabase(dbFilepath, 10, 100)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	testKey := func(hex string) (*ecdsa.PrivateKey, common.Address) {
 		key := crypto.ToECDSA(common.Hex2Bytes(hex))
