@@ -111,7 +111,7 @@ func (b *SimulatedBackend) ContractCall(contract common.Address, data []byte, pe
 
 	// Assemble the call invocation to measure the gas usage
 	msg := callmsg{
-		from:     from,
+		from:     from.Address(),
 		to:       &contract,
 		gasPrice: new(big.Int),
 		gasLimit: common.MaxBig.Uint64(),
@@ -166,7 +166,7 @@ func (b *SimulatedBackend) EstimateGasLimit(sender common.Address, contract *com
 
 	// Assemble the call invocation to measure the gas usage
 	msg := callmsg{
-		from:     from,
+		from:     from.Address(),
 		to:       contract,
 		gasPrice: new(big.Int),
 		gasLimit: common.MaxBig.Uint64(),
@@ -204,17 +204,18 @@ func (b *SimulatedBackend) SendTransaction(tx *types.Transaction) error {
 
 // callmsg implements core.Message to allow passing it as a transaction simulator.
 type callmsg struct {
-	from     *state.StateObject
+	from     common.Address
 	to       *common.Address
 	gasLimit uint64
 	gasPrice *big.Int
 	value    *big.Int
 	data     []byte
+	statedb  *state.StateDB
 }
 
-func (m callmsg) From() common.Address                  { return m.from.Address() }
+func (m callmsg) From() common.Address                  { return m.from }
 func (m callmsg) FromFrontier() (common.Address, error) { return m.from.Address(), nil }
-func (m callmsg) Nonce() uint64                         { return m.from.Nonce() }
+func (m callmsg) Nonce() uint64                         { return m.statedb.GetNonce(m.from) }
 func (m callmsg) To() *common.Address                   { return m.to }
 func (m callmsg) GasPrice() *big.Int                    { return m.gasPrice }
 func (m callmsg) Gas() uint64                           { return m.gasLimit }
