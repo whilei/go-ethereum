@@ -161,6 +161,7 @@ func NewBlockChain(chainDb ethdb.Database, config *params.ChainConfig, pow pow.P
 		bodyRLPCache: bodyRLPCache,
 		blockCache:   blockCache,
 		futureBlocks: futureBlocks,
+		stateCache:   state.NewDatabase(chainDb),
 		pow:          pow,
 	}
 	bc.SetValidator(NewBlockValidator(config, bc, pow))
