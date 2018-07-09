@@ -518,6 +518,7 @@ func chm(t testing.TB, genesis *types.Block, db ethdb.Database) *BlockChain {
 	if err != nil {
 		t.Fatal(err)
 	}
+	bc.stateCache = state.NewDatabase(db)
 	bc.SetValidator(bproc{})
 	bc.SetProcessor(bproc{})
 	bc.ResetWithGenesisBlock(genesis)
