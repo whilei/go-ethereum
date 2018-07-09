@@ -101,7 +101,7 @@ func makePreState(db ethdb.Database, accounts map[string]Account) *state.StateDB
 	for addr, account := range accounts {
 		insertAccount(statedb, addr, account)
 	}
-	root, _ := statedb.CommitTo(db, false)
+	root, _ := statedb.Commit(false)
 	statedb, _ = state.New(root, sdb)
 	return statedb
 }
