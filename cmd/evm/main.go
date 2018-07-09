@@ -189,7 +189,7 @@ func run(ctx *cli.Context) error {
 	vmdone := time.Since(tstart)
 
 	if ctx.GlobalBool(DumpFlag.Name) {
-		statedb.CommitTo(db, false)
+		statedb.Commit(false)
 		fmt.Println(string(statedb.Dump([]common.Address{})))
 	}
 
