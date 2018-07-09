@@ -111,6 +111,9 @@ func WriteGenesisBlock(chainDb ethdb.Database, genesis *params.GenesisDump) (*ty
 		return nil, err
 	}
 	header.Root = root
+	if err := statedb.Database().TrieDB().Commit(root, false); err != nil {
+		return nil, err
+	}
 
 	gblock := types.NewBlock(header, nil, nil, nil)
 
