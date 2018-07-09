@@ -19,6 +19,7 @@ package core
 import (
 	"fmt"
 	"math/big"
+	"strconv"
 
 	"github.com/ethereumproject/go-ethereum/common"
 	"github.com/ethereumproject/go-ethereum/core/state"
@@ -262,7 +263,7 @@ func GenerateChain(config *params.ChainConfig, parent *types.Block, db ethdb.Dat
 	for i := 0; i < n; i++ {
 		statedb, err := state.New(parent.Root(), state.NewDatabase(db))
 		if err != nil {
-			panic(err)
+			panic(err.Error() + " i: " + strconv.Itoa(i) + " parent:" + parent.Root().Hex())
 		}
 		header := makeHeader(config, parent, statedb)
 		block, receipt := genblock(i, header, statedb)
