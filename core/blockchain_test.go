@@ -98,6 +98,7 @@ func testFork(t *testing.T, blockchain *BlockChain, i, n int, full bool, compara
 	if err != nil {
 		t.Fatal("could not make new canonical in testFork", err)
 	}
+
 	// Assert the chains have the same header/block at #i
 	var hash1, hash2 common.Hash
 	if full {
@@ -110,6 +111,7 @@ func testFork(t *testing.T, blockchain *BlockChain, i, n int, full bool, compara
 	if hash1 != hash2 {
 		t.Errorf("chain content mismatch at %d: have hash %v, want hash %v", i, hash2, hash1)
 	}
+
 	// Extend the newly created chain
 	var (
 		blockChainB  []*types.Block
@@ -126,6 +128,7 @@ func testFork(t *testing.T, blockchain *BlockChain, i, n int, full bool, compara
 			t.Fatalf("failed to insert forking chain: %v", res.Error)
 		}
 	}
+
 	// Sanity check that the forked chain can be imported into the original
 	var tdPre, tdPost *big.Int
 
@@ -158,7 +161,7 @@ func testBlockChainImport(chain types.Blocks, blockchain *BlockChain) error {
 			}
 			return err
 		}
-		statedb, err := state.New(blockchain.GetBlock(block.ParentHash()).Root(), state.NewDatabase(blockchain.chainDb))
+		statedb, err := state.New(blockchain.GetBlock(block.ParentHash()).Root(), blockchain.stateCache)
 		if err != nil {
 			return err
 		}
@@ -797,6 +800,7 @@ func TestFastVsFullChains(t *testing.T) {
 		config  = MakeDiehardChainConfig()
 	)
 	blocks, receipts := GenerateChain(config, genesis, gendb, 1024, func(i int, block *BlockGen) {
+
 		block.SetCoinbase(common.Address{0x00})
 
 		// If the block number is multiple of 3, send a few bonus transactions to the miner
