@@ -56,9 +56,12 @@ func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big
 
 	obj := statedb.GetOrNewStateObject(addr)
 	obj.SetBalance(balance)
-	root, err := statedb.CommitTo(db, false)
+	root, err := statedb.Commit(false)
 	if err != nil {
 		panic(fmt.Sprintf("cannot write state: %v", err))
+	}
+	if err := statedb.Database().TrieDB().Commit(root, false); err != nil {
+		panic("trie commit err: " + err.Error())
 	}
 
 	return types.NewBlock(&types.Header{
