@@ -21,7 +21,6 @@ package fetcher
 import (
 	"crypto/ecdsa"
 	"errors"
-	"fmt"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -67,9 +66,12 @@ func init() {
 
 	obj := statedb.GetOrNewStateObject(testAddress)
 	obj.SetBalance(big.NewInt(1000000000))
-	root, err := statedb.CommitTo(testdb, false)
+	root, err := statedb.Commit(false)
 	if err != nil {
-		panic(fmt.Sprintf("cannot write state: %v", err))
+		panic("cannot write state: " + err.Error())
+	}
+	if err := statedb.Database().TrieDB().Commit(root, false); err != nil {
+		panic("commit state trie err: " + err.Error())
 	}
 	genesis = types.NewBlock(&types.Header{
 		Difficulty: big.NewInt(131072),
