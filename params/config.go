@@ -360,7 +360,7 @@ func (c *ChainConfig) IsHomestead(num *big.Int) bool {
 	if c.HomesteadBlock != nil {
 		return isForked(c.HomesteadBlock, num)
 	}
-	if c.ForkByName("Homestead").Block == nil || num == nil {
+	if c.ForkByName("Homestead") == nil || c.ForkByName("Homestead").Block == nil || num == nil {
 		return false
 	}
 	return num.Cmp(c.ForkByName("Homestead").Block) >= 0
@@ -372,7 +372,7 @@ func (c *ChainConfig) IsEIP150(num *big.Int) bool {
 		return isForked(c.EIP150Block, num)
 	}
 	fork := c.ForkByName("GasReprice")
-	if fork.Block == nil || num == nil {
+	if fork == nil || fork.Block == nil || num == nil {
 		return false
 	}
 	return num.Cmp(fork.Block) >= 0
@@ -384,7 +384,7 @@ func (c *ChainConfig) IsDiehard(num *big.Int) bool {
 		return isForked(c.EIP158Block, num)
 	}
 	fork := c.ForkByName("Diehard")
-	if fork.Block == nil || num == nil {
+	if fork == nil || fork.Block == nil || num == nil {
 		return false
 	}
 	return num.Cmp(fork.Block) >= 0
@@ -396,7 +396,7 @@ func (c *ChainConfig) IsEIP155(num *big.Int) bool {
 		return isForked(c.EIP155Block, num)
 	}
 	fork := c.ForkByName("Diehard")
-	if fork.Block == nil || num == nil {
+	if fork == nil || fork.Block == nil || num == nil {
 		return false
 	}
 	if num.Cmp(fork.Block) >= 0 {
@@ -442,7 +442,7 @@ func (c *ChainConfig) IsDAOFork(num *big.Int) bool {
 		return isForked(c.DAOForkBlock, num)
 	}
 	fork := c.ForkByName("The DAO Hard Fork")
-	if fork.Block == nil || num == nil {
+	if fork == nil || fork.Block == nil || num == nil {
 		return false
 	}
 	return num.Cmp(fork.Block) >= 0
@@ -590,7 +590,7 @@ func (c *ChainConfig) GasTable(num *big.Int) GasTable {
 	name, ok := f.GetString("type")
 	if !ok {
 		name = ""
-	} // will wall to default panic
+	} // will fall to default panic
 	switch name {
 	case "homestead":
 		return GasTableHomestead
