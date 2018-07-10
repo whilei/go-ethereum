@@ -408,8 +408,20 @@ func (self *StateDB) createObject(addr common.Address) (newobj, prev *stateObjec
 	newobj = newObject(self, addr, Account{})
 	newobj.setNonce(0) // sets the object to dirty
 	if prev == nil {
+		if logger.MlogEnabled() {
+			mlogStateCreateObject.AssignDetails(
+				newobj.address.Hex(),
+				prev,
+			).Send(mlogState)
+		}
 		self.journal.append(createObjectChange{account: &addr})
 	} else {
+		if logger.MlogEnabled() {
+			mlogStateCreateObject.AssignDetails(
+				newobj.address.Hex(),
+				prev.address.Hex(),
+			).Send(mlogState)
+		}
 		self.journal.append(resetObjectChange{prev: prev})
 	}
 	self.setStateObject(newobj)

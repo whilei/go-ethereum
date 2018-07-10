@@ -24,6 +24,7 @@ import (
 
 	"github.com/ethereumproject/go-ethereum/common"
 	"github.com/ethereumproject/go-ethereum/crypto"
+	"github.com/ethereumproject/go-ethereum/logger"
 	"github.com/ethereumproject/go-ethereum/rlp"
 )
 
@@ -246,6 +247,14 @@ func (c *stateObject) AddBalance(amount *big.Int) {
 		return
 	}
 	c.SetBalance(new(big.Int).Add(c.Balance(), amount))
+	if logger.MlogEnabled() {
+		mlogStateAddBalanceObject.AssignDetails(
+			c.Address().Hex(),
+			c.Nonce(),
+			c.Balance(),
+			amount,
+		).Send(mlogState)
+	}
 }
 
 // SubBalance removes amount from c's balance.
@@ -255,6 +264,14 @@ func (c *stateObject) SubBalance(amount *big.Int) {
 		return
 	}
 	c.SetBalance(new(big.Int).Sub(c.Balance(), amount))
+	if logger.MlogEnabled() {
+		mlogStateSubBalanceObject.AssignDetails(
+			c.Address().Hex(),
+			c.Nonce(),
+			c.Balance(),
+			amount,
+		).Send(mlogState)
+	}
 }
 
 func (self *stateObject) SetBalance(amount *big.Int) {
