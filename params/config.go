@@ -357,6 +357,9 @@ func (c *ChainConfig) GetChainID() *big.Int {
 
 // IsHomestead returns whether num is either equal to the homestead block or greater.
 func (c *ChainConfig) IsHomestead(num *big.Int) bool {
+	if c.HomesteadBlock != nil {
+		return isForked(c.HomesteadBlock, num)
+	}
 	if c.ForkByName("Homestead").Block == nil || num == nil {
 		return false
 	}
@@ -365,6 +368,9 @@ func (c *ChainConfig) IsHomestead(num *big.Int) bool {
 
 // IsEIP150 returns whether num is greater than or equal to the Diehard block, but less than explosion.
 func (c *ChainConfig) IsEIP150(num *big.Int) bool {
+	if c.EIP150Block != nil {
+		return isForked(c.EIP150Block, num)
+	}
 	fork := c.ForkByName("GasReprice")
 	if fork.Block == nil || num == nil {
 		return false
@@ -374,6 +380,9 @@ func (c *ChainConfig) IsEIP150(num *big.Int) bool {
 
 // IsDiehard returns whether num is greater than or equal to the Diehard block, but less than explosion.
 func (c *ChainConfig) IsDiehard(num *big.Int) bool {
+	if c.EIP158Block != nil {
+		return isForked(c.EIP158Block, num)
+	}
 	fork := c.ForkByName("Diehard")
 	if fork.Block == nil || num == nil {
 		return false
@@ -383,6 +392,9 @@ func (c *ChainConfig) IsDiehard(num *big.Int) bool {
 
 // IsEIP155 returns whether EIP155 is configured at or behind a given block number
 func (c *ChainConfig) IsEIP155(num *big.Int) bool {
+	if c.EIP155Block != nil {
+		return isForked(c.EIP155Block, num)
+	}
 	fork := c.ForkByName("Diehard")
 	if fork.Block == nil || num == nil {
 		return false
@@ -395,6 +407,9 @@ func (c *ChainConfig) IsEIP155(num *big.Int) bool {
 
 // IsEIP158 returns whether EIP158 is configured at or behind a given block number
 func (c *ChainConfig) IsEIP158(num *big.Int) bool {
+	if c.EIP158Block != nil {
+		return isForked(c.EIP158Block, num)
+	}
 	ff, fork, ok := c.GetFeature(num, "gastable")
 	if fork == nil || !ok {
 		return false
@@ -407,6 +422,9 @@ func (c *ChainConfig) IsEIP158(num *big.Int) bool {
 }
 
 func (c *ChainConfig) IsByzantium(num *big.Int) bool {
+	if c.ByzantiumBlock != nil {
+		return isForked(c.ByzantiumBlock, num)
+	}
 	ff, fork, ok := c.GetFeature(num, "newopcodes-placholderid") // PTAL just noting placeholder
 	if fork == nil || !ok {
 		return false
@@ -420,6 +438,9 @@ func (c *ChainConfig) IsByzantium(num *big.Int) bool {
 
 // IsDAOFork returns whether num is greater than or equal DAO Fork
 func (c *ChainConfig) IsDAOFork(num *big.Int) bool {
+	if c.DAOForkBlock != nil {
+		return isForked(c.DAOForkBlock, num)
+	}
 	fork := c.ForkByName("The DAO Hard Fork")
 	if fork.Block == nil || num == nil {
 		return false
@@ -552,6 +573,9 @@ func (c *ChainConfig) GetSigner(blockNumber *big.Int) types.Signer {
 		} else {
 			panic(fmt.Errorf("chainID is not set for EIP-155 at %v", blockNumber))
 		}
+	}
+	if c.ChainID != nil {
+		return types.NewChainIdSigner(c.ChainID)
 	}
 	return types.BasicSigner{}
 }
