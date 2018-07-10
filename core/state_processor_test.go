@@ -409,8 +409,8 @@ func TestAccumulateRewards1(t *testing.T) {
 			t.Error("No era length configured, is required.")
 		}
 
+		// set up new in-mem state database
 		db := ethdb.NewMemDatabase()
-
 		stateDB, err := state.New(common.Hash{}, state.NewDatabase(db))
 		if err != nil {
 			t.Fatalf("could not open statedb: %v", err)
@@ -429,23 +429,24 @@ func TestAccumulateRewards1(t *testing.T) {
 			uncles[1].Coinbase = common.StringToAddress("0000000000000000000000000000000000000003")
 		}
 
-		// Manual tallies for reward accumulation.
+		// initialize manual tallies for reward accumulation.
 		winnerB, totalB := new(big.Int), new(big.Int)
 		unclesB := []*big.Int{new(big.Int), new(big.Int)}
 
-		winnerB = stateDB.GetBalance(header.Coinbase)
-		unclesB[0] = stateDB.GetBalance(uncles[0].Coinbase)
-		unclesB[1] = stateDB.GetBalance(uncles[1].Coinbase)
+		// set initial values from state database (should be 0)
+		winnerB = new(big.Int).Set(stateDB.GetBalance(header.Coinbase))
+		unclesB[0] = new(big.Int).Set(stateDB.GetBalance(uncles[0].Coinbase))
+		unclesB[1] = new(big.Int).Set(stateDB.GetBalance(uncles[1].Coinbase))
 
+		// check total is 0 at beginning
 		totalB.Add(totalB, winnerB)
 		totalB.Add(totalB, unclesB[0])
 		totalB.Add(totalB, unclesB[1])
-
 		if totalB.Cmp(big.NewInt(0)) != 0 {
-			t.Errorf("unexpected: %v", totalB)
+			t.Fatalf("unexpected: %v", totalB)
 		}
 
-		for _, c := range cases[i] {
+		for j, c := range cases[i] {
 			bn := c.block
 			era := GetBlockEra(bn, eraLen)
 
@@ -475,18 +476,17 @@ func TestAccumulateRewards1(t *testing.T) {
 			totalB.Add(totalB, winnerB)
 
 			AccumulateRewards(config, stateDB, header, uncles)
-			stateDB.Commit(false)
 
 			// Check balances.
 			//t.Logf("config=%d block=%d era=%d w:%d u1:%d u2:%d", i, bn, new(big.Int).Add(era, big.NewInt(1)), winnerB, unclesB[0], unclesB[1])
 			if wb := stateDB.GetBalance(header.Coinbase); wb.Cmp(winnerB) != 0 {
-				t.Errorf("winner balance @ %v, want: %v, got: %v (config: %v)", bn, winnerB, wb, i)
+				t.Errorf("case=%d winner balance blocknum=%v, want: %v, got: %v (config: %v)", j, bn, winnerB, wb, i)
 			}
 			if uB0 := stateDB.GetBalance(uncles[0].Coinbase); unclesB[0].Cmp(uB0) != 0 {
-				t.Errorf("uncle1 balance @ %v, want: %v, got: %v (config: %v)", bn, unclesB[0], uB0, i)
+				t.Errorf("case=%d uncle1 balance blocknum=%v, want: %v, got: %v (config: %v)", j, bn, unclesB[0], uB0, i)
 			}
 			if uB1 := stateDB.GetBalance(uncles[1].Coinbase); unclesB[1].Cmp(uB1) != 0 {
-				t.Errorf("uncle2 balance @ %v, want: %v, got: %v (config: %v)", bn, unclesB[1], uB1, i)
+				t.Errorf("case=%d uncle2 balance blocknum=%v, want: %v, got: %v (config: %v)", j, bn, unclesB[1], uB1, i)
 			}
 		}
 		db.Close()
