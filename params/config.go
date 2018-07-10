@@ -582,10 +582,10 @@ func (c *ChainConfig) GetSigner(blockNumber *big.Int) types.Signer {
 
 // GasTable returns the gas table corresponding to the current fork
 // The returned GasTable's fields shouldn't, under any circumstances, be changed.
-func (c *ChainConfig) GasTable(num *big.Int) *GasTable {
+func (c *ChainConfig) GasTable(num *big.Int) GasTable {
 	f, _, configured := c.GetFeature(num, "gastable")
 	if !configured {
-		return &GasTableHomestead
+		return GasTableHomestead
 	}
 	name, ok := f.GetString("type")
 	if !ok {
@@ -593,11 +593,11 @@ func (c *ChainConfig) GasTable(num *big.Int) *GasTable {
 	} // will wall to default panic
 	switch name {
 	case "homestead":
-		return &GasTableHomestead
+		return GasTableHomestead
 	case "eip150":
-		return &GasTableEIP150
+		return GasTableEIP150
 	case "eip160":
-		return &GasTableEIP158 // PTAL Hm.
+		return GasTableEIP158 // PTAL Hm.
 	default:
 		panic(fmt.Errorf("Unsupported gastable value '%v' at block: %v", name, num))
 	}
