@@ -44,7 +44,7 @@ type HexOrDecimal64 uint64
 func (i *HexOrDecimal64) UnmarshalText(input []byte) error {
 	int, ok := ParseUint64(string(input))
 	if !ok {
-		return fmt.Errorf("invalid hex or decimal integer %q", input)
+		return NewErrInvalidHexOrDecimal([]byte(fmt.Sprintf("[uint64] input:%q", input)))
 	}
 	*i = HexOrDecimal64(int)
 	return nil

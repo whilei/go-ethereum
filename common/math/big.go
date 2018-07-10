@@ -18,8 +18,11 @@
 package math
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
+	"strconv"
+	"strings"
 )
 
 // Various big integer limit values.
@@ -30,6 +33,8 @@ var (
 	tt63      = BigPow(2, 63)
 	MaxBig256 = new(big.Int).Set(tt256m1)
 	MaxBig63  = new(big.Int).Sub(tt63, big.NewInt(1))
+
+	ErrInvalidHexOrDecimal = errors.New("invalid hex or decimal integer")
 )
 
 const (
@@ -42,11 +47,21 @@ const (
 // HexOrDecimal256 marshals big.Int as hex or decimal.
 type HexOrDecimal256 big.Int
 
+// NewErrInvalidHexOrDecimal wrap an ErrInvalidHexOrDecimal, adding the offending input detail
+func NewErrInvalidHexOrDecimal(input []byte) error {
+	return fmt.Errorf("%v: %q", ErrInvalidHexOrDecimal, input)
+}
+
+// IsInvalidHexOrDecimalErr return whether an error represent an ErrInvalidHexOrDecimal
+func IsInvalidHexOrDecimalErr(err error) bool {
+	return strings.HasPrefix(err.Error(), ErrInvalidHexOrDecimal.Error())
+}
+
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (i *HexOrDecimal256) UnmarshalText(input []byte) error {
 	bigint, ok := ParseBig256(string(input))
 	if !ok {
-		return fmt.Errorf("invalid hex or decimal integer %q", input)
+		return NewErrInvalidHexOrDecimal([]byte(fmt.Sprintf("[256] bitlen:%d input:%q", len(input), input)))
 	}
 	*i = HexOrDecimal256(*bigint)
 	return nil
