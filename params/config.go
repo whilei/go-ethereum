@@ -342,6 +342,9 @@ func (c *ChainConfig) SortForks() *ChainConfig {
 // if the value is set multiple times.
 func (c *ChainConfig) GetChainID() *big.Int {
 	n := new(big.Int)
+	if c.ChainID != nil {
+		return c.ChainID
+	}
 	feat, _, ok := c.HasFeature("eip155")
 	if !ok {
 		return n
