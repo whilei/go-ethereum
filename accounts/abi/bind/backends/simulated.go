@@ -117,6 +117,7 @@ func (b *SimulatedBackend) ContractCall(contract common.Address, data []byte, pe
 		gasLimit: common.MaxBig.Uint64(),
 		value:    new(big.Int),
 		data:     data,
+		statedb:  statedb,
 	}
 	// Execute the call and return
 	// Create a new context to be used in the EVM environment
@@ -172,6 +173,7 @@ func (b *SimulatedBackend) EstimateGasLimit(sender common.Address, contract *com
 		gasLimit: common.MaxBig.Uint64(),
 		value:    value,
 		data:     data,
+		statedb:  statedb,
 	}
 	// Execute the call and return
 	// Execute the call and return
