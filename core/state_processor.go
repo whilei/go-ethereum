@@ -219,6 +219,7 @@ func AccumulateRewards(config *params.ChainConfig, statedb *state.StateDB, heade
 			statedb.AddBalance(uncle.Coinbase, ur) // $$
 		}
 	}
+	header.Root = statedb.IntermediateRoot(config.IsEIP158(header.Number))
 }
 
 // As of "Era 2" (zero-index era 1), uncle miners and winners are rewarded equally for each included block.
