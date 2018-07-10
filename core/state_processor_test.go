@@ -475,6 +475,7 @@ func TestAccumulateRewards1(t *testing.T) {
 			totalB.Add(totalB, winnerB)
 
 			AccumulateRewards(config, stateDB, header, uncles)
+			stateDB.Commit(false)
 
 			// Check balances.
 			//t.Logf("config=%d block=%d era=%d w:%d u1:%d u2:%d", i, bn, new(big.Int).Add(era, big.NewInt(1)), winnerB, unclesB[0], unclesB[1])
@@ -713,7 +714,7 @@ func TestAccumulateRewards4_0Uncles(t *testing.T) {
 	}
 	// t.Logf("Non-accruing balances over cases. 0 uncles. Configs mainnet=0, morden=1")
 	for i, config := range configs {
-		for _, c := range cases[i] {
+		for j, c := range cases[i] {
 
 			db := ethdb.NewMemDatabase()
 			stateDB, err := state.New(common.Hash{}, state.NewDatabase(db))
@@ -721,15 +722,15 @@ func TestAccumulateRewards4_0Uncles(t *testing.T) {
 				t.Fatalf("could not open statedb: %v", err)
 			}
 
-			var winner *types.Header = &types.Header{
+			winner := &types.Header{
 				Number:   c.block,
 				Coinbase: WinnerCoinbase,
 			}
-			var uncles []*types.Header = []*types.Header{}
+			uncles := []*types.Header{}
 
 			gotWinnerBalance := stateDB.GetBalance(winner.Coinbase)
 			if gotWinnerBalance.Cmp(big.NewInt(0)) != 0 {
-				t.Errorf("unexpected: %v", gotWinnerBalance)
+				t.Errorf("unexpected: case:%d config:%d got: %v want: 0", j, i, gotWinnerBalance)
 			}
 
 			AccumulateRewards(config, stateDB, winner, uncles)
