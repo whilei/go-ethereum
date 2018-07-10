@@ -127,8 +127,7 @@ func (t *StateTest) Run(subtest StateSubtest, vmconfig vm.Config) (*state.StateD
 		return nil, UnsupportedForkError{subtest.Fork}
 	}
 	block := t.genesis(config).ToBlock(nil)
-	db := ethdb.NewMemDatabase()
-	statedb := MakePreState(db, t.json.Pre)
+	statedb := MakePreState(ethdb.NewMemDatabase(), t.json.Pre)
 
 	post := t.json.Post[subtest.Fork][subtest.Index]
 	msg, err := t.json.Tx.toMessage(post)
@@ -142,16 +141,20 @@ func (t *StateTest) Run(subtest StateSubtest, vmconfig vm.Config) (*state.StateD
 	gaspool := new(core.GasPool)
 	gaspool.AddGas(block.GasLimit())
 	snapshot := statedb.Snapshot()
-	_, _, _, err = core.ApplyMessage(evm, msg, gaspool)
-	if err != nil {
+	didRevert := false
+	if _, _, _, err := core.ApplyMessage(evm, msg, gaspool); err != nil {
+		didRevert = true
 		statedb.RevertToSnapshot(snapshot)
 	}
 	if logs := rlpHash(statedb.Logs()); logs != common.Hash(post.Logs) {
 		return statedb, fmt.Errorf("post state logs hash mismatch: got %x, want %x\n%s", logs, post.Logs, spew.Sprint(statedb.Logs()))
 	}
-	root, _ := statedb.Commit(config.IsEIP158(block.Number()))
+	root, err := statedb.Commit(config.IsEIP158(block.Number()))
+	if err != nil {
+		return statedb, err
+	}
 	if root != common.Hash(post.Root) {
-		return statedb, fmt.Errorf("post state root mismatch: got %x, want %x", root, post.Root)
+		return statedb, fmt.Errorf("post state root mismatch: got %x, want %x [didrevert=%v]", root, post.Root, didRevert)
 	}
 	return statedb, nil
 }
@@ -233,7 +236,6 @@ func (tx *stTransaction) toMessage(ps stPostState) (core.Message, error) {
 	}
 
 	msg := types.NewMessage(from, to, tx.Nonce, value, gasLimit, tx.GasPrice, data, true)
-	// msg.from, err = types.Sender(s, tx)
 	return msg, nil
 }
 
