@@ -273,31 +273,6 @@ func vmTestBlockHash(n uint64) common.Hash {
 	return common.BytesToHash(crypto.Keccak256([]byte(big.NewInt(int64(n)).String())))
 }
 
-func (self *Env) RuleSet() RuleSet {
-	diehard := params.TestChainConfig.ForkByName("Diehard")
-	return RuleSet{
-		HomesteadBlock:           params.TestChainConfig.HomesteadBlock,
-		HomesteadGasRepriceBlock: params.TestChainConfig.EIP150Block,
-		DiehardBlock:             diehard.Block,
-		ExplosionBlock:           big.NewInt(5000000), // TODO
-	}
-}
-func (self *Env) Vm() *vm.EVM              { return self.evm }
-func (self *Env) Origin() common.Address   { return self.origin }
-func (self *Env) BlockNumber() *big.Int    { return self.number }
-func (self *Env) Coinbase() common.Address { return self.coinbase }
-func (self *Env) Time() *big.Int           { return self.time }
-func (self *Env) Difficulty() *big.Int     { return self.difficulty }
-func (self *Env) Db() vm.StateDB           { return self.state }
-func (self *Env) GasLimit() *big.Int       { return self.gasLimit }
-func (self *Env) GetHash(n uint64) common.Hash {
-	return common.BytesToHash(crypto.Keccak256([]byte(big.NewInt(int64(n)).String())))
-}
-func (self *Env) AddLog(log **types.Log) {
-	self.state.AddLog(*log)
-}
-func (self *Env) Depth() int     { return self.depth }
-func (self *Env) SetDepth(i int) { self.depth = i }
 func (self *Env) CanTransfer(statedb vm.StateDB, from common.Address, balance *big.Int) bool {
 	if self.skipTransfer {
 		if self.initial {
@@ -308,26 +283,20 @@ func (self *Env) CanTransfer(statedb vm.StateDB, from common.Address, balance *b
 
 	return self.state.GetBalance(from).Cmp(balance) >= 0
 }
-func (self *Env) SnapshotDatabase() int {
-	return self.state.Snapshot()
-}
-func (self *Env) RevertToSnapshot(snapshot int) {
-	self.state.RevertToSnapshot(snapshot)
-}
 
 func (self *Env) Transfer(db vm.StateDB, from, to common.Address, amount *big.Int) {
 	if self.skipTransfer {
 		return
 	}
-	core.Transfer(self.Db(), from.Address(), to.Address(), amount)
+	core.Transfer(self.state, from.Address(), to.Address(), amount)
 }
 
 func (self *Env) Call(caller vm.ContractRef, addr common.Address, data []byte, gas uint64, price, value *big.Int) ([]byte, error) {
+	self.evm.GasPrice = price
 	if self.vmTest && self.depth > 0 {
 		self.state.AddBalance(caller.Address(), new(big.Int).Mul(new(big.Int).SetUint64(gas), price))
 		return nil, nil
 	}
-	self.evm.GasPrice = price
 
 	// original gas in bigInt
 	og := big.NewInt(0).SetUint64(gas)
@@ -343,67 +312,13 @@ func (self *Env) Call(caller vm.ContractRef, addr common.Address, data []byte, g
 
 }
 func (self *Env) CallCode(caller vm.ContractRef, addr common.Address, data []byte, gas, price, value *big.Int) ([]byte, error) {
-	if self.vmTest && self.depth > 0 {
-		self.state.AddBalance(caller.Address(), new(big.Int).Mul(gas, price))
-		return nil, nil
-	}
-	og := big.NewInt(0).Set(gas)
-	self.Gas = og
-	ret, leftOverGas, err := self.evm.CallCode(caller, addr, data, gas.Uint64(), value)
-
-	logB := big.NewInt(0).SetUint64(leftOverGas)
-	spentGas := new(big.Int).Sub(og, logB)
-	self.Gas.Sub(og, spentGas)
-
-	return ret, err
+	panic("unimplemented")
 }
 
 func (self *Env) DelegateCall(caller vm.ContractRef, addr common.Address, data []byte, gas, price *big.Int) ([]byte, error) {
-	if self.vmTest && self.depth > 0 {
-		self.state.AddBalance(caller.Address(), new(big.Int).Mul(gas, price))
-		return nil, nil
-	}
-	ret, _, err := self.evm.DelegateCall(caller, addr, data, gas.Uint64())
-	// self.state.Finalise(false)
-	return ret, err
-	// return core.DelegateCall(self, caller, addr, data, gas, price)
+	panic("unimplemented")
 }
 
 func (self *Env) Create(caller vm.ContractRef, data []byte, gas, price, value *big.Int) ([]byte, common.Address, error) {
-	if self.vmTest {
-		nonce := self.state.GetNonce(caller.Address())
-		obj := self.state.GetOrNewStateObject(crypto.CreateAddress(caller.Address(), nonce))
-		return nil, obj.Address(), nil
-	} else {
-		ret, a, _, err := self.evm.Create(caller, data, gas.Uint64(), value)
-		return ret, a, err
-	}
-}
-
-type Message struct {
-	from  common.Address
-	to    *common.Address
-	value *big.Int
-	gas   uint64
-	price *big.Int
-	data  []byte
-	nonce uint64
-}
-
-func NewMessage(from common.Address, to *common.Address, data []byte, value, gas, price *big.Int, nonce uint64) Message {
-	return Message{from, to, value, gas.Uint64(), price, data, nonce}
-}
-
-func (self Message) Hash() []byte { return nil }
-
-func (self Message) From() common.Address                  { return self.from }
-func (self Message) FromFrontier() (common.Address, error) { return self.from, nil }
-func (self Message) To() *common.Address                   { return self.to }
-func (self Message) GasPrice() *big.Int                    { return self.price }
-func (self Message) Gas() uint64                           { return self.gas }
-func (self Message) Value() *big.Int                       { return self.value }
-func (self Message) Nonce() uint64                         { return self.nonce }
-func (self Message) Data() []byte                          { return self.data }
-func (self Message) CheckNonce() bool {
-	return true
+	panic("unimplemented")
 }
