@@ -1161,13 +1161,11 @@ func (s *PublicTransactionPoolAPI) GetTransactionReceipt(txHash common.Hash) (ma
 
 	tx, _, err := getTransaction(s.chainDb, s.txPool, txHash)
 	if err != nil {
-		glog.V(logger.Info).Infof("tzdybal 1 %v\n", err)
 		return nil, err
 	}
 
 	txBlock, blockIndex, index, err := getTransactionBlockData(s.chainDb, txHash)
 	if err != nil {
-		glog.V(logger.Info).Infof("tzdybal 2 %v\n", err)
 		return nil, err
 	}
 
@@ -1184,7 +1182,6 @@ func (s *PublicTransactionPoolAPI) GetTransactionReceipt(txHash common.Hash) (ma
 			return nil, err
 		}
 
-		fmt.Println("tzdybal: PlayBackTransactions")
 		receipts, _, _, err := proc.Process(block, statedb)
 		if err != nil {
 			return nil, err
