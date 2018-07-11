@@ -18,7 +18,6 @@ package core
 
 import (
 	"errors"
-	"fmt"
 	"math/big"
 
 	"github.com/ethereumproject/go-ethereum/common"
@@ -80,19 +79,8 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB) (ty
 
 	// Iterate over and process the individual transactions
 	for i, tx := range block.Transactions() {
-		// // PTAL these seem like "sugary" "pre-flight" safety checks and warnings that are actually redundant to the VM processing. I think we can safely get rid of them.
-		if tx.Protected() {
-			chainId := p.config.GetChainID()
-			if chainId.Cmp(new(big.Int)) == 0 {
-				return nil, nil, 0, fmt.Errorf("chainID is not set for EIP-155 in chain configuration at block number: %v. \n  Tx ChainID: %v", block.Number(), tx.ChainId())
-			}
-			if tx.ChainId() == nil || tx.ChainId().Cmp(chainId) != 0 {
-				return nil, nil, 0, fmt.Errorf("invalid transaction chain id. Current chain id: %v tx chain id: %v", p.config.GetChainID(), tx.ChainId())
-			}
-		}
 		statedb.Prepare(tx.Hash(), block.Hash(), i)
 		if !UseSputnikVM {
-			// (config *params.ChainConfig, bc ChainContext, author *common.Address, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64, cfg vm.Config)
 			receipt, _, err := ApplyTransaction(p.config, p.bc, nil, gp, statedb, header, tx, usedGas, cfg)
 			if err != nil {
 				return nil, nil, 0, err
