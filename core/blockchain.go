@@ -1660,8 +1660,7 @@ func (bc *BlockChain) InsertChain(chain types.Blocks) (res *ChainInsertResult) {
 			res.Error = err
 			return
 		}
-		triedb := bc.stateCache.TrieDB()
-		if err := triedb.Commit(root, false); err != nil {
+		if err := bc.stateCache.TrieDB().Commit(root, false); err != nil {
 			res.Error = err
 			return
 		}
