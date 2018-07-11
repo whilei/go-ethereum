@@ -108,7 +108,9 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB) (ty
 		receipts = append(receipts, receipt)
 		allLogs = append(allLogs, receipt.Logs...)
 	}
+
 	AccumulateRewards(p.config, statedb, header, block.Uncles())
+	header.Root = statedb.IntermediateRoot(p.config.IsEIP158(block.Number()))
 
 	return receipts, allLogs, *usedGas, err
 }
@@ -219,7 +221,6 @@ func AccumulateRewards(config *params.ChainConfig, statedb *state.StateDB, heade
 			statedb.AddBalance(uncle.Coinbase, ur) // $$
 		}
 	}
-	header.Root = statedb.IntermediateRoot(config.IsEIP158(header.Number))
 }
 
 // As of "Era 2" (zero-index era 1), uncle miners and winners are rewarded equally for each included block.
