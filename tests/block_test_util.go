@@ -281,7 +281,7 @@ func (t *BlockTest) TryBlocksInsert(blockchain *core.BlockChain) ([]btBlock, err
 				// block supposed to be invalid, continue with next
 				continue
 			}
-			return nil, fmt.Errorf("abort on block #%d (%x): %s", blocks[res.Index].Number(), blocks[res.Index].Hash(), res.Error)
+			return nil, fmt.Errorf("Block insert failed: #%d (%x): %s", blocks[res.Index].Number(), blocks[res.Index].Hash(), res.Error)
 		}
 		if b.BlockHeader == nil {
 			return nil, fmt.Errorf("Block insertion should have failed")

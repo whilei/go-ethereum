@@ -157,9 +157,6 @@ type RuleSet struct {
 	ExplosionBlock           *big.Int
 }
 
-func (r RuleSet) IsHomestead(n *big.Int) bool {
-	return n.Cmp(r.HomesteadBlock) >= 0
-}
 func (r RuleSet) GasTable(num *big.Int) *params.GasTable {
 	if r.HomesteadGasRepriceBlock == nil || num == nil || num.Cmp(r.HomesteadGasRepriceBlock) < 0 {
 		return &params.GasTable{
@@ -326,17 +323,8 @@ func (self *Env) Transfer(db vm.StateDB, from, to common.Address, amount *big.In
 }
 
 func (self *Env) Call(caller vm.ContractRef, addr common.Address, data []byte, gas uint64, price, value *big.Int) ([]byte, error) {
-	// ctc := vm.NewContract(caller, addr, value, gas)
-	// if self.vmTest && self.depth > 0 {
-	// 	caller.ReturnGas(gas, price)
-	//
-	// 	return nil, nil
-	// }
-	// ret, err := core.Call(self, caller, addr, data, gas, price, value)
-	// self.Gas = gas
-
 	if self.vmTest && self.depth > 0 {
-		// self.state.AddBalance(caller.Address(), new(big.Int).Mul(new(big.Int).SetUint64(gas), price))
+		self.state.AddBalance(caller.Address(), new(big.Int).Mul(new(big.Int).SetUint64(gas), price))
 		return nil, nil
 	}
 	self.evm.GasPrice = price
@@ -356,19 +344,23 @@ func (self *Env) Call(caller vm.ContractRef, addr common.Address, data []byte, g
 }
 func (self *Env) CallCode(caller vm.ContractRef, addr common.Address, data []byte, gas, price, value *big.Int) ([]byte, error) {
 	if self.vmTest && self.depth > 0 {
-		// caller.ReturnGas(gas, price)
-		// self.state.AddBalance(caller.Address(), new(big.Int).Mul(gas, price))
+		self.state.AddBalance(caller.Address(), new(big.Int).Mul(gas, price))
 		return nil, nil
 	}
-	ret, _, err := self.evm.CallCode(caller, addr, data, gas.Uint64(), value)
+	og := big.NewInt(0).Set(gas)
+	self.Gas = og
+	ret, leftOverGas, err := self.evm.CallCode(caller, addr, data, gas.Uint64(), value)
+
+	logB := big.NewInt(0).SetUint64(leftOverGas)
+	spentGas := new(big.Int).Sub(og, logB)
+	self.Gas.Sub(og, spentGas)
+
 	return ret, err
-	// return core.CallCode(self, caller, addr, data, gas, price, value)
 }
 
 func (self *Env) DelegateCall(caller vm.ContractRef, addr common.Address, data []byte, gas, price *big.Int) ([]byte, error) {
 	if self.vmTest && self.depth > 0 {
-		// caller.ReturnGas(gas, price)
-		// self.state.AddBalance(caller.Address(), new(big.Int).Mul(gas, price))
+		self.state.AddBalance(caller.Address(), new(big.Int).Mul(gas, price))
 		return nil, nil
 	}
 	ret, _, err := self.evm.DelegateCall(caller, addr, data, gas.Uint64())
@@ -379,17 +371,12 @@ func (self *Env) DelegateCall(caller vm.ContractRef, addr common.Address, data [
 
 func (self *Env) Create(caller vm.ContractRef, data []byte, gas, price, value *big.Int) ([]byte, common.Address, error) {
 	if self.vmTest {
-		// caller.ReturnGas(gas, price)
-		// self.state.AddBalance(caller.Address(), new(big.Int).Mul(gas, price))
-
 		nonce := self.state.GetNonce(caller.Address())
 		obj := self.state.GetOrNewStateObject(crypto.CreateAddress(caller.Address(), nonce))
-
 		return nil, obj.Address(), nil
 	} else {
 		ret, a, _, err := self.evm.Create(caller, data, gas.Uint64(), value)
 		return ret, a, err
-		// return core.Create(self, caller, data, gas, price, value)
 	}
 }
 

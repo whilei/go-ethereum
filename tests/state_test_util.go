@@ -128,6 +128,9 @@ func (t *StateTest) Run(subtest StateSubtest, vmconfig vm.Config) (*state.StateD
 	}
 	block := t.genesis(config).ToBlock(nil)
 	statedb := MakePreState(ethdb.NewMemDatabase(), t.json.Pre)
+	if root := statedb.IntermediateRoot(false); root != block.Root() {
+		return statedb, fmt.Errorf("pre state root mismatch: got: %x, want: %x\n%v", root, block.Root(), string(statedb.Dump(nil)))
+	}
 
 	post := t.json.Post[subtest.Fork][subtest.Index]
 	msg, err := t.json.Tx.toMessage(post)
@@ -142,7 +145,8 @@ func (t *StateTest) Run(subtest StateSubtest, vmconfig vm.Config) (*state.StateD
 	gaspool.AddGas(block.GasLimit())
 	snapshot := statedb.Snapshot()
 	didRevert := false
-	if _, _, _, err := core.ApplyMessage(evm, msg, gaspool); err != nil {
+	_, usedGas, failed, errAM := core.ApplyMessage(evm, msg, gaspool)
+	if errAM != nil {
 		didRevert = true
 		statedb.RevertToSnapshot(snapshot)
 	}
@@ -154,8 +158,9 @@ func (t *StateTest) Run(subtest StateSubtest, vmconfig vm.Config) (*state.StateD
 		return statedb, err
 	}
 	if root != common.Hash(post.Root) {
-		return statedb, fmt.Errorf("post state root mismatch: got %x, want %x [didrevert=%v]", root, post.Root, didRevert)
+		return statedb, fmt.Errorf("post state root mismatch: got %x, want %x [didrevert=%v usedGas=%d failed=%v]\n%v", root, post.Root, didRevert, usedGas, failed, string(statedb.Dump(nil)))
 	}
+
 	return statedb, nil
 }
 
