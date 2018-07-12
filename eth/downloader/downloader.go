@@ -1447,7 +1447,7 @@ func (d *Downloader) importBlockResults(results []*fetchResult) error {
 
 	res := d.blockchain.InsertChain(blocks)
 	if res.Error != nil {
-		glog.V(logger.Debug).Infoln("Downloaded item processing failed", "number", results[res.Index].Header.Number, "hash", results[res.Index].Header.Hash(), "err", res.Error)
+		glog.V(logger.Debug).Infoln("Downloaded item processing failed", "number", results[res.Index].Header.Number, "hash", results[res.Index].Header.Hash().Hex(), "err", res.Error)
 		return errInvalidChain
 	}
 	go d.mux.Post(InsertChainEvent{res.ChainInsertEvent})
