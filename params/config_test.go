@@ -113,6 +113,39 @@ func TestChainConfig_IsExplosion(t *testing.T) {
 
 }
 
+func TestChainConfig_IsByzantium(t *testing.T) {
+	config := DefaultConfigMainnet.ChainConfig
+	if config.ByzantiumBlock == nil {
+		t.Fatal("expected byz block to have been assigned by SetForkBlockVals fn during init")
+	}
+	var cases = []struct {
+		n     *big.Int
+		isByz bool
+	}{
+		{
+			n:     big.NewInt(0),
+			isByz: false,
+		},
+		{
+			n:     big.NewInt(1),
+			isByz: false,
+		},
+		{
+			n:     big.NewInt(6500000),
+			isByz: false,
+		},
+		{
+			n:     big.NewInt(7000000),
+			isByz: true,
+		},
+	}
+	for _, c := range cases {
+		if !config.IsByzantium(c.n) && c.isByz {
+			t.Errorf("%d: %v", c.n, c.isByz)
+		}
+	}
+}
+
 func getDefaultChainConfigSorted() *ChainConfig {
 	return DefaultConfigMainnet.ChainConfig.SortForks()
 }
