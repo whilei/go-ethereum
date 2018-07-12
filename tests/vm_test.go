@@ -33,7 +33,10 @@ func TestVM(t *testing.T) {
 	vmt.skipShortMode("^vmInputLimits(Light)?.json")
 
 	vmt.walk(t, vmTestDir, func(t *testing.T, name string, test *VMTest) {
-		withTrace(t, test.json.Exec.GasLimit, func(vmconfig vm.Config) error {
+		withTrace(t, test.json.Exec.GasLimit, StateSubtest{
+			Fork:  "[VMTest]" + name,
+			Index: 0,
+		}, func(vmconfig vm.Config) error {
 			return vmt.checkFailure(t, name, test.Run(vmconfig))
 		})
 	})
