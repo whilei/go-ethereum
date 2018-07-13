@@ -118,7 +118,7 @@ func runStateTests(ruleSet RuleSet, tests map[string]VmTest, skipTests []string)
 
 		//fmt.Println("StateTest:", name)
 		if err := runStateTest(ruleSet, test); err != nil {
-			return fmt.Errorf("%s: %s", name, err.Error())
+			return fmt.Errorf("[OLD]%s: %s", name, err.Error())
 		}
 
 		//glog.Infoln("State test passed: ", name)
