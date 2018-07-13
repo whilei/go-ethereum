@@ -22,17 +22,20 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"path/filepath"
 	"strconv"
 	"testing"
 
 	"github.com/ethereumproject/go-ethereum/common"
 	"github.com/ethereumproject/go-ethereum/core"
 	"github.com/ethereumproject/go-ethereum/core/state"
-	"github.com/ethereumproject/go-ethereum/core/vm"
+	"github.com/ethereumproject/go-ethereum/core/types"
 	"github.com/ethereumproject/go-ethereum/crypto"
 	"github.com/ethereumproject/go-ethereum/ethdb"
 	"github.com/ethereumproject/go-ethereum/logger/glog"
 )
+
+var oldStateTestDir = filepath.Join(filepath.Join(".", "files"), "StateTests")
 
 func RunStateTestWithReader(ruleSet RuleSet, r io.Reader, skipTests []string) error {
 	tests := make(map[string]VmTest)
@@ -94,7 +97,7 @@ func BenchStateTest(ruleSet RuleSet, p string, conf bconf, b *testing.B) error {
 
 func benchStateTest(ruleSet RuleSet, test VmTest, env map[string]string, b *testing.B) {
 	b.StopTimer()
-	db, _ := ethdb.NewMemDatabase()
+	db := ethdb.NewMemDatabase()
 	statedb := makePreState(db, test.Pre)
 	b.StartTimer()
 
@@ -115,7 +118,7 @@ func runStateTests(ruleSet RuleSet, tests map[string]VmTest, skipTests []string)
 
 		//fmt.Println("StateTest:", name)
 		if err := runStateTest(ruleSet, test); err != nil {
-			return fmt.Errorf("%s: %s\n", name, err.Error())
+			return fmt.Errorf("%s: %s", name, err.Error())
 		}
 
 		//glog.Infoln("State test passed: ", name)
@@ -126,7 +129,7 @@ func runStateTests(ruleSet RuleSet, tests map[string]VmTest, skipTests []string)
 }
 
 func runStateTest(ruleSet RuleSet, test VmTest) error {
-	db, _ := ethdb.NewMemDatabase()
+	db := ethdb.NewMemDatabase()
 	statedb := makePreState(db, test.Pre)
 
 	// XXX Yeah, yeah...
@@ -146,7 +149,7 @@ func runStateTest(ruleSet RuleSet, test VmTest) error {
 		ret []byte
 		// gas  *big.Int
 		// err  error
-		logs vm.Logs
+		logs []*types.Log
 	)
 
 	ret, logs, _, _ = RunState(ruleSet, db, statedb, env, test.Transaction)
@@ -154,13 +157,14 @@ func runStateTest(ruleSet RuleSet, test VmTest) error {
 	// Compare expected and actual return
 	rexp := common.FromHex(test.Out)
 	if bytes.Compare(rexp, ret) != 0 {
-		return fmt.Errorf("return failed. Expected %x, got %x\n", rexp, ret)
+		return fmt.Errorf("return failed. Expected %x, got %x", rexp, ret)
 	}
 
 	// check post state
 	for addr, account := range test.Post {
-		obj := statedb.GetAccount(common.HexToAddress(addr))
-		if obj == nil {
+		a := common.HexToAddress(addr)
+		exist := statedb.Exist(a)
+		if !exist {
 			return fmt.Errorf("did not find expected post-state account: %s", addr)
 		}
 		// Because vm.Account interface does not have Nonce method, so after
@@ -169,27 +173,27 @@ func runStateTest(ruleSet RuleSet, test VmTest) error {
 
 		if balance, ok := new(big.Int).SetString(account.Balance, 0); !ok {
 			panic("malformed test account balance")
-		} else if balance.Cmp(obj.Balance()) != 0 {
-			return fmt.Errorf("(%x) balance failed. Expected: %v have: %v\n", obj.Address().Bytes()[:4], account.Balance, obj.Balance())
+		} else if balance.Cmp(statedb.GetBalance(a)) != 0 {
+			return fmt.Errorf("(%x) balance failed. Expected: %v have: %v", a.Bytes()[:4], account.Balance, statedb.GetBalance(a))
 		}
 
 		if nonce, err := strconv.ParseUint(account.Nonce, 0, 64); err != nil {
 			return fmt.Errorf("test account %q malformed nonce: %s", addr, err)
 		} else if sobj.Nonce() != nonce {
-			return fmt.Errorf("(%x) nonce failed. Expected: %v have: %v\n", obj.Address().Bytes()[:4], account.Nonce, sobj.Nonce())
+			return fmt.Errorf("(%x) nonce failed. Expected: %v have: %v", a.Bytes()[:4], account.Nonce, sobj.Nonce())
 		}
 
 		for addr, value := range account.Storage {
-			v := statedb.GetState(obj.Address(), common.HexToHash(addr))
+			v := statedb.GetState(a, common.HexToHash(addr))
 			vexp := common.HexToHash(value)
 
 			if v != vexp {
-				return fmt.Errorf("storage failed:\n%x: %s:\nexpected: %x\nhave:     %x\n(%v %v)\n", obj.Address().Bytes(), addr, vexp, v, vexp.Big(), v.Big())
+				return fmt.Errorf("storage failed:\n%x: %s:\nexpected: %x\nhave:     %x\n(%v %v)", a.Bytes(), addr, vexp, v, vexp.Big(), v.Big())
 			}
 		}
 	}
 
-	root, _ := statedb.CommitTo(db, false)
+	root, _ := statedb.Commit(false)
 	if common.HexToHash(test.PostStateRoot) != root {
 		return fmt.Errorf("Post state root error. Expected: %s have: %x", test.PostStateRoot, root)
 	}
@@ -204,7 +208,7 @@ func runStateTest(ruleSet RuleSet, test VmTest) error {
 	return nil
 }
 
-func RunState(ruleSet RuleSet, db ethdb.Database, statedb *state.StateDB, env, tx map[string]string) ([]byte, vm.Logs, *big.Int, error) {
+func RunState(ruleSet RuleSet, db ethdb.Database, statedb *state.StateDB, env, tx map[string]string) ([]byte, []*types.Log, *big.Int, error) {
 	data := common.FromHex(tx["data"])
 	gas, _ := new(big.Int).SetString(tx["gasLimit"], 0)
 	price, _ := new(big.Int).SetString(tx["gasPrice"], 0)
@@ -223,27 +227,28 @@ func RunState(ruleSet RuleSet, db ethdb.Database, statedb *state.StateDB, env, t
 		to = &t
 	}
 	// Set pre compiled contracts
-	vm.Precompiled = vm.PrecompiledContracts()
+	//vm.Precompiled = vm.PrecompiledContracts()
 	snapshot := statedb.Snapshot()
 	currentGasLimit, ok := new(big.Int).SetString(env["currentGasLimit"], 0)
 	if !ok {
 		panic("malformed currentGasLimit")
 	}
-	gaspool := new(core.GasPool).AddGas(currentGasLimit)
+	gaspool := new(core.GasPool).AddGas(currentGasLimit.Uint64())
 
 	key, err := hex.DecodeString(tx["secretKey"])
 	if err != nil {
 		panic(err)
 	}
 	addr := crypto.PubkeyToAddress(crypto.ToECDSA(key).PublicKey)
-	message := NewMessage(addr, to, data, value, gas, price, nonce)
+	//func NewMessage(from common.Address, to *common.Address, nonce uint64, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte, checkNonce bool) Message {
+	message := types.NewMessage(addr, to, nonce, value, gas.Uint64(), price, data, false)
 	vmenv := NewEnvFromMap(ruleSet, statedb, env, tx)
 	vmenv.origin = addr
-	ret, _, err := core.ApplyMessage(vmenv, message, gaspool)
+	ret, _, _, err := core.ApplyMessage(vmenv.evm, message, gaspool)
 	if core.IsNonceErr(err) || core.IsInvalidTxErr(err) || core.IsGasLimitErr(err) {
 		statedb.RevertToSnapshot(snapshot)
 	}
-	statedb.CommitTo(db, false)
+	statedb.Commit(false)
 
 	return ret, vmenv.state.Logs(), vmenv.Gas, err
 }
