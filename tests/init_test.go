@@ -19,7 +19,7 @@ import (
 var (
 	baseDir      = filepath.Join(".", "files")
 	blockTestDir = filepath.Join(baseDir, "BlockchainTests")
-	// stateTestDir       = filepath.Join(baseDir, "StateTests")
+	// oldStateTestDir    = filepath.Join(baseDir, "StateTests")
 	stateTestDir       = filepath.Join(baseDir, "GeneralStateTests")
 	transactionTestDir = filepath.Join(baseDir, "TransactionTests")
 	vmTestDir          = filepath.Join(baseDir, "VMTests")
