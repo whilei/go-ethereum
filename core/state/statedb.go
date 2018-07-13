@@ -392,7 +392,7 @@ func (self *StateDB) getStateObject(addr common.Address) (stateObject *stateObje
 		return nil
 	}
 	// Insert into the live set.
-	obj := newObject(self, addr, data)
+	obj = newObject(self, addr, data)
 	self.setStateObject(obj)
 	return obj
 }
