@@ -32,6 +32,11 @@ import (
 	"github.com/ethereumproject/go-ethereum/trie"
 )
 
+const (
+	// Default StartingNonce for Morden Testnet
+	DefaultTestnetStartingNonce = uint64(1048576)
+)
+
 var StartingNonce = uint64(0)
 
 type revision struct {
@@ -196,7 +201,7 @@ func (self *StateDB) GetBalance(addr common.Address) *big.Int {
 	if stateObject != nil {
 		return stateObject.Balance()
 	}
-	return common.Big0
+	return new(big.Int)
 }
 
 func (self *StateDB) GetNonce(addr common.Address) uint64 {
@@ -205,7 +210,7 @@ func (self *StateDB) GetNonce(addr common.Address) uint64 {
 		return stateObject.Nonce()
 	}
 
-	return 0
+	return StartingNonce
 }
 
 func (self *StateDB) GetCode(addr common.Address) []byte {
@@ -406,7 +411,7 @@ func (self *StateDB) GetOrNewStateObject(addr common.Address) *stateObject {
 func (self *StateDB) createObject(addr common.Address) (newobj, prev *stateObject) {
 	prev = self.getStateObject(addr)
 	newobj = newObject(self, addr, Account{})
-	newobj.setNonce(0) // sets the object to dirty
+	newobj.setNonce(StartingNonce) // sets the object to dirty
 	if prev == nil {
 		if logger.MlogEnabled() {
 			mlogStateCreateObject.AssignDetails(

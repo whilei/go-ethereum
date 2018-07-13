@@ -53,7 +53,7 @@ func ApplyMultiVmTransaction(config *params.ChainConfig, bc *BlockChain, gp *Gas
 	eip160Fork := config.ForkByName("Diehard")
 
 	var vm *sputnikvm.VM
-	if state.StartingNonce == 0 {
+	if config.ChainID.Cmp(params.DefaultConfigMainnet.ChainConfig.ChainID) == 0 || config.ChainID.Cmp(common.Big1) == 0 {
 		if eip160Fork.Block != nil && currentNumber.Cmp(eip160Fork.Block) >= 0 {
 			vm = sputnikvm.NewEIP160(&vmtx, &vmheader)
 		} else if eip150Fork.Block != nil && currentNumber.Cmp(eip150Fork.Block) >= 0 {
@@ -63,7 +63,7 @@ func ApplyMultiVmTransaction(config *params.ChainConfig, bc *BlockChain, gp *Gas
 		} else {
 			vm = sputnikvm.NewFrontier(&vmtx, &vmheader)
 		}
-	} else if state.StartingNonce == 1048576 {
+	} else if config.ChainID.Cmp(params.DefaultConfigMorden.ChainConfig.ChainID) == 0 {
 		if eip160Fork.Block != nil && currentNumber.Cmp(eip160Fork.Block) >= 0 {
 			vm = sputnikvm.NewMordenEIP160(&vmtx, &vmheader)
 		} else if eip150Fork.Block != nil && currentNumber.Cmp(eip150Fork.Block) >= 0 {
