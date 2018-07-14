@@ -62,21 +62,7 @@ var (
 
 		CreateBySuicide: 25000,
 	}
-	// GasTableEIP158 contain the gas re-prices for
-	// the EIP15* phase.
-	//
-	// (whilei): just noting for reference
-	// We have this listed as EIP160, EF has as EIP158
-	// var DefaultDiehardGasTable = &vm.GasTable{
-	// 	ExtcodeSize:     big.NewInt(700),
-	// 	ExtcodeCopy:     big.NewInt(700),
-	// 	Balance:         big.NewInt(400),
-	// 	SLoad:           big.NewInt(200),
-	// 	Calls:           big.NewInt(700),
-	// 	Suicide:         big.NewInt(5000),
-	// 	ExpByte:         big.NewInt(50),
-	// 	CreateBySuicide: big.NewInt(25000),
-	// }
+
 	GasTableEIP158 = GasTable{
 		ExtcodeSize: 700,
 		ExtcodeCopy: 700,
