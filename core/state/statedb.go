@@ -562,8 +562,8 @@ func (s *StateDB) Finalise(deleteEmptyObjects bool) {
 // It is called in between transactions to get the root hash that
 // goes into transaction receipts.
 func (s *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
-	s.Finalise(deleteEmptyObjects)
-	// s.Finalise(false)
+	// s.Finalise(deleteEmptyObjects)
+	s.Finalise(false)
 	return s.trie.Hash()
 }
 
