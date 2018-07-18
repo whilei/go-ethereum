@@ -126,7 +126,7 @@ func runVmTests(tests map[string]VmTest, skipTests []string) error {
 			return fmt.Errorf("%s %s", name, err.Error())
 		}
 
-		fmt.Println("OLD VM test passed:", name)
+		// fmt.Println("OLD VM test passed:", name)
 		//fmt.Println(string(statedb.Dump()))
 	}
 	return nil
