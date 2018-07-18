@@ -154,7 +154,7 @@ var Forks = map[string]*params.ChainConfig{
 		ChainID:        big.NewInt(1),
 		HomesteadBlock: big.NewInt(0),
 		DAOForkBlock:   big.NewInt(5),
-		DAOForkSupport: true,
+		DAOForkSupport: false, // true,
 	},
 	"EIP158ToByzantiumAt5": {
 		ChainID:        big.NewInt(1),

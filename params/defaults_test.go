@@ -278,3 +278,27 @@ func TestDefaultChainConfigurationVariablesExist(t *testing.T) {
 	}
 
 }
+
+func TestChainConfigIntegrationBlockVars(t *testing.T) {
+	for _, c := range []*ChainConfig{
+		DefaultConfigMainnet.ChainConfig,
+		DefaultConfigMorden.ChainConfig,
+	} {
+		expectedBlockVarVals := []*big.Int{
+			c.HomesteadBlock,
+			c.EIP150Block,
+			c.EIP155Block,
+			c.EIP158Block,
+			c.DAOForkBlock,
+			c.ByzantiumBlock,
+		}
+		for i, k := range expectedBlockVarVals {
+			if k == nil {
+				t.Errorf("%d: nil", i)
+			}
+			if k.Cmp(new(big.Int)) <= 0 {
+				t.Errorf("%d: 0", i)
+			}
+		}
+	}
+}

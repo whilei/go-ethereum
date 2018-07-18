@@ -29,40 +29,40 @@ var (
 	// TestnetGenesisHash = common.HexToHash("0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d")
 )
 
-// var (
-// // MainnetChainConfig is the chain parameters to run a node on the main network.
-// MainnetChainConfig = &ChainConfig{
-// 	ChainID:             big.NewInt(1),
-// 	HomesteadBlock:      big.NewInt(1150000),
-// 	DAOForkBlock:        big.NewInt(1920000),
-// 	DAOForkSupport:      true,
-// 	EIP150Block:         big.NewInt(2463000),
-// 	EIP150Hash:          common.HexToHash("0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0"),
-// 	EIP155Block:         big.NewInt(2675000),
-// 	EIP158Block:         big.NewInt(2675000),
-// 	ByzantiumBlock:      nil,
-// 	ConstantinopleBlock: nil,
-// 	Ethash:              new(EthashConfig),
-// }
+var (
+	// // MainnetChainConfig is the chain parameters to run a node on the main network.
+	// MainnetChainConfig = &ChainConfig{
+	// 	ChainID:             big.NewInt(1),
+	// 	HomesteadBlock:      big.NewInt(1150000),
+	// 	DAOForkBlock:        big.NewInt(1920000),
+	// 	DAOForkSupport:      true,
+	// 	EIP150Block:         big.NewInt(2463000),
+	// 	EIP150Hash:          common.HexToHash("0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0"),
+	// 	EIP155Block:         big.NewInt(2675000),
+	// 	EIP158Block:         big.NewInt(2675000),
+	// 	ByzantiumBlock:      nil,
+	// 	ConstantinopleBlock: nil,
+	// 	Ethash:              new(EthashConfig),
+	// }
 
-// TODO(whilei): Add these back
-// // AllEthashProtocolChanges contains every protocol change (EIPs) introduced
-// // and accepted by the Ethereum core developers into the Ethash consensus.
-// //
-// // This configuration is intentionally not using keyed fields to force anyone
-// // adding flags to the config to also have to set these fields.
-// AllEthashProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, new(EthashConfig), nil}
-//
-// // AllCliqueProtocolChanges contains every protocol change (EIPs) introduced
-// // and accepted by the Ethereum core developers into the Clique consensus.
-// //
-// // This configuration is intentionally not using keyed fields to force anyone
-// // adding flags to the config to also have to set these fields.
-// AllCliqueProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, &CliqueConfig{Period: 0, Epoch: 30000}}
-//
-// TestChainConfig = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, new(EthashConfig), nil}
-// TestRules       = TestChainConfig.Rules(new(big.Int))
-// )
+	// TODO(whilei): Add these back
+	// // AllEthashProtocolChanges contains every protocol change (EIPs) introduced
+	// // and accepted by the Ethereum core developers into the Ethash consensus.
+	// //
+	// // This configuration is intentionally not using keyed fields to force anyone
+	// // adding flags to the config to also have to set these fields.
+	// AllEthashProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, new(EthashConfig), nil}
+	//
+	// // AllCliqueProtocolChanges contains every protocol change (EIPs) introduced
+	// // and accepted by the Ethereum core developers into the Clique consensus.
+	// //
+	// // This configuration is intentionally not using keyed fields to force anyone
+	// // adding flags to the config to also have to set these fields.
+	AllCliqueProtocolChanges = &ChainConfig{ChainID: big.NewInt(1337), HomesteadBlock: big.NewInt(0), DAOForkBlock: nil, DAOForkSupport: false, EIP150Block: big.NewInt(0), EIP150Hash: common.Hash{}, EIP155Block: big.NewInt(0), EIP158Block: big.NewInt(0), ByzantiumBlock: big.NewInt(0), Clique: &CliqueConfig{Period: 0, Epoch: 30000}}
+	//
+	TestChainConfig = &ChainConfig{ChainID: big.NewInt(1), HomesteadBlock: big.NewInt(0), DAOForkBlock: nil, DAOForkSupport: false, EIP150Block: big.NewInt(0), EIP150Hash: common.Hash{}, EIP155Block: big.NewInt(0), EIP158Block: big.NewInt(0), ByzantiumBlock: big.NewInt(0), Clique: nil}
+	TestRules       = TestChainConfig.Rules(new(big.Int))
+)
 
 // // ChainConfig is the core config which determines the blockchain settings.
 // //

@@ -231,7 +231,7 @@ func (env *Env) VmContext() vm.Context {
 		Transfer:    env.Transfer,
 		GetHash:     vmTestBlockHash,
 		Origin:      env.origin,
-		// GasPrice:    new(big.Int).Set(msg.GasPrice()), // this gets set per test via env.Call
+		GasPrice:    big.NewInt(0), // new(big.Int).Set(msg.GasPrice()), // this gets set per test via env.Call
 		Coinbase:    env.coinbase,
 		GasLimit:    env.gasLimit.Uint64(),
 		BlockNumber: env.number,

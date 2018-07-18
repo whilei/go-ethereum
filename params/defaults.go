@@ -7,7 +7,7 @@ import (
 var (
 	DefaultConfigMainnet *SufficientChainConfig
 	DefaultConfigMorden  *SufficientChainConfig
-	TestChainConfig      *ChainConfig
+	// TestChainConfig      *ChainConfig
 )
 
 func init() {
@@ -18,13 +18,13 @@ func init() {
 	if err != nil {
 		glog.Fatal("Error parsing mainnet defaults from JSON:", err)
 	}
-	DefaultConfigMainnet.ChainConfig.SetForkBlockVals()
+	DefaultConfigMainnet.ChainConfig = DefaultConfigMainnet.ChainConfig.SetForkBlockVals()
 
 	DefaultConfigMorden, err = parseExternalChainConfig("/params/config/morden.json", assetsOpen)
 	if err != nil {
 		glog.Fatal("Error parsing morden defaults from JSON:", err)
 	}
-	DefaultConfigMorden.ChainConfig.SetForkBlockVals()
+	DefaultConfigMorden.ChainConfig = DefaultConfigMorden.ChainConfig.SetForkBlockVals()
 
-	TestChainConfig = DefaultConfigMorden.ChainConfig
+	// TestChainConfig = DefaultConfigMorden.ChainConfig
 }

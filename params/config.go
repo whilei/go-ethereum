@@ -186,14 +186,17 @@ func (c *ChainConfig) SetForkBlockVals() *ChainConfig {
 				if c.IsEIP155(f.Block) {
 					c.EIP155Block = f.Block
 				}
-				if c.IsEIP158(f.Block) {
-					c.EIP158Block = f.Block
-				}
+				c.EIP158Block = nil
+				// if c.IsEIP158(f.Block) {
+				// 	c.EIP158Block = f.Block
+				// }
 			}
 		case "Busybee":
 			if f.Block != nil {
 				if c.IsByzantium(f.Block) {
 					c.ByzantiumBlock = f.Block
+				} else {
+					c.ByzantiumBlock = nil
 				}
 			}
 		}
@@ -407,18 +410,19 @@ func (c *ChainConfig) IsEIP155(num *big.Int) bool {
 
 // IsEIP158 returns whether EIP158 is configured at or behind a given block number
 func (c *ChainConfig) IsEIP158(num *big.Int) bool {
-	if c.EIP158Block != nil {
-		return isForked(c.EIP158Block, num)
-	}
-	ff, fork, ok := c.GetFeature(num, "gastable")
-	if fork == nil || !ok {
-		return false
-	}
-	t, ok := ff.GetString("type")
-	if !ok {
-		return false
-	}
-	return t == "eip160" // PTAL again, hm.
+	return false
+	// if c.EIP158Block != nil {
+	// 	return isForked(c.EIP158Block, num)
+	// }
+	// ff, fork, ok := c.GetFeature(num, "gastable")
+	// if fork == nil || !ok {
+	// 	return false
+	// }
+	// t, ok := ff.GetString("type")
+	// if !ok {
+	// 	return false
+	// }
+	// return t == "eip160" // PTAL again, hm. (|| eip158 ??)
 }
 
 func (c *ChainConfig) IsByzantium(num *big.Int) bool {
@@ -583,6 +587,9 @@ func (c *ChainConfig) GetSigner(blockNumber *big.Int) types.Signer {
 // GasTable returns the gas table corresponding to the current fork
 // The returned GasTable's fields shouldn't, under any circumstances, be changed.
 func (c *ChainConfig) GasTable(num *big.Int) GasTable {
+	if num == nil {
+		return GasTableHomestead
+	}
 	f, _, configured := c.GetFeature(num, "gastable")
 	if !configured {
 		return GasTableHomestead

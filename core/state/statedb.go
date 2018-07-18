@@ -191,6 +191,7 @@ func (self *StateDB) Exist(addr common.Address) bool {
 // Empty returns whether the state object is either non-existent
 // or empty according to the EIP161 specification (balance = nonce = code = 0)
 func (self *StateDB) Empty(addr common.Address) bool {
+	// return false
 	so := self.getStateObject(addr)
 	return so == nil || so.empty()
 }

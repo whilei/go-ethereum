@@ -355,6 +355,11 @@ func formatSufficientChainConfigPretty(config *params.SufficientChainConfig) (s 
 			}
 		}
 	}
+	ss = append(ss, printable{0, "HomesteadBlock", config.ChainConfig.HomesteadBlock})
+	ss = append(ss, printable{0, "EIP150Block", config.ChainConfig.EIP150Block})
+	ss = append(ss, printable{0, "EIP155Block", config.ChainConfig.EIP155Block})
+	ss = append(ss, printable{0, "EIP158Block", config.ChainConfig.EIP158Block})
+	ss = append(ss, printable{0, "ByzantiumBlock", config.ChainConfig.ByzantiumBlock})
 	ss = append(ss, printable{1, "Bad hashes", nil})
 	for _, v := range config.ChainConfig.BadHashes {
 		ss = append(ss, printable{2, "Block", v.Block})
@@ -508,7 +513,7 @@ func formatBlockPretty(b *types.Block) (ss []printable) {
 	ss = append(ss, printable{1, "Bloom (string)", string(bh.Bloom.Bytes())})
 	ss = append(ss, printable{1, "Gas limit", bh.GasLimit})
 	ss = append(ss, printable{1, "Gas used", bh.GasUsed})
-	ss = append(ss, printable{1, "Extra data (bytes)", bh.Extra})
+	ss = append(ss, printable{1, "Extra data (bytes)", string(bh.Extra)})
 	return ss
 }
 

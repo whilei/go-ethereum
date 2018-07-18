@@ -184,8 +184,9 @@ func (tm *testMatcher) runTestFile(t *testing.T, path, name string, runTest inte
 	// Load the file as map[string]<testType>.
 	m := makeMapFromTestFunc(runTest)
 	if err := readJSONFile(path, m.Addr().Interface()); err != nil {
-		if len(filepath.SplitList(path)) == 2 {
-			t.Skip("skipping old test using new test runner")
+		// NOTE(whilei): incoming(new vm tests are nested, so dir)
+		if len(filepath.SplitList(path)) == 3 && strings.Contains(err.Error(), "cannot unmarshal array") {
+			t.Skipf("%s: skipping old test using new test runner", path)
 		} else {
 			t.Fatal(err)
 		}

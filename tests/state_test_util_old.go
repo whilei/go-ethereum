@@ -202,6 +202,9 @@ func runStateTest(ruleSet RuleSet, test VmTest) error {
 	if common.HexToHash(test.PostStateRoot) != root {
 		return wrapStateErr(fmt.Errorf("Post state root error. Expected: %s have: %x", test.PostStateRoot, root))
 	}
+	if err := statedb.Database().TrieDB().Commit(root, false); err != nil {
+		return err
+	}
 
 	// check logs
 	if len(test.Logs) > 0 {
@@ -246,7 +249,7 @@ func RunState(ruleSet RuleSet, db ethdb.Database, statedb *state.StateDB, env, t
 	}
 	addr := crypto.PubkeyToAddress(crypto.ToECDSA(key).PublicKey)
 	//func NewMessage(from common.Address, to *common.Address, nonce uint64, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte, checkNonce bool) Message {
-	message := types.NewMessage(addr, to, nonce, value, gas.Uint64(), price, data, false)
+	message := types.NewMessage(addr, to, nonce, value, gas.Uint64(), price, data, true)
 	vmenv := NewEnvFromMap(ruleSet, statedb, env, tx)
 	vmenv.origin = addr
 
