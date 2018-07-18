@@ -151,12 +151,17 @@ func (t *StateTest) Run(subtest StateSubtest, vmconfig vm.Config) (*state.StateD
 		statedb.RevertToSnapshot(snapshot)
 	}
 	if logs := rlpHash(statedb.Logs()); logs != common.Hash(post.Logs) {
+		// return statedb, fmt.Errorf("post state logs hash mismatch: got %x, want %x\n%s\n%s", logs, post.Logs, spew.Sprint(statedb.Logs()), string(statedb.RawDump(nil)))
 		return statedb, fmt.Errorf("post state logs hash mismatch: got %x, want %x\n%s", logs, post.Logs, spew.Sprint(statedb.Logs()))
 	}
 	root, err := statedb.Commit(config.IsEIP158(block.Number()))
 	if err != nil {
 		return statedb, err
 	}
+	if err := statedb.Database().TrieDB().Commit(root, false); err != nil {
+		return statedb, fmt.Errorf("%s", err.Error())
+	}
+
 	if root != common.Hash(post.Root) {
 		return statedb, fmt.Errorf("post state root mismatch: got %x, want %x [didrevert=%v usedGas=%d failed=%v]\n%v", root, post.Root, didRevert, usedGas, failed, string(statedb.Dump(nil)))
 	}
