@@ -270,7 +270,13 @@ func RunState(ruleSet RuleSet, db ethdb.Database, statedb *state.StateDB, env, t
 	if core.IsNonceErr(err) || core.IsInvalidTxErr(err) || core.IsGasLimitErr(err) {
 		statedb.RevertToSnapshot(snapshot)
 	}
-	statedb.Commit(false)
+	root, err := statedb.Commit(false)
+	if err != nil {
+		panic("COMMIT STATE ERR: " + err.Error())
+	}
+	if err := statedb.Database().TrieDB().Commit(root, false); err != nil {
+		panic("COMMIT STATE TRIE ERR: " + err.Error())
+	}
 
 	return ret, vmenv.state.Logs(), vmenv.Gas, err
 }
