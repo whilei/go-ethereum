@@ -173,8 +173,11 @@ func runBlockTest(homesteadBlock, gasPriceFork *big.Int, test *BlockTest) error 
 	evmux := new(event.TypeMux)
 
 	params.DefaultConfigMainnet.ChainConfig.ForkByName("Homestead").Block = homesteadBlock
+	params.DefaultConfigMainnet.ChainConfig.HomesteadBlock = homesteadBlock
 	if gasPriceFork != nil {
 		params.DefaultConfigMainnet.ChainConfig.ForkByName("GasReprice").Block = gasPriceFork
+		params.DefaultConfigMainnet.ChainConfig.EIP155Block = gasPriceFork
+		params.DefaultConfigMainnet.ChainConfig.EIP158Block = gasPriceFork
 	}
 
 	chain, err := core.NewBlockChain(db, params.DefaultConfigMainnet.ChainConfig, ethash.NewShared(), evmux)
