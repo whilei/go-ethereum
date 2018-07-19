@@ -268,7 +268,7 @@ func RunState(ruleSet RuleSet, db ethdb.Database, statedb *state.StateDB, env, t
 
 	ret, usedGas, _, err := core.ApplyMessage(vmenv.evm, message, gaspool)
 
-	vmenv.Gas.Set(new(big.Int).SetUint64(usedGas))
+	vmenv.Gas.SetUint64(usedGas)
 
 	if core.IsNonceErr(err) || core.IsInvalidTxErr(err) || core.IsGasLimitErr(err) {
 		statedb.RevertToSnapshot(snapshot)
