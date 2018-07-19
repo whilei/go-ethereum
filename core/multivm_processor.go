@@ -175,7 +175,6 @@ Loop:
 			Topics:      log.Topics,
 			Data:        log.Data,
 			BlockNumber: header.Number.Uint64(),
-			TxHash:      tx.Hash(),
 		}
 		// (, log.Topics, log.Data, header.Number.Uint64())
 		statedb.AddLog(statelog)

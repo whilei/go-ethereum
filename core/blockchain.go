@@ -1107,6 +1107,11 @@ func (bc *BlockChain) HasBlock(hash common.Hash) bool {
 	return bc.GetBlock(hash) != nil
 }
 
+func (bc *BlockChain) HasState(hash common.Hash) bool {
+	_, err := bc.stateCache.OpenTrie(hash)
+	return err == nil
+}
+
 // HasBlockAndState checks if a block and associated state trie is fully present
 // in the database or not, caching it if present.
 func (bc *BlockChain) HasBlockAndState(hash common.Hash) bool {
@@ -1116,8 +1121,7 @@ func (bc *BlockChain) HasBlockAndState(hash common.Hash) bool {
 		return false
 	}
 	// Ensure the associated state is also present
-	_, err := state.New(block.Root(), state.NewDatabase(bc.chainDb))
-	return err == nil
+	return bc.HasState(block.Root())
 }
 
 // GetBlock retrieves a block from the database by hash, caching it if found.
@@ -1657,6 +1661,10 @@ func (bc *BlockChain) InsertChain(chain types.Blocks) (res *ChainInsertResult) {
 		// Write state changes to database
 		root, err := state.Commit(bc.Config().IsEIP158(block.Number()))
 		if err != nil {
+			res.Error = err
+			return
+		}
+		if err := state.Reset(root); err != nil {
 			res.Error = err
 			return
 		}
