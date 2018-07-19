@@ -288,7 +288,7 @@ func TestChainConfigIntegrationBlockVars(t *testing.T) {
 			c.HomesteadBlock,
 			c.EIP150Block,
 			c.EIP155Block,
-			c.EIP158Block,
+			// c.EIP158Block,
 			c.DAOForkBlock,
 			c.ByzantiumBlock,
 		}
