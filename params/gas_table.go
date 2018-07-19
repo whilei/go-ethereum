@@ -63,7 +63,7 @@ var (
 		CreateBySuicide: 25000,
 	}
 
-	GasTableEIP158 = GasTable{
+	GasTableEIP160 = GasTable{
 		ExtcodeSize: 700,
 		ExtcodeCopy: 700,
 		Balance:     400,

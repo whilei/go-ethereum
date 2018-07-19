@@ -145,6 +145,8 @@ type ChainConfig struct {
 	EIP155Block *big.Int `json:"-"` // EIP155 HF block
 	EIP158Block *big.Int `json:"-"` // EIP158 HF block
 
+	EIP160Block *big.Int `json:"-"` // EIP160Block (ETC @ Diehard)
+
 	ByzantiumBlock *big.Int `json:"-"` // Byzantium switch block (nil = no fork, 0 = already on byzantium)
 	// ConstantinopleBlock *big.Int `json:"-"` // Constantinople switch block (nil = no fork, 0 = already activated)
 	Clique *CliqueConfig `json:"clique,omitempty"`
@@ -186,7 +188,9 @@ func (c *ChainConfig) SetForkBlockVals() *ChainConfig {
 				if c.IsEIP155(f.Block) {
 					c.EIP155Block = f.Block
 				}
-				c.EIP158Block = nil
+				if c.IsEIP160(f.Block) {
+					c.EIP160Block = f.Block
+				}
 				// if c.IsEIP158(f.Block) {
 				// 	c.EIP158Block = f.Block
 				// }
@@ -195,12 +199,12 @@ func (c *ChainConfig) SetForkBlockVals() *ChainConfig {
 			if f.Block != nil {
 				if c.IsByzantium(f.Block) {
 					c.ByzantiumBlock = f.Block
-				} else {
-					c.ByzantiumBlock = nil
 				}
 			}
 		}
 	}
+	c.EIP158Block = nil // TODO(whilei): This is, AFAIK, not implemented ever in ETC. So configuration specs are undecided (eg. what name, schema, hardfork)
+	c.ChainID = c.GetChainID()
 	return c
 }
 
@@ -383,9 +387,6 @@ func (c *ChainConfig) IsEIP150(num *big.Int) bool {
 
 // IsDiehard returns whether num is greater than or equal to the Diehard block, but less than explosion.
 func (c *ChainConfig) IsDiehard(num *big.Int) bool {
-	if c.EIP158Block != nil {
-		return isForked(c.EIP158Block, num)
-	}
 	fork := c.ForkByName("Diehard")
 	if fork == nil || fork.Block == nil || num == nil {
 		return false
@@ -410,19 +411,19 @@ func (c *ChainConfig) IsEIP155(num *big.Int) bool {
 
 // IsEIP158 returns whether EIP158 is configured at or behind a given block number
 func (c *ChainConfig) IsEIP158(num *big.Int) bool {
-	return false
-	// if c.EIP158Block != nil {
-	// 	return isForked(c.EIP158Block, num)
-	// }
-	// ff, fork, ok := c.GetFeature(num, "gastable")
-	// if fork == nil || !ok {
-	// 	return false
-	// }
-	// t, ok := ff.GetString("type")
-	// if !ok {
-	// 	return false
-	// }
-	// return t == "eip160" // PTAL again, hm. (|| eip158 ??)
+	return isForked(c.EIP158Block, num)
+}
+
+func (c *ChainConfig) IsEIP160(num *big.Int) bool {
+	ff, fork, ok := c.GetFeature(num, "gastable")
+	if fork == nil || !ok {
+		return false
+	}
+	t, ok := ff.GetString("type")
+	if !ok {
+		return false
+	}
+	return t == "eip160"
 }
 
 func (c *ChainConfig) IsByzantium(num *big.Int) bool {
@@ -604,7 +605,7 @@ func (c *ChainConfig) GasTable(num *big.Int) GasTable {
 	case "eip150":
 		return GasTableEIP150
 	case "eip160":
-		return GasTableEIP158 // PTAL Hm.
+		return GasTableEIP160 // PTAL Hm.
 	default:
 		panic(fmt.Errorf("Unsupported gastable value '%v' at block: %v", name, num))
 	}
