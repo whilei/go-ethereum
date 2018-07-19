@@ -563,8 +563,10 @@ func (s *StateDB) Finalise(deleteEmptyObjects bool) {
 // It is called in between transactions to get the root hash that
 // goes into transaction receipts.
 func (s *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
-	// s.Finalise(deleteEmptyObjects)
-	s.Finalise(false)
+	if deleteEmptyObjects {
+		panic("finalise with delete empty objects called: this requires EIP158/161 adoption")
+	}
+	s.Finalise(deleteEmptyObjects)
 	return s.trie.Hash()
 }
 
