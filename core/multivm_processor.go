@@ -182,7 +182,14 @@ Loop:
 	usedGas := vm.UsedGas()
 	*totalUsedGas += usedGas.Uint64()
 
-	receipt := types.NewReceipt(statedb.IntermediateRoot(false).Bytes(), false, *totalUsedGas)
+	var root []byte
+	// if config.IsByzantium(header.Number) {
+	// 	statedb.Finalise(config.IsEIP158(header.Number))
+	// } else {
+	root = statedb.IntermediateRoot(config.IsEIP158(header.Number)).Bytes()
+	// }
+
+	receipt := types.NewReceipt(root, false, *totalUsedGas)
 	receipt.TxHash = tx.Hash()
 	receipt.GasUsed = usedGas.Uint64()
 	if tx.To() == nil {
@@ -196,5 +203,5 @@ Loop:
 	glog.V(logger.Debug).Infoln(receipt)
 
 	vm.Free()
-	return receipt, logs, usedGas.Uint64(), nil
+	return receipt, logs, *totalUsedGas, nil
 }
