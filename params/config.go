@@ -605,7 +605,7 @@ func (c *ChainConfig) GasTable(num *big.Int) GasTable {
 	case "eip150":
 		return GasTableEIP150
 	case "eip160":
-		return GasTableEIP160 // PTAL Hm.
+		return GasTableEIP160
 	default:
 		panic(fmt.Errorf("Unsupported gastable value '%v' at block: %v", name, num))
 	}
