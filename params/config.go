@@ -579,7 +579,7 @@ func (c *ChainConfig) GetSigner(blockNumber *big.Int) types.Signer {
 			panic(fmt.Errorf("chainID is not set for EIP-155 at %v", blockNumber))
 		}
 	}
-	if c.ChainID != nil {
+	if c.ChainID != nil && c.IsEIP155(blockNumber) {
 		return types.NewChainIdSigner(c.ChainID)
 	}
 	return types.BasicSigner{}
