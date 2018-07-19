@@ -47,6 +47,8 @@ var (
 		Calls:       40,
 		Suicide:     0,
 		ExpByte:     10,
+
+		CreateBySuicide: 0,
 	}
 
 	// GasTableEIP150 contain the gas re-prices for
