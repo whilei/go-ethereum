@@ -18,12 +18,16 @@ echo $noteid
 echo 'go test -v ./$path... &> got.$noteid.out'
 go test -v ./$path... &> got.$noteid.out
 echo 'cat got.$noteid.out | grep FAIL | wc -l'
-cat got.$noteid.out | grep FAIL | wc -l
+echo "PASS: $(cat got.$noteid.out | grep PASS | wc -l)"
+echo "SKIP: $(cat got.$noteid.out | grep SKIP | wc -l)"
+echo "FAIL: $(cat got.$noteid.out | grep FAIL | wc -l)"
 
 echo 'go test -tags=sputnikvm -v ./$path... &> got.svm.$noteid.out'
 go test -tags=sputnikvm -v ./$path... &> got.svm.$noteid.out
 echo 'cat got.svm.$noteid.out | grep FAIL | wc -l'
-cat got.svm.$noteid.out | grep FAIL | wc -l
+echo "PASS: $(cat got.svm.$noteid.out | grep PASS | wc -l)"
+echo "SKIP: $(cat got.svm.$noteid.out | grep SKIP | wc -l)"
+echo "FAIL: $(cat got.svm.$noteid.out | grep FAIL | wc -l)"
 
 unset GOMAXPROCS
 

@@ -188,7 +188,7 @@ func (tm *testMatcher) runTestFile(t *testing.T, path, name string, runTest inte
 		if len(filepath.SplitList(path)) == 3 && strings.Contains(err.Error(), "cannot unmarshal array") {
 			t.Skipf("%s: skipping old test using new test runner", path)
 		} else {
-			t.Fatal(err)
+			t.Fatalf("err=%v, path=%s", err, path)
 		}
 	}
 
