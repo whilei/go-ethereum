@@ -48,9 +48,6 @@ func ApplyMultiVmTransaction(config *params.ChainConfig, bc *BlockChain, gp *Gas
 	}
 
 	currentNumber := header.Number
-	homesteadFork := config.ForkByName("Homestead")
-	eip150Fork := config.ForkByName("GasReprice")
-	eip160Fork := config.ForkByName("Diehard")
 
 	var vm *sputnikvm.VM
 	if config.ChainID.Cmp(params.DefaultConfigMainnet.ChainConfig.ChainID) == 0 || config.ChainID.Cmp(common.Big1) == 0 {
