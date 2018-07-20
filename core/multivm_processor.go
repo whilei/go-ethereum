@@ -23,7 +23,7 @@ var UseSputnikVM = false
 // chain config and state. Note that we use the name of the chain
 // config to determine which hard fork to use so ClassicVM's gas table
 // would not be used.
-func ApplyMultiVmTransaction(config *params.ChainConfig, bc *BlockChain, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, totalUsedGas *uint64) (*types.Receipt, []*types.Log, uint64, error) {
+func ApplyMultiVmTransaction(config *params.ChainConfig, bc *BlockChain, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64) (*types.Receipt, uint64, error) {
 	tx.SetSigner(config.GetSigner(header.Number))
 
 	from, err := tx.From()
@@ -54,32 +54,32 @@ func ApplyMultiVmTransaction(config *params.ChainConfig, bc *BlockChain, gp *Gas
 
 	var vm *sputnikvm.VM
 	if config.ChainID.Cmp(params.DefaultConfigMainnet.ChainConfig.ChainID) == 0 || config.ChainID.Cmp(common.Big1) == 0 {
-		if eip160Fork.Block != nil && currentNumber.Cmp(eip160Fork.Block) >= 0 {
+		if config.IsEIP160(currentNumber) {
 			vm = sputnikvm.NewEIP160(&vmtx, &vmheader)
-		} else if eip150Fork.Block != nil && currentNumber.Cmp(eip150Fork.Block) >= 0 {
+		} else if config.IsEIP150(currentNumber) {
 			vm = sputnikvm.NewEIP150(&vmtx, &vmheader)
-		} else if homesteadFork.Block != nil && currentNumber.Cmp(homesteadFork.Block) >= 0 {
+		} else if config.IsHomestead(currentNumber) {
 			vm = sputnikvm.NewHomestead(&vmtx, &vmheader)
 		} else {
 			vm = sputnikvm.NewFrontier(&vmtx, &vmheader)
 		}
 	} else if config.ChainID.Cmp(params.DefaultConfigMorden.ChainConfig.ChainID) == 0 {
-		if eip160Fork.Block != nil && currentNumber.Cmp(eip160Fork.Block) >= 0 {
+		if config.IsEIP160(currentNumber) {
 			vm = sputnikvm.NewMordenEIP160(&vmtx, &vmheader)
-		} else if eip150Fork.Block != nil && currentNumber.Cmp(eip150Fork.Block) >= 0 {
+		} else if config.IsEIP150(currentNumber) {
 			vm = sputnikvm.NewMordenEIP150(&vmtx, &vmheader)
-		} else if homesteadFork.Block != nil && currentNumber.Cmp(homesteadFork.Block) >= 0 {
+		} else if config.IsHomestead(currentNumber) {
 			vm = sputnikvm.NewMordenHomestead(&vmtx, &vmheader)
 		} else {
 			vm = sputnikvm.NewMordenFrontier(&vmtx, &vmheader)
 		}
 	} else {
 		sputnikvm.SetCustomInitialNonce(big.NewInt(int64(state.StartingNonce)))
-		if eip160Fork.Block != nil && currentNumber.Cmp(eip160Fork.Block) >= 0 {
+		if config.IsEIP160(currentNumber) {
 			vm = sputnikvm.NewCustomEIP160(&vmtx, &vmheader)
-		} else if eip150Fork.Block != nil && currentNumber.Cmp(eip150Fork.Block) >= 0 {
+		} else if config.IsEIP150(currentNumber) {
 			vm = sputnikvm.NewCustomEIP150(&vmtx, &vmheader)
-		} else if homesteadFork.Block != nil && currentNumber.Cmp(homesteadFork.Block) >= 0 {
+		} else if config.IsHomestead(currentNumber) {
 			vm = sputnikvm.NewCustomHomestead(&vmtx, &vmheader)
 		} else {
 			vm = sputnikvm.NewCustomFrontier(&vmtx, &vmheader)
@@ -176,22 +176,21 @@ Loop:
 			Data:        log.Data,
 			BlockNumber: header.Number.Uint64(),
 		}
-		// (, log.Topics, log.Data, header.Number.Uint64())
 		statedb.AddLog(statelog)
 	}
-	usedGas := vm.UsedGas()
-	*totalUsedGas += usedGas.Uint64()
+	gas := vm.UsedGas().Uint64()
+	*usedGas += gas
 
 	var root []byte
-	// if config.IsByzantium(header.Number) {
-	// 	statedb.Finalise(config.IsEIP158(header.Number))
-	// } else {
-	root = statedb.IntermediateRoot(config.IsEIP158(header.Number)).Bytes()
-	// }
+	if config.IsByzantium(header.Number) {
+		statedb.Finalise(config.IsEIP158(header.Number))
+	} else {
+		root = statedb.IntermediateRoot(config.IsEIP158(header.Number)).Bytes()
+	}
 
-	receipt := types.NewReceipt(root, false, *totalUsedGas)
+	receipt := types.NewReceipt(root, false, *usedGas)
 	receipt.TxHash = tx.Hash()
-	receipt.GasUsed = usedGas.Uint64()
+	receipt.GasUsed = gas
 	if tx.To() == nil {
 		receipt.ContractAddress = crypto.CreateAddress(from, tx.Nonce())
 	}
@@ -203,5 +202,5 @@ Loop:
 	glog.V(logger.Debug).Infoln(receipt)
 
 	vm.Free()
-	return receipt, logs, *totalUsedGas, nil
+	return receipt, logs, *usedGas, nil
 }

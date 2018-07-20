@@ -89,7 +89,7 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB) (ty
 			allLogs = append(allLogs, receipt.Logs...)
 			continue
 		}
-		receipt, _, _, err := ApplyMultiVmTransaction(p.config, p.bc, gp, statedb, header, tx, usedGas)
+		receipt, _, err := ApplyMultiVmTransaction(p.config, p.bc, gp, statedb, header, tx, usedGas)
 		if err != nil {
 			return nil, nil, 0, err
 		}
@@ -127,7 +127,7 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 	// Update the state with pending changes
 	var root []byte
 	if config.IsByzantium(header.Number) {
-		statedb.Finalise(true)
+		statedb.Finalise(config.IsEIP158(header.Number))
 	} else {
 		root = statedb.IntermediateRoot(config.IsEIP158(header.Number)).Bytes()
 	}
