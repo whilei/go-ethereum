@@ -45,7 +45,6 @@ var (
 	// 	Ethash:              new(EthashConfig),
 	// }
 
-	// TODO(whilei): Add these back
 	// // AllEthashProtocolChanges contains every protocol change (EIPs) introduced
 	// // and accepted by the Ethereum core developers into the Ethash consensus.
 	// //
@@ -58,9 +57,9 @@ var (
 	// //
 	// // This configuration is intentionally not using keyed fields to force anyone
 	// // adding flags to the config to also have to set these fields.
-	AllCliqueProtocolChanges = &ChainConfig{ChainID: big.NewInt(1337), HomesteadBlock: big.NewInt(0), DAOForkBlock: nil, DAOForkSupport: false, EIP150Block: big.NewInt(0), EIP150Hash: common.Hash{}, EIP155Block: big.NewInt(0), EIP158Block: big.NewInt(0), ByzantiumBlock: big.NewInt(0), Clique: &CliqueConfig{Period: 0, Epoch: 30000}}
+	AllCliqueProtocolChanges = &ChainConfig{ChainID: big.NewInt(1337), HomesteadBlock: big.NewInt(0), DAOForkBlock: nil, DAOForkSupport: false, EIP150Block: big.NewInt(0), EIP150Hash: common.Hash{}, EIP155Block: big.NewInt(0), EIP158Block: nil, EIP160Block: big.NewInt(0), ByzantiumBlock: big.NewInt(0), Clique: &CliqueConfig{Period: 0, Epoch: 30000}}
 	//
-	TestChainConfig = &ChainConfig{ChainID: big.NewInt(1), HomesteadBlock: big.NewInt(0), DAOForkBlock: nil, DAOForkSupport: false, EIP150Block: big.NewInt(0), EIP150Hash: common.Hash{}, EIP155Block: big.NewInt(0), EIP158Block: big.NewInt(0), ByzantiumBlock: big.NewInt(0), Clique: nil}
+	TestChainConfig = &ChainConfig{ChainID: big.NewInt(1), HomesteadBlock: big.NewInt(0), DAOForkBlock: nil, DAOForkSupport: false, EIP150Block: big.NewInt(0), EIP150Hash: common.Hash{}, EIP155Block: big.NewInt(0), EIP158Block: big.NewInt(0), EIP160Block: big.NewInt(0), ByzantiumBlock: big.NewInt(0), Clique: nil}
 	TestRules       = TestChainConfig.Rules(new(big.Int))
 )
 
