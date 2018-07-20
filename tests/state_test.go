@@ -49,7 +49,7 @@ func TestState(t *testing.T) {
 				}
 				withTrace(t, test.gasLimit(subtest), subtest, func(vmconfig vm.Config) error {
 					// TODO(whilei)
-					// t.Skipf("skipping: %s", "incoming state test")
+					t.Skipf("skipping: %s", "incoming state test")
 					_, err := test.Run(subtest, vmconfig)
 					return st.checkFailure(t, name, err)
 				})
