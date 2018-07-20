@@ -24,7 +24,7 @@ import (
 )
 
 func BenchmarkStateCall1024(b *testing.B) {
-	fn := filepath.Join(oldStateTestDir, "stCallCreateCallCodeTestState.json")
+	fn := filepath.Join(oldStateTestDir, "stCallCreateCallCodeTest.json")
 	if err := BenchVmTest(fn, bconf{"Call1024BalanceTooLow", true, os.Getenv("JITVM") == "true"}, b); err != nil {
 		b.Error(err)
 	}
@@ -35,7 +35,7 @@ func TestStateStateSystemOperations(t *testing.T) {
 		HomesteadBlock: big.NewInt(1000000),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "stSystemOperationsTestState.json")
+	fn := filepath.Join(oldStateTestDir, "stSystemOperationsTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -79,7 +79,7 @@ func TestStateStateSpecial(t *testing.T) {
 		HomesteadBlock: big.NewInt(1000000),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "stSpecialTestState.json")
+	fn := filepath.Join(oldStateTestDir, "stSpecialTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -90,7 +90,7 @@ func TestStateStateRefund(t *testing.T) {
 		HomesteadBlock: big.NewInt(1000000),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "stRefundTestState.json")
+	fn := filepath.Join(oldStateTestDir, "stRefundTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -101,7 +101,7 @@ func TestStateStateBlockHash(t *testing.T) {
 		HomesteadBlock: big.NewInt(1000000),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "stBlockHashTestState.json")
+	fn := filepath.Join(oldStateTestDir, "stBlockHashTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -112,7 +112,7 @@ func TestStateStateInitCode(t *testing.T) {
 		HomesteadBlock: big.NewInt(1000000),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "stInitCodeTestState.json")
+	fn := filepath.Join(oldStateTestDir, "stInitCodeTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -134,7 +134,7 @@ func TestStateStateTransaction(t *testing.T) {
 		HomesteadBlock: big.NewInt(1000000),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "stTransactionTestState.json")
+	fn := filepath.Join(oldStateTestDir, "stTransactionTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -145,7 +145,7 @@ func TestStateStateTransition(t *testing.T) {
 		HomesteadBlock: big.NewInt(1000000),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "stTransitionTestState.json")
+	fn := filepath.Join(oldStateTestDir, "stTransitionTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -156,7 +156,7 @@ func TestStateCallCreateCallCode(t *testing.T) {
 		HomesteadBlock: big.NewInt(1000000),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "stCallCreateCallCodeTestState.json")
+	fn := filepath.Join(oldStateTestDir, "stCallCreateCallCodeTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -178,7 +178,7 @@ func TestStateDelegateCall(t *testing.T) {
 		HomesteadBlock: big.NewInt(1000000),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "stDelegatecallTestState.json")
+	fn := filepath.Join(oldStateTestDir, "stDelegatecallTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -189,7 +189,7 @@ func TestStateMemory(t *testing.T) {
 		HomesteadBlock: big.NewInt(1000000),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "stMemoryTestState.json")
+	fn := filepath.Join(oldStateTestDir, "stMemoryTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -203,7 +203,7 @@ func TestStateMemoryStress(t *testing.T) {
 	if os.Getenv("TEST_VM_COMPLEX") == "" {
 		t.Skip()
 	}
-	fn := filepath.Join(oldStateTestDir, "stMemoryStressTestState.json")
+	fn := filepath.Join(oldStateTestDir, "stMemoryStressTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -217,7 +217,7 @@ func TestStateQuadraticComplexity(t *testing.T) {
 	if os.Getenv("TEST_VM_COMPLEX") == "" {
 		t.Skip()
 	}
-	fn := filepath.Join(oldStateTestDir, "stQuadraticComplexityTestState.json")
+	fn := filepath.Join(oldStateTestDir, "stQuadraticComplexityTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -228,7 +228,7 @@ func TestStateSolidity(t *testing.T) {
 		HomesteadBlock: big.NewInt(1000000),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "stSolidityTestState.json")
+	fn := filepath.Join(oldStateTestDir, "stSolidityTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -239,7 +239,7 @@ func TestStateWallet(t *testing.T) {
 		HomesteadBlock: big.NewInt(1000000),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "stWalletTestState.json")
+	fn := filepath.Join(oldStateTestDir, "stWalletTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -264,7 +264,7 @@ func TestStateHomesteadStateSystemOperations(t *testing.T) {
 		HomesteadBlock: new(big.Int),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "Homestead", "stSystemOperationsTestState.json")
+	fn := filepath.Join(oldStateTestDir, "Homestead", "stSystemOperationsTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -286,7 +286,7 @@ func TestStateHomesteadStateRecursiveCreate(t *testing.T) {
 		HomesteadBlock: new(big.Int),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "Homestead", "stSpecialTestState.json")
+	fn := filepath.Join(oldStateTestDir, "Homestead", "stSpecialTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -297,7 +297,7 @@ func TestStateHomesteadStateRefund(t *testing.T) {
 		HomesteadBlock: new(big.Int),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "Homestead", "stRefundTestState.json")
+	fn := filepath.Join(oldStateTestDir, "Homestead", "stRefundTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -308,7 +308,7 @@ func TestStateHomesteadStateInitCode(t *testing.T) {
 		HomesteadBlock: new(big.Int),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "Homestead", "stInitCodeTestState.json")
+	fn := filepath.Join(oldStateTestDir, "Homestead", "stInitCodeTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -330,7 +330,7 @@ func TestStateHomesteadStateTransaction(t *testing.T) {
 		HomesteadBlock: new(big.Int),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "Homestead", "stTransactionTestState.json")
+	fn := filepath.Join(oldStateTestDir, "Homestead", "stTransactionTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -341,7 +341,7 @@ func TestStateHomesteadCallCreateCallCode(t *testing.T) {
 		HomesteadBlock: new(big.Int),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "Homestead", "stCallCreateCallCodeTestState.json")
+	fn := filepath.Join(oldStateTestDir, "Homestead", "stCallCreateCallCodeTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -363,7 +363,7 @@ func TestStateHomesteadMemory(t *testing.T) {
 		HomesteadBlock: new(big.Int),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "Homestead", "stMemoryTestState.json")
+	fn := filepath.Join(oldStateTestDir, "Homestead", "stMemoryTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -377,7 +377,7 @@ func TestStateHomesteadMemoryStress(t *testing.T) {
 	if os.Getenv("TEST_VM_COMPLEX") == "" {
 		t.Skip()
 	}
-	fn := filepath.Join(oldStateTestDir, "Homestead", "stMemoryStressTestState.json")
+	fn := filepath.Join(oldStateTestDir, "Homestead", "stMemoryStressTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -391,7 +391,7 @@ func TestStateHomesteadQuadraticComplexity(t *testing.T) {
 	if os.Getenv("TEST_VM_COMPLEX") == "" {
 		t.Skip()
 	}
-	fn := filepath.Join(oldStateTestDir, "Homestead", "stQuadraticComplexityTestState.json")
+	fn := filepath.Join(oldStateTestDir, "Homestead", "stQuadraticComplexityTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -402,7 +402,7 @@ func TestStateHomesteadWallet(t *testing.T) {
 		HomesteadBlock: new(big.Int),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "Homestead", "stWalletTestState.json")
+	fn := filepath.Join(oldStateTestDir, "Homestead", "stWalletTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -437,7 +437,7 @@ func TestStateEIP150Specific(t *testing.T) {
 		HomesteadGasRepriceBlock: big.NewInt(2457000),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "EIP150", "stEIPSpecificTestState.json")
+	fn := filepath.Join(oldStateTestDir, "EIP150", "stEIPSpecificTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -473,7 +473,7 @@ func TestStateEIP150HomesteadStateSystemOperations(t *testing.T) {
 		HomesteadGasRepriceBlock: big.NewInt(2457000),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "EIP150", "Homestead", "stSystemOperationsTestState.json")
+	fn := filepath.Join(oldStateTestDir, "EIP150", "Homestead", "stSystemOperationsTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -498,7 +498,7 @@ func TestStateEIP150HomesteadStateRecursiveCreate(t *testing.T) {
 		HomesteadGasRepriceBlock: big.NewInt(2457000),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "EIP150", "Homestead", "stSpecialTestState.json")
+	fn := filepath.Join(oldStateTestDir, "EIP150", "Homestead", "stSpecialTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -511,7 +511,7 @@ func TestStateEIP150HomesteadStateRefund(t *testing.T) {
 		DiehardBlock:             big.NewInt(2457000),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "EIP150", "Homestead", "stRefundTestState.json")
+	fn := filepath.Join(oldStateTestDir, "EIP150", "Homestead", "stRefundTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -523,7 +523,7 @@ func TestStateEIP150HomesteadStateInitCode(t *testing.T) {
 		HomesteadGasRepriceBlock: big.NewInt(2457000),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "EIP150", "Homestead", "stInitCodeTestState.json")
+	fn := filepath.Join(oldStateTestDir, "EIP150", "Homestead", "stInitCodeTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -547,7 +547,7 @@ func TestStateEIP150HomesteadStateTransaction(t *testing.T) {
 		HomesteadGasRepriceBlock: big.NewInt(2457000),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "EIP150", "Homestead", "stTransactionTestState.json")
+	fn := filepath.Join(oldStateTestDir, "EIP150", "Homestead", "stTransactionTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -559,7 +559,7 @@ func TestStateEIP150HomesteadCallCreateCallCode(t *testing.T) {
 		HomesteadGasRepriceBlock: big.NewInt(2457000),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "EIP150", "Homestead", "stCallCreateCallCodeTestState.json")
+	fn := filepath.Join(oldStateTestDir, "EIP150", "Homestead", "stCallCreateCallCodeTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -583,7 +583,7 @@ func TestStateEIP150HomesteadMemory(t *testing.T) {
 		HomesteadGasRepriceBlock: big.NewInt(2457000),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "EIP150", "Homestead", "stMemoryTestState.json")
+	fn := filepath.Join(oldStateTestDir, "EIP150", "Homestead", "stMemoryTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -598,7 +598,7 @@ func TestStateEIP150HomesteadMemoryStress(t *testing.T) {
 	if os.Getenv("TEST_VM_COMPLEX") == "" {
 		t.Skip()
 	}
-	fn := filepath.Join(oldStateTestDir, "EIP150", "Homestead", "stMemoryStressTestState.json")
+	fn := filepath.Join(oldStateTestDir, "EIP150", "Homestead", "stMemoryStressTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -613,7 +613,7 @@ func TestStateEIP150HomesteadQuadraticComplexity(t *testing.T) {
 	if os.Getenv("TEST_VM_COMPLEX") == "" {
 		t.Skip()
 	}
-	fn := filepath.Join(oldStateTestDir, "EIP150", "Homestead", "stQuadraticComplexityTestState.json")
+	fn := filepath.Join(oldStateTestDir, "EIP150", "Homestead", "stQuadraticComplexityTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -626,7 +626,7 @@ func TestStateEIP150HomesteadWallet(t *testing.T) {
 		DiehardBlock:             big.NewInt(2457000),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "EIP150", "Homestead", "stWalletTestState.json")
+	fn := filepath.Join(oldStateTestDir, "EIP150", "Homestead", "stWalletTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -662,7 +662,7 @@ func TestStateEIP150HomesteadBounds(t *testing.T) {
 		HomesteadGasRepriceBlock: big.NewInt(2457000),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "EIP150", "Homestead", "stBoundsTestState.json")
+	fn := filepath.Join(oldStateTestDir, "EIP150", "Homestead", "stBoundsTest.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
