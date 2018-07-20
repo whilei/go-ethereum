@@ -3,8 +3,6 @@
 package core
 
 import (
-	"math/big"
-
 	"github.com/ethereumproject/go-ethereum/core/state"
 	"github.com/ethereumproject/go-ethereum/core/types"
 	"github.com/ethereumproject/go-ethereum/params"
