@@ -370,7 +370,7 @@ func (c *ChainConfig) IsHomestead(num *big.Int) bool {
 	if c.ForkByName("Homestead") == nil || c.ForkByName("Homestead").Block == nil || num == nil {
 		return false
 	}
-	return num.Cmp(c.ForkByName("Homestead").Block) >= 0
+	return isForked(c.ForkByName("Homestead").Block, num)
 }
 
 // IsEIP150 returns whether num is greater than or equal to the Diehard block, but less than explosion.
@@ -382,7 +382,7 @@ func (c *ChainConfig) IsEIP150(num *big.Int) bool {
 	if fork == nil || fork.Block == nil || num == nil {
 		return false
 	}
-	return num.Cmp(fork.Block) >= 0
+	return isForked(fork.Block, num)
 }
 
 // IsDiehard returns whether num is greater than or equal to the Diehard block, but less than explosion.
@@ -391,7 +391,7 @@ func (c *ChainConfig) IsDiehard(num *big.Int) bool {
 	if fork == nil || fork.Block == nil || num == nil {
 		return false
 	}
-	return num.Cmp(fork.Block) >= 0
+	return isForked(fork.Block, num)
 }
 
 // IsEIP155 returns whether EIP155 is configured at or behind a given block number
@@ -403,7 +403,7 @@ func (c *ChainConfig) IsEIP155(num *big.Int) bool {
 	if fork == nil || fork.Block == nil || num == nil {
 		return false
 	}
-	if num.Cmp(fork.Block) >= 0 {
+	if isForked(fork.Block, num) {
 		return c.GetChainID().Cmp(new(big.Int)) > 0
 	}
 	return false
@@ -450,7 +450,7 @@ func (c *ChainConfig) IsDAOFork(num *big.Int) bool {
 	if fork == nil || fork.Block == nil || num == nil {
 		return false
 	}
-	return num.Cmp(fork.Block) >= 0
+	return isForked(fork.Block, num)
 }
 
 // IsExplosion returns whether num is either equal to the explosion block or greater.
