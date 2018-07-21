@@ -277,7 +277,7 @@ func NewEnvFromMap(ruleSet RuleSet, state *state.StateDB, envValues map[string]s
 	}
 
 	// env.evm = vm.NewEVM(env.VmContext(), env.state, params.DefaultConfigMorden.ChainConfig, vm.Config{NoRecursion: true})
-	env.evm = vm.NewEVM(env.VmContext(), env.state, chainConf, vm.Config{NoRecursion: true})
+	env.evm = vm.NewEVM(env.VmContext(), env.state, chainConf, vm.Config{NoRecursion: false})
 
 	return env
 }
