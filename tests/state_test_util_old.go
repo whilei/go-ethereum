@@ -171,6 +171,7 @@ func runStateTest(ruleSet RuleSet, test VmTest) error {
 		if !exist {
 			return wrapStateErr(fmt.Errorf("did not find expected post-state account: %s", addr))
 		}
+
 		// Because vm.Account interface does not have Nonce method, so after
 		// checking that obj exists, we'll use the StateObject type afterwards
 		sobj := statedb.GetOrNewStateObject(common.HexToAddress(addr))
@@ -198,12 +199,9 @@ func runStateTest(ruleSet RuleSet, test VmTest) error {
 		}
 	}
 
-	root, _ := statedb.Commit(false)
+	root := statedb.IntermediateRoot(false)
 	if common.HexToHash(test.PostStateRoot) != root {
 		return wrapStateErr(fmt.Errorf("Post state root error. Expected: %s have: %x", test.PostStateRoot, root))
-	}
-	if err := statedb.Database().TrieDB().Commit(root, false); err != nil {
-		return err
 	}
 
 	// check logs

@@ -101,8 +101,6 @@ func makePreState(db ethdb.Database, accounts map[string]Account) *state.StateDB
 	for addr, account := range accounts {
 		insertAccount(statedb, addr, account)
 	}
-	root, _ := statedb.Commit(false)
-	statedb, _ = state.New(root, sdb)
 	return statedb
 }
 
@@ -264,7 +262,22 @@ func NewEnvFromMap(ruleSet RuleSet, state *state.StateDB, envValues map[string]s
 	}
 	env.Gas = new(big.Int)
 
-	env.evm = vm.NewEVM(env.VmContext(), env.state, params.DefaultConfigMorden.ChainConfig, vm.Config{NoRecursion: true})
+	// build a chain config corresponding to given ruleset
+	chainConf := params.DefaultConfigMorden.ChainConfig
+	chainConf.HomesteadBlock = ruleSet.HomesteadBlock
+	chainConf.EIP150Block = ruleSet.HomesteadGasRepriceBlock
+	chainConf.EIP155Block = ruleSet.DiehardBlock
+	chainConf.EIP160Block = ruleSet.DiehardBlock
+	chainConf.ByzantiumBlock = nil
+
+	if chainConf.EIP160Block != nil {
+		chainConf.ChainID = big.NewInt(1)
+	} else {
+		chainConf.ChainID = nil
+	}
+
+	// env.evm = vm.NewEVM(env.VmContext(), env.state, params.DefaultConfigMorden.ChainConfig, vm.Config{NoRecursion: true})
+	env.evm = vm.NewEVM(env.VmContext(), env.state, chainConf, vm.Config{NoRecursion: true})
 
 	return env
 }
@@ -281,14 +294,14 @@ func (self *Env) CanTransfer(statedb vm.StateDB, from common.Address, balance *b
 		}
 	}
 
-	return self.state.GetBalance(from).Cmp(balance) >= 0
+	return statedb.GetBalance(from).Cmp(balance) >= 0
 }
 
 func (self *Env) Transfer(db vm.StateDB, from, to common.Address, amount *big.Int) {
 	if self.skipTransfer {
 		return
 	}
-	core.Transfer(self.state, from.Address(), to.Address(), amount)
+	core.Transfer(db, from.Address(), to.Address(), amount)
 }
 
 func (self *Env) Call(caller vm.ContractRef, addr common.Address, data []byte, gas uint64, price, value *big.Int) ([]byte, error) {
@@ -301,6 +314,7 @@ func (self *Env) Call(caller vm.ContractRef, addr common.Address, data []byte, g
 	// original gas in bigInt
 	og := big.NewInt(0).SetUint64(gas)
 	self.Gas = og
+
 	ret, leftoverGas, err := self.evm.Call(caller, addr, data, gas, value)
 
 	// deduce spent gas from (original gas - leftover gas), and set as test resulting gas
@@ -308,9 +322,11 @@ func (self *Env) Call(caller vm.ContractRef, addr common.Address, data []byte, g
 	logB := big.NewInt(0).SetUint64(leftoverGas)
 	spentGas := new(big.Int).Sub(og, logB)
 	self.Gas.Sub(og, spentGas)
+
 	return ret, err
 
 }
+
 func (self *Env) CallCode(caller vm.ContractRef, addr common.Address, data []byte, gas, price, value *big.Int) ([]byte, error) {
 	panic("unimplemented")
 }
