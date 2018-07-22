@@ -155,44 +155,6 @@ type RuleSet struct {
 	ExplosionBlock           *big.Int
 }
 
-func (r RuleSet) GasTable(num *big.Int) *params.GasTable {
-	if r.HomesteadGasRepriceBlock == nil || num == nil || num.Cmp(r.HomesteadGasRepriceBlock) < 0 {
-		return &params.GasTable{
-			ExtcodeSize:     uint64(20),
-			ExtcodeCopy:     uint64(20),
-			Balance:         uint64(20),
-			SLoad:           uint64(50),
-			Calls:           uint64(40),
-			Suicide:         uint64(0),
-			ExpByte:         uint64(10),
-			CreateBySuicide: uint64(0),
-		}
-	}
-	if r.DiehardBlock == nil || num == nil || num.Cmp(r.DiehardBlock) < 0 {
-		return &params.GasTable{
-			ExtcodeSize:     uint64(700),
-			ExtcodeCopy:     uint64(700),
-			Balance:         uint64(400),
-			SLoad:           uint64(200),
-			Calls:           uint64(700),
-			Suicide:         uint64(5000),
-			ExpByte:         uint64(10),
-			CreateBySuicide: uint64(25000),
-		}
-	}
-
-	return &params.GasTable{
-		ExtcodeSize:     uint64(700),
-		ExtcodeCopy:     uint64(700),
-		Balance:         uint64(400),
-		SLoad:           uint64(200),
-		Calls:           uint64(700),
-		Suicide:         uint64(5000),
-		ExpByte:         uint64(50),
-		CreateBySuicide: uint64(25000),
-	}
-}
-
 type Env struct {
 	ruleSet      RuleSet
 	depth        int
