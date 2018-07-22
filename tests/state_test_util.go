@@ -146,17 +146,18 @@ func runStateTest(ruleSet RuleSet, test VmTest) error {
 	}
 
 	var (
-		ret  []byte
-		gas  *big.Int
-		err  error
-		logs []*types.Log
+		ret    []byte
+		gas    *big.Int
+		failed bool
+		err    error
+		logs   []*types.Log
 	)
 
 	wrapStateErr := func(e error) error {
-		return fmt.Errorf("%v\nret=%x gas=%d err=%v logs=%v", e, ret, gas, err, logs)
+		return fmt.Errorf("%v\nret=%x gas=%d failed=%v err=%v logs=%v", e, ret, gas, failed, err, logs)
 	}
 
-	ret, logs, gas, err = RunState(ruleSet, db, statedb, env, test.Transaction)
+	ret, logs, gas, failed, err = RunState(ruleSet, db, statedb, env, test.Transaction)
 
 	// Compare expected and actual return
 	rexp := common.FromHex(test.Out)
@@ -172,21 +173,23 @@ func runStateTest(ruleSet RuleSet, test VmTest) error {
 			return wrapStateErr(fmt.Errorf("did not find expected post-state account: %s", addr))
 		}
 
-		// Because vm.Account interface does not have Nonce method, so after
-		// checking that obj exists, we'll use the StateObject type afterwards
-		sobj := statedb.GetOrNewStateObject(common.HexToAddress(addr))
-
-		if balance, ok := new(big.Int).SetString(account.Balance, 0); !ok {
+		gotBalance := statedb.GetBalance(a)
+		balance, ok := new(big.Int).SetString(account.Balance, 0)
+		if !ok {
 			panic("malformed test account balance")
-		} else if balance.Cmp(statedb.GetBalance(a)) != 0 {
-			diff := new(big.Int).Sub(balance, statedb.GetBalance(a))
-			return wrapStateErr(fmt.Errorf("(%x) balance failed. Expected: %v have: %v (diff= %v)", a.Bytes()[:4], account.Balance, statedb.GetBalance(a), diff))
+		}
+		if balance.Cmp(gotBalance) != 0 {
+			diff := new(big.Int).Sub(balance, gotBalance)
+			return wrapStateErr(fmt.Errorf("(%x) balance failed. Expected: %v have: %v (diff= %v)", a.Bytes()[:4], balance, gotBalance, diff))
 		}
 
-		if nonce, err := strconv.ParseUint(account.Nonce, 0, 64); err != nil {
+		gotNonce := statedb.GetNonce(a)
+		nonce, err := strconv.ParseUint(account.Nonce, 0, 64)
+		if err != nil {
 			return fmt.Errorf("test account %q malformed nonce: %s", addr, err)
-		} else if sobj.Nonce() != nonce {
-			return wrapStateErr(fmt.Errorf("(%x) nonce failed. Expected: %v have: %v", a.Bytes()[:4], account.Nonce, sobj.Nonce()))
+		}
+		if gotNonce != nonce {
+			return wrapStateErr(fmt.Errorf("(%x) nonce failed. Expected: %v have: %v", a.Bytes()[:4], nonce, gotNonce))
 		}
 
 		for addr, value := range account.Storage {
@@ -214,7 +217,7 @@ func runStateTest(ruleSet RuleSet, test VmTest) error {
 	return nil
 }
 
-func RunState(ruleSet RuleSet, db ethdb.Database, statedb *state.StateDB, env, tx map[string]string) ([]byte, []*types.Log, *big.Int, error) {
+func RunState(ruleSet RuleSet, db ethdb.Database, statedb *state.StateDB, env, tx map[string]string) ([]byte, []*types.Log, *big.Int, bool, error) {
 	data := common.FromHex(tx["data"])
 	gas, _ := new(big.Int).SetString(tx["gasLimit"], 0)
 	price, _ := new(big.Int).SetString(tx["gasPrice"], 0)
@@ -254,18 +257,24 @@ func RunState(ruleSet RuleSet, db ethdb.Database, statedb *state.StateDB, env, t
 	if vmenv.evm == nil {
 		panic("NIL EVM")
 	}
-	if gaspool == nil {
-		panic("NIL GASPOOl")
+	if vmenv.evm.StateDB == nil {
+		panic("NIL EVM STATE")
 	}
 	if vmenv.state == nil {
 		panic("NIL STATE")
 	}
-	if vmenv.evm.StateDB == nil {
-		panic("NIL EVM STATE")
+	if gaspool == nil {
+		panic("NIL GASPOOl")
 	}
 
-	ret, usedGas, _, err := core.ApplyMessage(vmenv.evm, message, gaspool)
+	// NOTE(whilei): Just noting that EVM used embedded Context struct, which is what the GasPrice field
+	// is referencing here.
+	vmenv.evm.GasPrice = message.GasPrice()
+	if vmenv.evm.GasPrice == nil {
+		panic("NIL GASPRICE")
+	}
 
+	ret, usedGas, failed, err := core.ApplyMessage(vmenv.evm, message, gaspool)
 	vmenv.Gas.SetUint64(usedGas)
 
 	if core.IsNonceErr(err) || core.IsInvalidTxErr(err) || core.IsGasLimitErr(err) {
@@ -279,5 +288,5 @@ func RunState(ruleSet RuleSet, db ethdb.Database, statedb *state.StateDB, env, t
 		panic("COMMIT STATE TRIE ERR: " + err.Error())
 	}
 
-	return ret, vmenv.state.Logs(), vmenv.Gas, err
+	return ret, vmenv.state.Logs(), vmenv.Gas, failed, err
 }
