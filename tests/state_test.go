@@ -123,7 +123,7 @@ func TestStateStateLog(t *testing.T) {
 		HomesteadBlock: big.NewInt(1000000),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "stLogTestStates.json")
+	fn := filepath.Join(oldStateTestDir, "stLogTests.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -319,7 +319,7 @@ func TestStateHomesteadStateLog(t *testing.T) {
 		HomesteadBlock: new(big.Int),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "Homestead", "stLogTestStates.json")
+	fn := filepath.Join(oldStateTestDir, "Homestead", "stLogTests.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
@@ -535,7 +535,7 @@ func TestStateEIP150HomesteadStateLog(t *testing.T) {
 		HomesteadGasRepriceBlock: big.NewInt(2457000),
 	}
 
-	fn := filepath.Join(oldStateTestDir, "EIP150", "Homestead", "stLogTestStates.json")
+	fn := filepath.Join(oldStateTestDir, "EIP150", "Homestead", "stLogTests.json")
 	if err := RunStateTest(ruleSet, fn, StateSkipTests); err != nil {
 		t.Error(err)
 	}
