@@ -250,7 +250,6 @@ func RunState(ruleSet RuleSet, db ethdb.Database, statedb *state.StateDB, env, t
 	}
 	// Set pre compiled contracts
 	//vm.Precompiled = vm.PrecompiledContracts()
-	snapshot := statedb.Snapshot()
 	currentGasLimit, ok := new(big.Int).SetString(env["currentGasLimit"], 0)
 	if !ok {
 		panic("malformed currentGasLimit")
@@ -264,6 +263,7 @@ func RunState(ruleSet RuleSet, db ethdb.Database, statedb *state.StateDB, env, t
 	addr := crypto.PubkeyToAddress(crypto.ToECDSA(key).PublicKey)
 	//func NewMessage(from common.Address, to *common.Address, nonce uint64, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte, checkNonce bool) Message {
 	message := types.NewMessage(addr, to, nonce, value, gas.Uint64(), price, data, true)
+
 	vmenv := NewEnvFromMap(ruleSet, statedb, env, tx)
 	vmenv.origin = addr
 
@@ -287,6 +287,7 @@ func RunState(ruleSet RuleSet, db ethdb.Database, statedb *state.StateDB, env, t
 		panic("NIL GASPRICE")
 	}
 
+	snapshot := statedb.Snapshot()
 	ret, usedGas, failed, err := core.ApplyMessage(vmenv.evm, message, gaspool)
 	vmenv.Gas.SetUint64(usedGas)
 
