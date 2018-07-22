@@ -19,6 +19,7 @@ package tests
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"math/big"
@@ -110,22 +111,32 @@ func runStateTests(ruleSet RuleSet, tests map[string]VmTest, skipTests []string)
 		skipTest[name] = true
 	}
 
+	var errs []error
+	var testsCount int
 	for name, test := range tests {
 		if skipTest[name] /*|| name != "callcodecallcode_11" */ {
 			glog.Infoln("Skipping state test", name)
 			continue
 		}
 
+		testsCount++
+
 		//fmt.Println("StateTest:", name)
 		if err := runStateTest(ruleSet, test); err != nil {
-			return fmt.Errorf("[OLD]%s: %s", name, err.Error())
+			errs = append(errs, fmt.Errorf("[OLD]%s(i=%d): %s", name, testsCount-1, err.Error()))
 		}
 
 		//glog.Infoln("State test passed: ", name)
 		//fmt.Println(string(statedb.Dump()))
 	}
+	if len(errs) > 0 {
+		var s string
+		for i, e := range errs {
+			s += fmt.Sprintf("%d/%d/%d: %v\n", i+1, len(errs), testsCount, e.Error())
+		}
+		return errors.New(s)
+	}
 	return nil
-
 }
 
 func runStateTest(ruleSet RuleSet, test VmTest) error {
