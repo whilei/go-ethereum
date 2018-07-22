@@ -227,15 +227,16 @@ func NewEnvFromMap(ruleSet RuleSet, statedb *state.StateDB, envValues map[string
 	env.Gas = new(big.Int)
 
 	// build a chain config corresponding to given ruleset
-	chainConf := params.DefaultConfigMorden.ChainConfig
+	chainConf := params.TestChainConfig
 	chainConf.HomesteadBlock = ruleSet.HomesteadBlock
 	chainConf.EIP150Block = ruleSet.HomesteadGasRepriceBlock
 	chainConf.EIP155Block = ruleSet.DiehardBlock
 	chainConf.EIP160Block = ruleSet.DiehardBlock
+	chainConf.EIP158Block = nil
 	chainConf.ByzantiumBlock = nil
 
 	if chainConf.EIP160Block != nil {
-		chainConf.ChainID = big.NewInt(1)
+		chainConf.ChainID = big.NewInt(62)
 	} else {
 		chainConf.ChainID = nil
 	}
