@@ -225,7 +225,7 @@ func NewEnvFromMap(ruleSet RuleSet, state *state.StateDB, envValues map[string]s
 	env.Gas = new(big.Int)
 
 	// build a chain config corresponding to given ruleset
-	chainConf := params.TestChainConfig // params.DefaultConfigMorden.ChainConfig
+	chainConf := params.DefaultConfigMorden.ChainConfig
 	chainConf.HomesteadBlock = ruleSet.HomesteadBlock
 	chainConf.EIP150Block = ruleSet.HomesteadGasRepriceBlock
 	chainConf.EIP155Block = ruleSet.DiehardBlock
