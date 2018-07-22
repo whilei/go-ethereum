@@ -26,6 +26,7 @@ import (
 )
 
 func TestState(t *testing.T) {
+	t.Skipf("skipping: %s", "incoming state tests")
 	t.Parallel()
 
 	st := new(testMatcher)
@@ -49,7 +50,6 @@ func TestState(t *testing.T) {
 				}
 				withTrace(t, test.gasLimit(subtest), subtest, func(vmconfig vm.Config) error {
 					// TODO(whilei)
-					t.Skipf("skipping: %s", "incoming state test")
 					_, err := test.Run(subtest, vmconfig)
 					return st.checkFailure(t, name, err)
 				})
