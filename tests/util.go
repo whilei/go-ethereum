@@ -106,24 +106,24 @@ func makePreState(db ethdb.Database, accounts map[string]Account) *state.StateDB
 	return statedb
 }
 
-func insertAccount(state *state.StateDB, saddr string, account Account) {
+func insertAccount(statedb *state.StateDB, saddr string, account Account) {
 	if common.IsHex(account.Code) {
 		account.Code = account.Code[2:]
 	}
 	addr := common.HexToAddress(saddr)
-	state.SetCode(addr, common.Hex2Bytes(account.Code))
+	statedb.SetCode(addr, common.Hex2Bytes(account.Code))
 	if i, err := strconv.ParseUint(account.Nonce, 0, 64); err != nil {
 		panic(err)
 	} else {
-		state.SetNonce(addr, i)
+		statedb.SetNonce(addr, i)
 	}
 	if i, ok := new(big.Int).SetString(account.Balance, 0); !ok {
 		panic("malformed account balance")
 	} else {
-		state.SetBalance(addr, i)
+		statedb.SetBalance(addr, i)
 	}
 	for a, v := range account.Storage {
-		state.SetState(addr, common.HexToHash(a), common.HexToHash(v))
+		statedb.SetState(addr, common.HexToHash(a), common.HexToHash(v))
 	}
 }
 
@@ -202,8 +202,8 @@ func (env *Env) VmContext() vm.Context {
 	}
 }
 
-func NewEnvFromMap(ruleSet RuleSet, state *state.StateDB, envValues map[string]string, exeValues map[string]string) *Env {
-	env := NewEnv(ruleSet, state)
+func NewEnvFromMap(ruleSet RuleSet, statedb *state.StateDB, envValues map[string]string, exeValues map[string]string) *Env {
+	env := NewEnv(ruleSet, statedb)
 
 	env.origin = common.HexToAddress(exeValues["caller"])
 	env.parent = common.HexToHash(envValues["previousHash"])
