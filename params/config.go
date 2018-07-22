@@ -173,8 +173,10 @@ func (c *ChainConfig) SetForkBlockVals() *ChainConfig {
 					// PTAL fallback hardcoded block hashes from default configs... not ideal
 					// rel #628
 					if f.RequiredHash.IsEmpty() {
+						// mainnet
 						if f.Block.Cmp(big.NewInt(2500000)) == 0 {
 							c.EIP150Hash = common.HexToHash("0x584bdb5d4e74fe97f5a5222b533fe1322fd0b6ad3eb03f02c3221984e2c0b430")
+							// morden
 						} else if f.Block.Cmp(big.NewInt(1783000)) == 0 {
 							c.EIP150Hash = common.HexToHash("0xf376243aeff1f256d970714c3de9fd78fa4e63cf63e32a51fe1169e375d98145")
 						}
@@ -415,6 +417,9 @@ func (c *ChainConfig) IsEIP158(num *big.Int) bool {
 }
 
 func (c *ChainConfig) IsEIP160(num *big.Int) bool {
+	if c.EIP160Block != nil {
+		return isForked(c.EIP160Block, num)
+	}
 	ff, fork, ok := c.GetFeature(num, "gastable")
 	if fork == nil || !ok {
 		return false
