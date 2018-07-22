@@ -111,6 +111,7 @@ func runStateTests(ruleSet RuleSet, tests map[string]VmTest, skipTests []string)
 		skipTest[name] = true
 	}
 
+	var indexes []int
 	var errs []error
 	var testsCount int
 	for name, test := range tests {
@@ -123,7 +124,8 @@ func runStateTests(ruleSet RuleSet, tests map[string]VmTest, skipTests []string)
 
 		//fmt.Println("StateTest:", name)
 		if err := runStateTest(ruleSet, test); err != nil {
-			errs = append(errs, fmt.Errorf("[OLD]%s(i=%d): %s", name, testsCount-1, err.Error()))
+			indexes = append(indexes, testsCount-1)
+			errs = append(errs, fmt.Errorf("[OLD]%s: %s", name, err.Error()))
 		}
 
 		//glog.Infoln("State test passed: ", name)
@@ -132,7 +134,7 @@ func runStateTests(ruleSet RuleSet, tests map[string]VmTest, skipTests []string)
 	if len(errs) > 0 {
 		var s string
 		for i, e := range errs {
-			s += fmt.Sprintf("%d/%d/%d: %v\n", i+1, len(errs), testsCount, e.Error())
+			s += fmt.Sprintf("i:%3d/%d/%d/%d|%v\n", indexes[i], i+1, len(errs), testsCount, e.Error())
 		}
 		return errors.New(s)
 	}
