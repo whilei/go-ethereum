@@ -266,7 +266,7 @@ teardown() {
 
 @test "--chain kitty --testnet | exit !=0" {
 	mkdir -p $DATA_DIR/kitty
-	cp $BATS_TEST_DIRNAME/../../core/config/mainnet.json $DATA_DIR/kitty/chain.json
+	cp $BATS_TEST_DIRNAME/../../params/config/mainnet.json $DATA_DIR/kitty/chain.json
 	sed -i.bak s/mainnet/kitty/ $DATA_DIR/kitty/chain.json
 	run $GETH_CMD --data-dir $DATA_DIR --chain kitty  --testnet console
 	echo "$output"
@@ -276,10 +276,10 @@ teardown() {
 
 @test "--chain kitty --bootnodes=enode://e809c4a2fec7daed400e5e28564e23693b23b2cc5a019b612505631bbe7b9ccf709c1796d2a3d29ef2b045f210caf51e3c4f5b6d3587d43ad5d6397526fa6179@174.112.32.157:30303 | exit 0" {
 	mkdir -p $DATA_DIR/kitty
-	cp $BATS_TEST_DIRNAME/../../core/config/mainnet.json $DATA_DIR/kitty/chain.json
-	cp $BATS_TEST_DIRNAME/../../core/config/mainnet_genesis.json $DATA_DIR/kitty/kitty_genesis.json
-	cp $BATS_TEST_DIRNAME/../../core/config/mainnet_bootnodes.json $DATA_DIR/kitty/kitty_bootnodes.json
-	cp $BATS_TEST_DIRNAME/../../core/config/mainnet_genesis_alloc.csv $DATA_DIR/kitty/kitty_genesis_alloc.csv
+	cp $BATS_TEST_DIRNAME/../../params/config/mainnet.json $DATA_DIR/kitty/chain.json
+	cp $BATS_TEST_DIRNAME/../../params/config/mainnet_genesis.json $DATA_DIR/kitty/kitty_genesis.json
+	cp $BATS_TEST_DIRNAME/../../params/config/mainnet_bootnodes.json $DATA_DIR/kitty/kitty_bootnodes.json
+	cp $BATS_TEST_DIRNAME/../../params/config/mainnet_genesis_alloc.csv $DATA_DIR/kitty/kitty_genesis_alloc.csv
 	sed -i.bak s/mainnet/kitty/ $DATA_DIR/kitty/chain.json
 	sed -i.bak s/mainnet/kitty/ $DATA_DIR/kitty/kitty_genesis.json
 	run $GETH_CMD --data-dir $DATA_DIR --chain kitty --bootnodes=enode://e809c4a2fec7daed400e5e28564e23693b23b2cc5a019b612505631bbe7b9ccf709c1796d2a3d29ef2b045f210caf51e3c4f5b6d3587d43ad5d6397526fa6179@174.112.32.157:30303 --exec 'exit;' console
@@ -316,7 +316,7 @@ freshconfig() {
 	rm -fr $DATA_DIR
 	DATA_DIR=`mktemp -d`
 	mkdir -p $DATA_DIR/kitty
-	cp "$BATS_TEST_DIRNAME/../../core/config/mainnet.json" "$DATA_DIR/kitty/chain.json"
+	cp "$BATS_TEST_DIRNAME/../../params/config/mainnet.json" "$DATA_DIR/kitty/chain.json"
 	sed -i.bak s/mainnet/kitty/ $DATA_DIR/kitty/chain.json
 }
 
@@ -325,7 +325,7 @@ freshconfig() {
 	declare -a NOTOK_VARS=(did genes chainconfig bootsrap)
 
 	mkdir -p $DATA_DIR/kitty
-	cp $BATS_TEST_DIRNAME/../../core/config/mainnet.json $DATA_DIR/kitty/chain.json
+	cp $BATS_TEST_DIRNAME/../../params/config/mainnet.json $DATA_DIR/kitty/chain.json
 	sed -i.bak s/mainnet/kitty/ $DATA_DIR/kitty/chain.json
 
 	counter=0
@@ -350,7 +350,7 @@ freshconfig() {
 	declare -a NOTOK_VARS=(noneonce gasLim dificile knives allok bills Clock Cash)
 
 	mkdir -p $DATA_DIR/kitty
-	cp $BATS_TEST_DIRNAME/../../core/config/mainnet.json $DATA_DIR/kitty/chain.json
+	cp $BATS_TEST_DIRNAME/../../params/config/mainnet.json $DATA_DIR/kitty/chain.json
 	sed -i.bak s/mainnet/kitty/ $DATA_DIR/kitty/chain.json
 
 	counter=0
@@ -375,7 +375,7 @@ freshconfig() {
 	declare -a NOTOK_VARS=(Ox0000000000000042 Ox0000000000000000000000000000000000000000000000000000000000001388 0x000000000000000000000000000000000000000  ewok  homeinbed)
 
 	mkdir -p $DATA_DIR/kitty
-	cp $BATS_TEST_DIRNAME/../../core/config/mainnet.json $DATA_DIR/kitty/chain.json
+	cp $BATS_TEST_DIRNAME/../../params/config/mainnet.json $DATA_DIR/kitty/chain.json
 	sed -i.bak s/mainnet/kitty/ $DATA_DIR/kitty/chain.json
 
 	counter=0
