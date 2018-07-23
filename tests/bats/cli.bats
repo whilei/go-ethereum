@@ -314,7 +314,7 @@ teardown() {
 	[[ "$output" == *"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"* ]]
 	[[ "$output" == *"5000"* ]]
 	[[ "$output" == *"0"* ]]
-	[[ "$output" == *"[17 187 232 219 78 52 123 78 140 147 124 28 131 112 228 181 237 51 173 179 219 105 203 219 122 56 225 229 11 27 130 250]"* ]]
+  [[ "$output" == *"0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa"* ]]
 }
 
 @test "status command present and true for morden" {
@@ -348,5 +348,4 @@ teardown() {
 	[[ "$output" == *"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"* ]]
 	[[ "$output" == *"3141592"* ]]
 	[[ "$output" == *"0"* ]]
-	[[ "$output" == *"[]"* ]]
 }
