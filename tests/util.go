@@ -188,8 +188,21 @@ func NewEnv(ruleSet RuleSet, state *state.StateDB) *Env {
 }
 
 func (env *Env) VmContext() vm.Context {
+	// canTransfer := func(db vm.StateDB, address common.Address, amount *big.Int) bool {
+	// 	if env.initial {
+	// 		env.initial = false
+	// 		return true
+	// 	}
+	// 	return core.CanTransfer(db, address, amount)
+	// }
+	// transfer := func(db vm.StateDB, sender, recipient common.Address, amount *big.Int) {
+	// 	if env.skipTransfer {
+	// 		return
+	// 	}
+	// 	core.Transfer(db, sender, recipient, amount)
+	// }
 	return vm.Context{
-		CanTransfer: env.CanTransfer,
+		CanTransfer: env.CanTransfer, // canTransfer,
 		Transfer:    env.Transfer,
 		GetHash:     vmTestBlockHash,
 		Origin:      env.origin,
@@ -228,6 +241,7 @@ func NewEnvFromMap(ruleSet RuleSet, statedb *state.StateDB, envValues map[string
 
 	// build a chain config corresponding to given ruleset
 	chainConf := params.TestChainConfig
+	// chainConf := params.DefaultConfigMainnet.ChainConfig
 	chainConf.HomesteadBlock = ruleSet.HomesteadBlock
 	chainConf.EIP150Block = ruleSet.HomesteadGasRepriceBlock
 	chainConf.EIP155Block = ruleSet.DiehardBlock
@@ -242,6 +256,51 @@ func NewEnvFromMap(ruleSet RuleSet, statedb *state.StateDB, envValues map[string
 	}
 
 	env.evm = vm.NewEVM(env.VmContext(), env.state, chainConf, vm.Config{NoRecursion: false})
+
+	return env
+}
+
+func NewEnvFromMapNoRecursion(ruleSet RuleSet, statedb *state.StateDB, envValues map[string]string, exeValues map[string]string) *Env {
+	env := NewEnv(ruleSet, statedb)
+
+	env.origin = common.HexToAddress(exeValues["caller"])
+	env.parent = common.HexToHash(envValues["previousHash"])
+	env.coinbase = common.HexToAddress(envValues["currentCoinbase"])
+	env.number, _ = new(big.Int).SetString(envValues["currentNumber"], 0)
+	if env.number == nil {
+		panic("malformed current number")
+	}
+	env.time, _ = new(big.Int).SetString(envValues["currentTimestamp"], 0)
+	if env.time == nil {
+		panic("malformed current timestamp")
+	}
+	env.difficulty, _ = new(big.Int).SetString(envValues["currentDifficulty"], 0)
+	if env.difficulty == nil {
+		panic("malformed current difficulty")
+	}
+	env.gasLimit, _ = new(big.Int).SetString(envValues["currentGasLimit"], 0)
+	if env.gasLimit == nil {
+		panic("malformed current gas limit")
+	}
+	env.Gas = new(big.Int)
+
+	// build a chain config corresponding to given ruleset
+	chainConf := params.TestChainConfig
+	// chainConf := params.DefaultConfigMainnet.ChainConfig
+	chainConf.HomesteadBlock = ruleSet.HomesteadBlock
+	chainConf.EIP150Block = ruleSet.HomesteadGasRepriceBlock
+	chainConf.EIP155Block = ruleSet.DiehardBlock
+	chainConf.EIP160Block = ruleSet.DiehardBlock
+	chainConf.EIP158Block = nil
+	chainConf.ByzantiumBlock = nil
+
+	if chainConf.EIP160Block != nil {
+		chainConf.ChainID = big.NewInt(62)
+	} else {
+		chainConf.ChainID = nil
+	}
+
+	env.evm = vm.NewEVM(env.VmContext(), env.state, chainConf, vm.Config{NoRecursion: true})
 
 	return env
 }

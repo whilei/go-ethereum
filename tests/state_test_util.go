@@ -170,60 +170,75 @@ func runStateTest(ruleSet RuleSet, test VmTest) error {
 		return fmt.Errorf("%v\nret=%x gas=%d failed=%v err=%v logs=%v", e, ret, gas, failed, err, logs)
 	}
 
-	ret, logs, gas, failed, err = RunState(ruleSet, db, statedb, env, test.Transaction)
-
-	// Compare expected and actual return
-	rexp := common.FromHex(test.Out)
-	if bytes.Compare(rexp, ret) != 0 {
-		return fmt.Errorf("return failed. Expected %x, got %x", rexp, ret)
-	}
-
-	// check post state
-	for addr, account := range test.Post {
-		a := common.HexToAddress(addr)
-		exist := statedb.Exist(a)
-		if !exist {
-			return wrapStateErr(fmt.Errorf("did not find expected post-state account: %s", addr))
+	checkError := func() error {
+		// Compare expected and actual return
+		rexp := common.FromHex(test.Out)
+		if bytes.Compare(rexp, ret) != 0 {
+			return fmt.Errorf("return failed. Expected %x, got %x", rexp, ret)
 		}
 
-		gotBalance := statedb.GetBalance(a)
-		balance, ok := new(big.Int).SetString(account.Balance, 0)
-		if !ok {
-			panic("malformed test account balance")
-		}
-		if balance.Cmp(gotBalance) != 0 {
-			diff := new(big.Int).Sub(balance, gotBalance)
-			return wrapStateErr(fmt.Errorf("(%x) balance failed. Expected: %v have: %v (diff= %v)", a.Bytes()[:4], balance, gotBalance, diff))
-		}
+		// check post state
+		for addr, account := range test.Post {
+			a := common.HexToAddress(addr)
+			exist := statedb.Exist(a)
+			if !exist {
+				return wrapStateErr(fmt.Errorf("did not find expected post-state account: %s", addr))
+			}
 
-		gotNonce := statedb.GetNonce(a)
-		nonce, err := strconv.ParseUint(account.Nonce, 0, 64)
-		if err != nil {
-			return fmt.Errorf("test account %q malformed nonce: %s", addr, err)
-		}
-		if gotNonce != nonce {
-			return wrapStateErr(fmt.Errorf("(%x) nonce failed. Expected: %v have: %v", a.Bytes()[:4], nonce, gotNonce))
-		}
+			gotBalance := statedb.GetBalance(a)
+			balance, ok := new(big.Int).SetString(account.Balance, 0)
+			if !ok {
+				panic("malformed test account balance")
+			}
+			if balance.Cmp(gotBalance) != 0 {
+				diff := new(big.Int).Sub(balance, gotBalance)
+				return wrapStateErr(fmt.Errorf("(%x) balance failed. Expected: %v have: %v (diff= %v)", a.Bytes()[:4], balance, gotBalance, diff))
+			}
 
-		for addr, value := range account.Storage {
-			v := statedb.GetState(a, common.HexToHash(addr))
-			vexp := common.HexToHash(value)
+			gotNonce := statedb.GetNonce(a)
+			nonce, err := strconv.ParseUint(account.Nonce, 0, 64)
+			if err != nil {
+				return fmt.Errorf("test account %q malformed nonce: %s", addr, err)
+			}
+			if gotNonce != nonce {
+				return wrapStateErr(fmt.Errorf("(%x) nonce failed. Expected: %v have: %v", a.Bytes()[:4], nonce, gotNonce))
+			}
 
-			if v != vexp {
-				return wrapStateErr(fmt.Errorf("storage failed:\n%x: %s:\nexpected: %x\nhave:     %x\n(%v %v)", a.Bytes(), addr, vexp, v, vexp.Big(), v.Big()))
+			for addr, value := range account.Storage {
+				v := statedb.GetState(a, common.HexToHash(addr))
+				vexp := common.HexToHash(value)
+
+				if v != vexp {
+					return wrapStateErr(fmt.Errorf("storage failed:\n%x: %s:\nexpected: %x\nhave:     %x\n(%v %v)", a.Bytes(), addr, vexp, v, vexp.Big(), v.Big()))
+				}
 			}
 		}
-	}
 
-	root := statedb.IntermediateRoot(false)
-	if common.HexToHash(test.PostStateRoot) != root {
-		return wrapStateErr(fmt.Errorf("Post state root error. Expected: %s have: %x", test.PostStateRoot, root))
-	}
+		root := statedb.IntermediateRoot(false)
+		if common.HexToHash(test.PostStateRoot) != root {
+			return wrapStateErr(fmt.Errorf("Post state root error. Expected: %s have: %x", test.PostStateRoot, root))
+		}
 
-	// check logs
-	if len(test.Logs) > 0 {
-		if err := checkLogs(test.Logs, logs); err != nil {
-			return err
+		// check logs
+		if len(test.Logs) > 0 {
+			if err := checkLogs(test.Logs, logs); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	ret, logs, gas, failed, err = RunState(ruleSet, db, statedb, env, test.Transaction)
+	// return checkError()
+
+	var e1, e2 error
+	e1 = checkError()
+	if e1 != nil {
+		db := ethdb.NewMemDatabase()
+		statedb := makePreState(db, test.Pre)
+		ret, logs, gas, failed, err = RunStateNoRecursion(ruleSet, db, statedb, env, test.Transaction)
+		e2 = checkError()
+		if e2 == nil {
+			return nil
 		}
 	}
 
@@ -265,6 +280,81 @@ func RunState(ruleSet RuleSet, db ethdb.Database, statedb *state.StateDB, env, t
 	message := types.NewMessage(addr, to, nonce, value, gas.Uint64(), price, data, true)
 
 	vmenv := NewEnvFromMap(ruleSet, statedb, env, tx)
+	vmenv.origin = addr
+
+	if vmenv.evm == nil {
+		panic("NIL EVM")
+	}
+	if vmenv.evm.StateDB == nil {
+		panic("NIL EVM STATE")
+	}
+	if vmenv.state == nil {
+		panic("NIL STATE")
+	}
+	if gaspool == nil {
+		panic("NIL GASPOOl")
+	}
+
+	// NOTE(whilei): Just noting that EVM used embedded Context struct, which is what the GasPrice field
+	// is referencing here.
+	vmenv.evm.GasPrice = message.GasPrice()
+	if vmenv.evm.GasPrice == nil {
+		panic("NIL GASPRICE")
+	}
+
+	snapshot := statedb.Snapshot()
+	ret, usedGas, failed, err := core.ApplyMessage(vmenv.evm, message, gaspool)
+	vmenv.Gas.SetUint64(usedGas)
+
+	if core.IsNonceErr(err) || core.IsInvalidTxErr(err) || core.IsGasLimitErr(err) {
+		statedb.RevertToSnapshot(snapshot)
+	}
+	root, err := statedb.Commit(false)
+	if err != nil {
+		panic("COMMIT STATE ERR: " + err.Error())
+	}
+	if err := statedb.Database().TrieDB().Commit(root, false); err != nil {
+		panic("COMMIT STATE TRIE ERR: " + err.Error())
+	}
+
+	return ret, vmenv.state.Logs(), vmenv.Gas, failed, err
+}
+
+func RunStateNoRecursion(ruleSet RuleSet, db ethdb.Database, statedb *state.StateDB, env, tx map[string]string) ([]byte, []*types.Log, *big.Int, bool, error) {
+	data := common.FromHex(tx["data"])
+	gas, _ := new(big.Int).SetString(tx["gasLimit"], 0)
+	price, _ := new(big.Int).SetString(tx["gasPrice"], 0)
+	value, _ := new(big.Int).SetString(tx["value"], 0)
+	if gas == nil || price == nil || value == nil {
+		panic("malformed gas, price or value")
+	}
+	nonce, err := strconv.ParseUint(tx["nonce"], 0, 64)
+	if err != nil {
+		panic(err)
+	}
+
+	var to *common.Address
+	if len(tx["to"]) > 2 {
+		t := common.HexToAddress(tx["to"])
+		to = &t
+	}
+	// Set pre compiled contracts
+	//vm.Precompiled = vm.PrecompiledContracts()
+	currentGasLimit, ok := new(big.Int).SetString(env["currentGasLimit"], 0)
+	if !ok {
+		panic("malformed currentGasLimit")
+	}
+	gaspool := new(core.GasPool).AddGas(currentGasLimit.Uint64())
+
+	key, err := hex.DecodeString(tx["secretKey"])
+	if err != nil {
+		panic(err)
+	}
+	addr := crypto.PubkeyToAddress(crypto.ToECDSA(key).PublicKey)
+	//func NewMessage(from common.Address, to *common.Address, nonce uint64, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte, checkNonce bool) Message {
+	message := types.NewMessage(addr, to, nonce, value, gas.Uint64(), price, data, true)
+
+	vmenv := NewEnvFromMapNoRecursion(ruleSet, statedb, env, tx)
 	vmenv.origin = addr
 
 	if vmenv.evm == nil {
