@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"math/big"
 	"path/filepath"
 	"strconv"
@@ -34,6 +35,7 @@ import (
 	"github.com/ethereumproject/go-ethereum/crypto"
 	"github.com/ethereumproject/go-ethereum/ethdb"
 	"github.com/ethereumproject/go-ethereum/logger/glog"
+	"strings"
 )
 
 var oldStateTestDir = filepath.Join(filepath.Join(".", "files"), "StateTests")
@@ -186,22 +188,32 @@ func runStateTest(ruleSet RuleSet, test VmTest) error {
 			}
 
 			gotBalance := statedb.GetBalance(a)
-			balance, ok := new(big.Int).SetString(account.Balance, 0)
+			wantBalance, ok := new(big.Int).SetString(account.Balance, 0)
 			if !ok {
 				panic("malformed test account balance")
 			}
-			if balance.Cmp(gotBalance) != 0 {
-				diff := new(big.Int).Sub(balance, gotBalance)
-				return wrapStateErr(fmt.Errorf("(%x) balance failed. Expected: %v have: %v (diff= %v)", a.Bytes()[:4], balance, gotBalance, diff))
+			if wantBalance.Cmp(gotBalance) != 0 {
+				if strings.Contains(account.Balance, "ffffffffffffffffffffffffffffff") && gotBalance.Uint64() == math.MaxUint64 {
+					// if wantBalance.Cmp(common.MaxBig) == 0 {
+					// 	panic("max max")
+					// }
+					// if strings.Contains(test.Pre[addr].Balance, "ffffffffffffffffffffffffffffff") {
+					// 	panic("max pre bal")
+					// }
+					return wrapStateErr(fmt.Errorf("want/got:maxbig/maxuint64"))
+				} else {
+					diff := new(big.Int).Sub(wantBalance, gotBalance)
+					return wrapStateErr(fmt.Errorf("(%x) balance failed. Expected: %v have: %v (diff= %v)", a.Bytes()[:4], wantBalance, gotBalance, diff))
+				}
 			}
 
 			gotNonce := statedb.GetNonce(a)
-			nonce, err := strconv.ParseUint(account.Nonce, 0, 64)
+			wantNonce, err := strconv.ParseUint(account.Nonce, 0, 64)
 			if err != nil {
 				return fmt.Errorf("test account %q malformed nonce: %s", addr, err)
 			}
-			if gotNonce != nonce {
-				return wrapStateErr(fmt.Errorf("(%x) nonce failed. Expected: %v have: %v", a.Bytes()[:4], nonce, gotNonce))
+			if gotNonce != wantNonce {
+				return wrapStateErr(fmt.Errorf("(%x) nonce failed. Expected: %v have: %v", a.Bytes()[:4], wantNonce, gotNonce))
 			}
 
 			for addr, value := range account.Storage {
@@ -233,12 +245,19 @@ func runStateTest(ruleSet RuleSet, test VmTest) error {
 	var e1, e2 error
 	e1 = checkError()
 	if e1 != nil {
+		// run test again with VM NoRecursion
 		db := ethdb.NewMemDatabase()
 		statedb := makePreState(db, test.Pre)
 		ret, logs, gas, failed, err = RunStateNoRecursion(ruleSet, db, statedb, env, test.Transaction)
 		e2 = checkError()
 		if e2 == nil {
-			return nil
+			return fmt.Errorf("requires VM.NoRecursion=true")
+			// return nil
+		} else if e1 != e2 {
+			return fmt.Errorf("[NoRecursion=false]%v\n[NoRecursion=true]%v", e1, e2)
+		} else {
+			// TODO maybe only return 1
+			return fmt.Errorf("[NoRecursion=false]%v\n[NoRecursion=true]%v", e1, e2)
 		}
 	}
 
@@ -282,6 +301,7 @@ func RunState(ruleSet RuleSet, db ethdb.Database, statedb *state.StateDB, env, t
 	vmenv := NewEnvFromMap(ruleSet, statedb, env, tx)
 	vmenv.origin = addr
 
+	// debug checks for svm panic
 	if vmenv.evm == nil {
 		panic("NIL EVM")
 	}
@@ -303,12 +323,13 @@ func RunState(ruleSet RuleSet, db ethdb.Database, statedb *state.StateDB, env, t
 	}
 
 	snapshot := statedb.Snapshot()
-	ret, usedGas, failed, err := core.ApplyMessage(vmenv.evm, message, gaspool)
-	vmenv.Gas.SetUint64(usedGas)
 
-	if core.IsNonceErr(err) || core.IsInvalidTxErr(err) || core.IsGasLimitErr(err) {
+	// Here, ret, usedGas, and failed are only assigned for debugging/logging reasons
+	ret, usedGas, failed, err := core.ApplyMessage(vmenv.evm, message, gaspool)
+	if err != nil {
 		statedb.RevertToSnapshot(snapshot)
 	}
+	vmenv.Gas.SetUint64(usedGas)
 	root, err := statedb.Commit(false)
 	if err != nil {
 		panic("COMMIT STATE ERR: " + err.Error())

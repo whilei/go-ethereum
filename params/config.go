@@ -140,7 +140,7 @@ type ChainConfig struct {
 
 	// EIP150 implements the Gas price changes (https://github.com/ethereum/EIPs/issues/150)
 	EIP150Block *big.Int    `json:"-"` // EIP150 HF block (nil = no fork)
-	EIP150Hash  common.Hash `json:"-"` // EIP150 HF hash (needed for header only clients as only gas pricing changed)
+	EIP150Hash  common.Hash `json:"-"` // EIP150 HF hash (needed for header only clients as only gas pricing changed) (ETC unused)
 
 	EIP155Block *big.Int `json:"-"` // EIP155 HF block
 	EIP158Block *big.Int `json:"-"` // EIP158 HF block
@@ -193,9 +193,6 @@ func (c *ChainConfig) SetForkBlockVals() *ChainConfig {
 				if c.IsEIP160(f.Block) {
 					c.EIP160Block = f.Block
 				}
-				// if c.IsEIP158(f.Block) {
-				// 	c.EIP158Block = f.Block
-				// }
 			}
 		case "Busybee":
 			if f.Block != nil {
@@ -205,7 +202,7 @@ func (c *ChainConfig) SetForkBlockVals() *ChainConfig {
 			}
 		}
 	}
-	c.EIP158Block = nil // TODO(whilei): This is, AFAIK, not implemented ever in ETC. So configuration specs are undecided (eg. what name, schema, hardfork)
+	c.EIP158Block = nil // TODO(whilei): This is not implemented in ETC. So configuration specs are undecided.
 	c.ChainID = c.GetChainID()
 	return c
 }

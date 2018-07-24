@@ -48,7 +48,7 @@ var (
 		Suicide:     0,
 		ExpByte:     10,
 
-		CreateBySuicide: 0,
+		// CreateBySuicide: 0,
 	}
 
 	// GasTableEIP150 contain the gas re-prices for

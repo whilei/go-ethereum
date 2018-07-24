@@ -188,6 +188,7 @@ func NewEnv(ruleSet RuleSet, state *state.StateDB) *Env {
 }
 
 func (env *Env) VmContext() vm.Context {
+	env.initial = true
 	// canTransfer := func(db vm.StateDB, address common.Address, amount *big.Int) bool {
 	// 	if env.initial {
 	// 		env.initial = false
@@ -241,7 +242,6 @@ func NewEnvFromMap(ruleSet RuleSet, statedb *state.StateDB, envValues map[string
 
 	// build a chain config corresponding to given ruleset
 	chainConf := params.TestChainConfig
-	// chainConf := params.DefaultConfigMainnet.ChainConfig
 	chainConf.HomesteadBlock = ruleSet.HomesteadBlock
 	chainConf.EIP150Block = ruleSet.HomesteadGasRepriceBlock
 	chainConf.EIP155Block = ruleSet.DiehardBlock
