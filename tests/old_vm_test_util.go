@@ -210,8 +210,6 @@ func RunVm(state *state.StateDB, env, exec map[string]string) ([]byte, []*types.
 	if gas == nil || price == nil || value == nil {
 		panic("malformed gas, price or value")
 	}
-	// Reset the pre-compiled contracts for VM tests.
-	// vm.Precompiled = make(map[string]*vm.PrecompiledContract)
 
 	caller := state.GetOrNewStateObject(from)
 
@@ -221,7 +219,7 @@ func RunVm(state *state.StateDB, env, exec map[string]string) ([]byte, []*types.
 	// 	DiehardBlock:             big.NewInt(3000000),
 	// 	ExplosionBlock:           big.NewInt(5000000),
 	// }, state, env, exec)
-	vmenv := NewEnvFromMap(RuleSet{
+	vmenv := NewEnvFromMapNoRecursion(RuleSet{
 		HomesteadBlock:           big.NewInt(1150000),
 		HomesteadGasRepriceBlock: big.NewInt(2500000),
 		DiehardBlock:             big.NewInt(3000000),
