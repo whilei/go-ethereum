@@ -143,6 +143,12 @@ func (tm *testMatcher) checkFailure(t *testing.T, name string, err error) error 
 		}
 		return fmt.Errorf("test succeeded unexpectedly")
 	}
+	if err != nil {
+		if strings.Contains(err.Error(), "unsupported fork") {
+			t.Skipf("noerror: %s", err)
+			return nil
+		}
+	}
 	return err
 }
 
