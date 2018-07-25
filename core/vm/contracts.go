@@ -25,8 +25,6 @@ import (
 	"github.com/ethereumproject/go-ethereum/common/math"
 	"github.com/ethereumproject/go-ethereum/crypto"
 	"github.com/ethereumproject/go-ethereum/crypto/bn256"
-	"github.com/ethereumproject/go-ethereum/logger"
-	"github.com/ethereumproject/go-ethereum/logger/glog"
 	"github.com/ethereumproject/go-ethereum/params"
 	"golang.org/x/crypto/ripemd160"
 )
@@ -78,58 +76,29 @@ func (c *ecrecover) RequiredGas(input []byte) uint64 {
 }
 
 func (c *ecrecover) Run(input []byte) ([]byte, error) {
-	in := common.RightPadBytes(input, 128)
-	// "in" is (hash, v, r, s), each 32 bytes
+	const ecRecoverInputLength = 128
+
+	input = common.RightPadBytes(input, ecRecoverInputLength)
+	// "input" is (hash, v, r, s), each 32 bytes
 	// but for ecrecover we want (r, s, v)
-	r := new(big.Int).SetBytes(in[64:96])
-	s := new(big.Int).SetBytes(in[96:128])
-	// Treat V as a 256bit integer
-	vbig := new(big.Int).SetBytes(in[32:64])
-	v := byte(vbig.Uint64())
-	// tighter sig s values in homestead only apply to tx sigs
-	if !crypto.ValidateSignatureValues(v, r, s, false) {
-		glog.V(logger.Detail).Infof("ECRECOVER error: v, r or s value invalid")
+
+	r := new(big.Int).SetBytes(input[64:96])
+	s := new(big.Int).SetBytes(input[96:128])
+	v := input[63] - 27
+
+	// tighter sig s values input homestead only apply to tx sigs
+	if !allZero(input[32:63]) || !crypto.ValidateSignatureValues(v, r, s, false) {
 		return nil, nil
 	}
-	// v needs to be at the end and normalized for libsecp256k1
-	vbignormal := new(big.Int).Sub(vbig, big.NewInt(27))
-	vnormal := byte(vbignormal.Uint64())
-	rsv := append(in[64:128], vnormal)
-	pubKey, err := crypto.Ecrecover(in[:32], rsv)
+	// v needs to be at the end for libsecp256k1
+	pubKey, err := crypto.Ecrecover(input[:32], append(input[64:128], v))
 	// make sure the public key is a valid one
 	if err != nil {
-		glog.V(logger.Detail).Infoln("ECRECOVER error: ", err)
 		return nil, nil
 	}
+
 	// the first byte of pubkey is bitcoin heritage
 	return common.LeftPadBytes(crypto.Keccak256(pubKey[1:])[12:], 32), nil
-
-	// const ecRecoverInputLength = 128
-
-	// input = common.RightPadBytes(input, ecRecoverInputLength)
-	// // "input" is (hash, v, r, s), each 32 bytes
-	// // but for ecrecover we want (r, s, v)
-
-	// r := new(big.Int).SetBytes(input[64:96])
-	// s := new(big.Int).SetBytes(input[96:128])
-	// v := input[63] - 27
-
-	// // tighter sig s values input homestead only apply to tx sigs
-	// if !allZero(input[32:63]) || !crypto.ValidateSignatureValues(v, r, s, false) {
-	// 	return nil, nil
-	// }
-	// // v needs to be at the end for libsecp256k1
-	// vbignormal := new(big.Int).Sub(vbig, big.NewInt(27))
-	// vnormal := byte(vbignormal.Uint64())
-	// rsv := append(input[64:128], vnormal)
-	// pubKey, err := crypto.Ecrecover(input[:32], rsv) // append(input[64:128], v))
-	// // make sure the public key is a valid one
-	// if err != nil {
-	// 	return nil, nil
-	// }
-
-	// // the first byte of pubkey is bitcoin heritage
-	// return common.LeftPadBytes(crypto.Keccak256(pubKey[1:])[12:], 32), nil
 }
 
 // SHA256 implemented as a native contract.
