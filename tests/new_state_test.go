@@ -26,7 +26,7 @@ import (
 )
 
 func TestState(t *testing.T) {
-	t.Skipf("skipping: %s", "incoming state tests")
+	// t.Skipf("skipping: %s", "incoming state tests")
 	t.Parallel()
 
 	st := new(testMatcher)
