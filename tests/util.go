@@ -19,6 +19,7 @@ package tests
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"math/big"
 	"strconv"
 
@@ -238,6 +239,12 @@ func NewEnvFromMap(ruleSet RuleSet, statedb *state.StateDB, envValues map[string
 	if env.gasLimit == nil {
 		panic("malformed current gas limit")
 	}
+	if env.gasLimit.Cmp(new(big.Int).SetUint64(math.MaxUint64)) > 0 {
+		// panic("overflow maxuint64")
+	}
+	// if env.gasLimit.Cmp(common.MaxBig) == 0 {
+	// 	panic("max gas limit...")
+	// }
 	env.Gas = new(big.Int)
 
 	// build a chain config corresponding to given ruleset
@@ -245,8 +252,9 @@ func NewEnvFromMap(ruleSet RuleSet, statedb *state.StateDB, envValues map[string
 	chainConf.HomesteadBlock = ruleSet.HomesteadBlock
 	chainConf.EIP150Block = ruleSet.HomesteadGasRepriceBlock
 	chainConf.EIP155Block = ruleSet.DiehardBlock
-	chainConf.EIP160Block = ruleSet.DiehardBlock
+	// chainConf.EIP158Block = ruleSet.DiehardBlock
 	chainConf.EIP158Block = nil
+	chainConf.EIP160Block = ruleSet.DiehardBlock
 	chainConf.ByzantiumBlock = nil
 
 	if chainConf.EIP160Block != nil {
@@ -268,7 +276,7 @@ func NewEnvFromMapNoRecursion(ruleSet RuleSet, statedb *state.StateDB, envValues
 	env.coinbase = common.HexToAddress(envValues["currentCoinbase"])
 	env.number, _ = new(big.Int).SetString(envValues["currentNumber"], 0)
 	if env.number == nil {
-		panic("malformed current number")
+		panic("malformed current number") // v needs to be at the end and normalized for libsecp256k1
 	}
 	env.time, _ = new(big.Int).SetString(envValues["currentTimestamp"], 0)
 	if env.time == nil {

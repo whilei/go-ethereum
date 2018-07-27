@@ -1,3 +1,6 @@
+
+# ./runtests-short.sh tests/
+
 path="$1"
 
 set GOMAXPROCS=6
@@ -8,16 +11,6 @@ echo $noteid
 mkdir -p gotarchive
 
 mv got*out* gotarchive/
-
-# echo 'go test -v ./... &> gotest.$noteid.out'
-# go test -v ./... &> gotest.$noteid.out
-# echo 'cat gotest.$noteid.out | grep FAIL | wc -l'
-# cat gotest.$noteid.out | grep FAIL | wc -l
-# 
-# echo 'go test -tags=sputnikvm -v ./... &> gotest.svm.$noteid.out'
-# go test -tags=sputnikvm -v ./... &> gotest.svm.$noteid.out
-# echo 'cat gotest.svm.$noteid.out | grep FAIL | wc -l'
-# cat gotest.svm.$noteid.out | grep FAIL | wc -l
 
 echo "go test -v ./$path... &> got.$noteid.out"
 go test -v ./$path... &> got.$noteid.out
@@ -35,3 +28,4 @@ echo "FAIL: $(cat got.$noteid.out.svm | grep FAIL | wc -l)"
 
 unset GOMAXPROCS
 
+./analyse-tests.sh "got.$noteid.out"

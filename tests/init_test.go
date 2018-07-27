@@ -148,7 +148,7 @@ func (tm *testMatcher) checkFailure(t *testing.T, name string, err error) error 
 			t.Skipf("noerror: %s", err)
 			return nil
 		}
-		err = fmt.Errorf("[NEW]%v", err)
+		err = fmt.Errorf("[NEW]%s: %v", name, err)
 	}
 	return err
 }

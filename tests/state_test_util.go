@@ -46,7 +46,7 @@ func RunStateTestWithReader(ruleSet RuleSet, r io.Reader, skipTests []string) er
 		return err
 	}
 
-	if err := runStateTests(ruleSet, tests, skipTests); err != nil {
+	if err := runStateTests(ruleSet, "", tests, skipTests); err != nil {
 		return err
 	}
 
@@ -59,7 +59,7 @@ func RunStateTest(ruleSet RuleSet, p string, skipTests []string) error {
 		return err
 	}
 
-	if err := runStateTests(ruleSet, tests, skipTests); err != nil {
+	if err := runStateTests(ruleSet, p, tests, skipTests); err != nil {
 		return err
 	}
 
@@ -107,7 +107,30 @@ func benchStateTest(ruleSet RuleSet, test VmTest, env map[string]string, b *test
 	RunState(ruleSet, db, statedb, env, test.Exec)
 }
 
-func runStateTests(ruleSet RuleSet, tests map[string]VmTest, skipTests []string) error {
+func rulesetToString(rs RuleSet) string {
+	switch true {
+	case rs.HomesteadBlock == nil:
+		return "Frontier"
+	case rs.HomesteadGasRepriceBlock == nil:
+		return "Homestead"
+	case rs.DiehardBlock == nil:
+		return "EIP150"
+	default:
+		return "Diehard"
+		// case rs.ExplosionBlock == nil:
+		// return "Bomb"
+	}
+	return ""
+	// if rs.HomesteadBlock == nil {
+	// 	return "Frontier"
+	// } else if rs.HomesteadGasRepriceBlock == nil {
+	// 	return "Homestead"
+	// } else if rs.DiehardBlock {
+	// 	return "EIP150"
+	// }
+}
+
+func runStateTests(ruleSet RuleSet, path string, tests map[string]VmTest, skipTests []string) error {
 	skipTest := make(map[string]bool, len(skipTests))
 	for _, name := range skipTests {
 		skipTest[name] = true
@@ -127,7 +150,7 @@ func runStateTests(ruleSet RuleSet, tests map[string]VmTest, skipTests []string)
 		//fmt.Println("StateTest:", name)
 		if err := runStateTest(ruleSet, test); err != nil {
 			indexes = append(indexes, testsCount-1)
-			errs = append(errs, fmt.Errorf("[OLD]%s: %s", name, err.Error()))
+			errs = append(errs, fmt.Errorf("[OLD]path=%s name=%s ruleset=%s err=%s want_psr=%s", path, name, rulesetToString(ruleSet), err.Error(), test.PostStateRoot))
 		}
 
 		//glog.Infoln("State test passed: ", name)
@@ -136,7 +159,7 @@ func runStateTests(ruleSet RuleSet, tests map[string]VmTest, skipTests []string)
 	if len(errs) > 0 {
 		var s string
 		for i, e := range errs {
-			s += fmt.Sprintf("i:%3d/%d/%d/%d|%v\n", indexes[i], i+1, len(errs), testsCount, e.Error())
+			s += fmt.Sprintf("\n- i=%3d/%d/%d/%d err=%v\n", indexes[i], i+1, len(errs), testsCount, e.Error())
 		}
 		return errors.New(s)
 	}
@@ -242,26 +265,28 @@ func runStateTest(ruleSet RuleSet, test VmTest) error {
 	ret, logs, gas, failed, err = RunState(ruleSet, db, statedb, env, test.Transaction)
 	// return checkError()
 
-	var e1, e2 error
+	// var e1, e2 error
+	var e1 error
 	e1 = checkError()
-	if e1 != nil {
-		// run test again with VM NoRecursion
-		db := ethdb.NewMemDatabase()
-		statedb := makePreState(db, test.Pre)
-		ret, logs, gas, failed, err = RunStateNoRecursion(ruleSet, db, statedb, env, test.Transaction)
-		e2 = checkError()
-		if e2 == nil {
-			return fmt.Errorf("requires VM.NoRecursion=true")
-			// return nil
-		} else if e1 != e2 {
-			return fmt.Errorf("[NoRecursion=false]%v\n[NoRecursion=true]%v", e1, e2)
-		} else {
-			// TODO maybe only return 1
-			return fmt.Errorf("[NoRecursion=false]%v\n[NoRecursion=true]%v", e1, e2)
-		}
-	}
+	return e1
+	// if e1 != nil {
+	// 	// run test again with VM NoRecursion
+	// 	db := ethdb.NewMemDatabase()
+	// 	statedb := makePreState(db, test.Pre)
+	// 	ret, logs, gas, failed, err = RunStateNoRecursion(ruleSet, db, statedb, env, test.Transaction)
+	// 	e2 = checkError()
+	// 	if e2 == nil {
+	// 		return fmt.Errorf("requires VM.NoRecursion=true")
+	// 		// return nil
+	// 	} else if e1 != e2 {
+	// 		return fmt.Errorf("[NoRecursion=false]%v\n[NoRecursion=true]%v", e1, e2)
+	// 	} else {
+	// 		// TODO maybe only return 1
+	// 		return fmt.Errorf("[NoRecursion=false]%v\n[NoRecursion=true]%v", e1, e2)
+	// 	}
+	// }
 
-	return nil
+	// return nil
 }
 
 func RunState(ruleSet RuleSet, db ethdb.Database, statedb *state.StateDB, env, tx map[string]string) ([]byte, []*types.Log, *big.Int, bool, error) {
@@ -327,6 +352,9 @@ func RunState(ruleSet RuleSet, db ethdb.Database, statedb *state.StateDB, env, t
 	// Here, ret, usedGas, and failed are only assigned for debugging/logging reasons
 	ret, usedGas, failed, err := core.ApplyMessage(vmenv.evm, message, gaspool)
 	if err != nil {
+		if err.Error() == "gas uint64 overflow" {
+			panic(err.Error())
+		}
 		statedb.RevertToSnapshot(snapshot)
 	}
 	vmenv.Gas.SetUint64(usedGas)
