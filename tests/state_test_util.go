@@ -184,15 +184,19 @@ func runStateTest(ruleSet RuleSet, test VmTest) error {
 	}
 
 	var (
-		ret    []byte
-		gas    *big.Int
-		failed bool
-		err    error
-		logs   []*types.Log
+		ret     []byte
+		gas     *big.Int
+		failed  bool
+		err     error
+		logs    []*types.Log
+		gotRoot common.Hash
 	)
 
 	wrapStateErr := func(e error) error {
-		return fmt.Errorf("%v\nret=%x gas=%d failed=%v err=%v logs=%v", e, ret, gas, failed, err, logs)
+		if gotRoot.IsEmpty() {
+			gotRoot = statedb.IntermediateRoot(false)
+		}
+		return fmt.Errorf("%v\nret=%x gas=%d failed=%v err=%v logs=%v root=%s", e, ret, gas, failed, err, logs, gotRoot.Hex())
 	}
 
 	checkError := func() error {
@@ -249,9 +253,9 @@ func runStateTest(ruleSet RuleSet, test VmTest) error {
 			}
 		}
 
-		root := statedb.IntermediateRoot(false)
-		if common.HexToHash(test.PostStateRoot) != root {
-			return wrapStateErr(fmt.Errorf("Post state root error. Expected: %s have: %x", test.PostStateRoot, root))
+		gotRoot = statedb.IntermediateRoot(false)
+		if common.HexToHash(test.PostStateRoot) != gotRoot {
+			return wrapStateErr(fmt.Errorf("Post state gotRoot error. Expected: %s have: %x", test.PostStateRoot, gotRoot))
 		}
 
 		// check logs
@@ -358,11 +362,11 @@ func RunState(ruleSet RuleSet, db ethdb.Database, statedb *state.StateDB, env, t
 		statedb.RevertToSnapshot(snapshot)
 	}
 	vmenv.Gas.SetUint64(usedGas)
-	root, err := statedb.Commit(false)
+	gotRoot, err := statedb.Commit(false)
 	if err != nil {
 		panic("COMMIT STATE ERR: " + err.Error())
 	}
-	if err := statedb.Database().TrieDB().Commit(root, false); err != nil {
+	if err := statedb.Database().TrieDB().Commit(gotRoot, false); err != nil {
 		panic("COMMIT STATE TRIE ERR: " + err.Error())
 	}
 
@@ -433,11 +437,11 @@ func RunStateNoRecursion(ruleSet RuleSet, db ethdb.Database, statedb *state.Stat
 	if core.IsNonceErr(err) || core.IsInvalidTxErr(err) || core.IsGasLimitErr(err) {
 		statedb.RevertToSnapshot(snapshot)
 	}
-	root, err := statedb.Commit(false)
+	gotRoot, err := statedb.Commit(false)
 	if err != nil {
 		panic("COMMIT STATE ERR: " + err.Error())
 	}
-	if err := statedb.Database().TrieDB().Commit(root, false); err != nil {
+	if err := statedb.Database().TrieDB().Commit(gotRoot, false); err != nil {
 		panic("COMMIT STATE TRIE ERR: " + err.Error())
 	}
 

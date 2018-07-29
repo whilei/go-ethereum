@@ -28,4 +28,4 @@ echo "FAIL: $(cat got.$noteid.out.svm | grep FAIL | wc -l)"
 
 unset GOMAXPROCS
 
-./analyse-tests.sh "got.$noteid.out"
+./analyze-tests.sh "got.$noteid.out"
