@@ -35,6 +35,8 @@ func TestState(t *testing.T) {
 	// Broken tests:
 	st.skipLoad(`^stTransactionTest/OverflowGasRequire\.json`) // gasLimit > 256 bits
 	st.skipLoad(`^stTransactionTest/zeroSigTransa[^/]*\.json`) // EIP-86 is not supported yet
+	st.skipLoad(`Byzantium`)                                   // not supported
+	st.skipLoad(`EIP158`)                                      // not supported
 	// Expected failures:
 	st.fails(`^stRevertTest/RevertPrecompiledTouch\.json/EIP158`, "bug in test")
 	st.fails(`^stRevertTest/RevertPrecompiledTouch\.json/Byzantium`, "bug in test")
@@ -47,6 +49,9 @@ func TestState(t *testing.T) {
 			t.Run(key, func(t *testing.T) {
 				if subtest.Fork == "Constantinople" {
 					t.Skip("constantinople not supported yet")
+				}
+				if subtest.Fork == "EIP158" {
+					t.Skip("eip158 not supported")
 				}
 				withTrace(t, test.gasLimit(subtest), subtest, func(vmconfig vm.Config) error {
 					// TODO(whilei)
