@@ -452,7 +452,7 @@ func (self *StateDB) Copy() *StateDB {
 	defer self.lock.Unlock()
 
 	// Copy all the basic fields, initialize the memory ones
-	state := &StateDB{
+	st := &StateDB{
 		db:                self.db,
 		trie:              self.db.CopyTrie(self.trie),
 		stateObjects:      make(map[common.Address]*StateObject, len(self.stateObjectsDirty)),
@@ -464,17 +464,17 @@ func (self *StateDB) Copy() *StateDB {
 	}
 	// Copy the dirty states, logs, and preimages
 	for addr := range self.stateObjectsDirty {
-		state.stateObjects[addr] = self.stateObjects[addr].deepCopy(state, state.MarkStateObjectDirty)
-		state.stateObjectsDirty[addr] = struct{}{}
+		st.stateObjects[addr] = self.stateObjects[addr].deepCopy(st, st.MarkStateObjectDirty)
+		st.stateObjectsDirty[addr] = struct{}{}
 	}
 	for hash, logs := range self.logs {
-		state.logs[hash] = make(vm.Logs, len(logs))
-		copy(state.logs[hash], logs)
+		st.logs[hash] = make(vm.Logs, len(logs))
+		copy(st.logs[hash], logs)
 	}
 	for hash, preimage := range self.preimages {
-		state.preimages[hash] = preimage
+		st.preimages[hash] = preimage
 	}
-	return state
+	return st
 }
 
 // Snapshot returns an identifier for the current revision of the state.
