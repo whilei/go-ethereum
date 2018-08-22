@@ -157,45 +157,45 @@ func (evm *EVM) Run(contract *Contract, input []byte) (ret []byte, err error) {
 				case PC:
 					opPc(instruction{data: new(big.Int).SetUint64(pc)}, &pc, evm.env, contract, mem, stack)
 				case JUMP:
-					if err := jump(pc, stack.pop()); err != nil {
-						return nil, err
-					}
+					err = jump(pc, stack.pop())
 
-					continue
 				case JUMPI:
 					pos, cond := stack.pop(), stack.pop()
 
 					if cond.Sign() != 0 {
-						if err := jump(pc, pos); err != nil {
-							return nil, err
-						}
-
-						continue
+						err = jump(pc, pos)
 					}
 				case RETURN:
 					offset, size := stack.pop(), stack.pop()
-					ret := mem.GetPtr(offset.Int64(), size.Int64())
+					ret, err = mem.GetPtr(offset.Int64(), size.Int64()), nil
 
-					return ret, nil
 				case RETURNDATACOPY:
-					if _, err := opReturnDataCopy(instruction{}, &pc, evm.env, contract, mem, stack); err != nil {
-						return nil, err
-					}
+					_, err = opReturnDataCopy(instruction{}, &pc, evm.env, contract, mem, stack)
+				case REVERT:
+					// TODO
 
 				case SUICIDE:
 					opSuicide(instruction{}, nil, evm.env, contract, mem, stack)
 
-					fallthrough
 				case STOP: // Stop the contract
-					return nil, nil
+					ret, err = nil, nil
 				}
 			}
 		} else {
 			return nil, fmt.Errorf("Invalid opcode %x", op)
 		}
 
-		pc++
+		switch {
+		case err != nil:
+			return nil, err
+		case opPtr.halts:
+			return ret, nil
+		case opPtr.jumps:
+			pc++
+		}
 
+		// if the operation clears the return data (eg it has returning data)
+		// set the last return to the result of the operation
 		if opPtr.returns {
 			evm.env.SetReturnData(ret)
 		}
@@ -206,8 +206,8 @@ func (evm *EVM) Run(contract *Contract, input []byte) (ret []byte, err error) {
 // the operation. This does not reduce gas or resizes the memory.
 func calculateGasAndSize(gasTable *GasTable, env Environment, contract *Contract, caller ContractRef, op OpCode, statedb Database, mem *Memory, stack *stack) (*big.Int, *big.Int, error) {
 	var (
-		gas                 = new(big.Int)
-		newMemSize *big.Int = new(big.Int)
+		gas        = new(big.Int)
+		newMemSize = new(big.Int)
 	)
 	err := baseCheck(op, stack, gas)
 	if err != nil {

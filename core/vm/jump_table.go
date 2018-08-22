@@ -21,6 +21,7 @@ import "math/big"
 type jumpPtr struct {
 	fn      instrFn
 	valid   bool // indicates whether the retrieved operation is valid and known
+	jumps   bool // indicates whether the program should not increment
 	halts   bool // indicates whether the operation should halt futher execution
 	writes  bool // determines whether this is a state modifying operation
 	reverts bool // determines whether the operation reverts state (implicitly halts)
@@ -584,10 +585,12 @@ func newJumpTable(ruleset RuleSet, blockNumber *big.Int) vmJumpTable {
 	jumpTable[JUMP] = jumpPtr{
 		fn:    nil,
 		valid: true,
+		jumps: true,
 	}
 	jumpTable[JUMPI] = jumpPtr{
 		fn:    nil,
 		valid: true,
+		jumps: true,
 	}
 	jumpTable[STOP] = jumpPtr{
 		fn:    nil,
