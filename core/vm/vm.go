@@ -154,6 +154,8 @@ func (evm *EVM) Run(contract *Contract, input []byte) (ret []byte, err error) {
 				opPtr.fn(instruction{}, &pc, evm.env, contract, mem, stack)
 			} else {
 				switch op {
+				case CREATE:
+					ret, err = opCreate(instruction{}, &pc, evm.env, contract, mem, stack)
 				case PC:
 					opPc(instruction{data: new(big.Int).SetUint64(pc)}, &pc, evm.env, contract, mem, stack)
 				case JUMP:
@@ -165,14 +167,12 @@ func (evm *EVM) Run(contract *Contract, input []byte) (ret []byte, err error) {
 					if cond.Sign() != 0 {
 						err = jump(pc, pos)
 					}
-				case RETURN:
+				case RETURN, REVERT:
 					offset, size := stack.pop(), stack.pop()
 					ret, err = mem.GetPtr(offset.Int64(), size.Int64()), nil
 
 				case RETURNDATACOPY:
 					_, err = opReturnDataCopy(instruction{}, &pc, evm.env, contract, mem, stack)
-				case REVERT:
-					// TODO
 
 				case SUICIDE:
 					opSuicide(instruction{}, nil, evm.env, contract, mem, stack)
@@ -185,19 +185,21 @@ func (evm *EVM) Run(contract *Contract, input []byte) (ret []byte, err error) {
 			return nil, fmt.Errorf("Invalid opcode %x", op)
 		}
 
-		switch {
-		case err != nil:
-			return nil, err
-		case opPtr.halts:
-			return ret, nil
-		case opPtr.jumps:
-			pc++
-		}
-
 		// if the operation clears the return data (eg it has returning data)
 		// set the last return to the result of the operation
 		if opPtr.returns {
 			evm.env.SetReturnData(ret)
+		}
+
+		switch {
+		case err != nil:
+			return nil, err
+		case opPtr.reverts:
+			return ret, ErrExecutionReverted
+		case opPtr.halts:
+			return ret, nil
+		case opPtr.jumps:
+			pc++
 		}
 	}
 }

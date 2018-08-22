@@ -120,6 +120,7 @@ func exec(env vm.Environment, caller vm.ContractRef, address, codeAddr *common.A
 	defer contract.Finalise()
 
 	ret, err = evm.Run(contract, input)
+
 	// if the contract creation ran successfully and no errors were returned
 	// calculate the gas required to store the code. If the code could not
 	// be stored due to not enough gas set an error and let it be handled
@@ -139,9 +140,10 @@ func exec(env vm.Environment, caller vm.ContractRef, address, codeAddr *common.A
 	// above we revert to the snapshot and consume any gas remaining. Additionally
 	// when we're in homestead this also counts for code storage gas errors.
 	if err != nil && (env.RuleSet().IsHomestead(env.BlockNumber()) || err != vm.CodeStoreOutOfGasError) {
-		contract.UseGas(contract.Gas)
-
 		env.RevertToSnapshot(snapshotPreTransfer)
+		if err != vm.ErrExecutionReverted {
+			contract.UseGas(contract.Gas)
+		}
 	}
 
 	return ret, addr, err
@@ -172,9 +174,10 @@ func execDelegateCall(env vm.Environment, caller vm.ContractRef, originAddr, toA
 
 	ret, err = evm.Run(contract, input)
 	if err != nil {
-		contract.UseGas(contract.Gas)
-
 		env.RevertToSnapshot(snapshot)
+		if err != vm.ErrExecutionReverted {
+			contract.UseGas(contract.Gas)
+		}
 	}
 
 	return ret, addr, err
@@ -216,9 +219,10 @@ func execStaticCall(env vm.Environment, caller vm.ContractRef, address, codeAddr
 
 	ret, err = evm.Run(contract, input)
 	if err != nil {
-		contract.UseGas(contract.Gas)
-
 		env.RevertToSnapshot(snapshot)
+		if err != vm.ErrExecutionReverted {
+			contract.UseGas(contract.Gas)
+		}
 	}
 
 	return ret, addr, err

@@ -29,7 +29,7 @@ var (
 
 	errWriteProtection       = errors.New("evm: write protection")
 	errReturnDataOutOfBounds = errors.New("evm: return data out of bounds")
-	errExecutionReverted     = errors.New("evm: execution reverted")
+	ErrExecutionReverted     = errors.New("evm: execution reverted")
 )
 
 type instrFn func(instr instruction, pc *uint64, env Environment, contract *Contract, memory *Memory, stack *stack)
@@ -435,7 +435,7 @@ func opGas(instr instruction, pc *uint64, env Environment, contract *Contract, m
 	stack.push(new(big.Int).Set(contract.Gas))
 }
 
-func opCreate(instr instruction, pc *uint64, env Environment, contract *Contract, memory *Memory, stack *stack) {
+func opCreate(instr instruction, pc *uint64, env Environment, contract *Contract, memory *Memory, stack *stack) ([]byte, error) {
 	var (
 		value        = stack.pop()
 		offset, size = stack.pop(), stack.pop()
@@ -448,8 +448,8 @@ func opCreate(instr instruction, pc *uint64, env Environment, contract *Contract
 	}
 
 	contract.UseGas(gas)
-	// TODO
-	_, addr, suberr := env.Create(contract, input, gas, contract.Price, value)
+
+	res, addr, suberr := env.Create(contract, input, gas, contract.Price, value)
 	// Push item on the stack based on the returned error. If the ruleset is
 	// homestead we must check for CodeStoreOutOfGasError (homestead only
 	// rule) and treat as an error, if the ruleset is frontier we must
@@ -461,6 +461,11 @@ func opCreate(instr instruction, pc *uint64, env Environment, contract *Contract
 	} else {
 		stack.push(addr.Big())
 	}
+
+	if suberr == ErrExecutionReverted {
+		return res, nil
+	}
+	return nil, nil
 }
 
 func opCall(instr instruction, pc *uint64, env Environment, contract *Contract, memory *Memory, stack *stack) {
@@ -487,9 +492,11 @@ func opCall(instr instruction, pc *uint64, env Environment, contract *Contract, 
 	if err != nil {
 		stack.push(new(big.Int))
 
-	} else if err == nil || err == errExecutionReverted {
+	} else {
 		stack.push(big.NewInt(1))
+	}
 
+	if err == nil || err == ErrExecutionReverted {
 		memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
 	}
 }
@@ -520,7 +527,8 @@ func opCallCode(instr instruction, pc *uint64, env Environment, contract *Contra
 
 	} else {
 		stack.push(big.NewInt(1))
-
+	}
+	if err == nil || err == ErrExecutionReverted {
 		memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
 	}
 }
@@ -535,6 +543,8 @@ func opDelegateCall(instr instruction, pc *uint64, env Environment, contract *Co
 		stack.push(new(big.Int))
 	} else {
 		stack.push(big.NewInt(1))
+	}
+	if err == nil || err == ErrExecutionReverted {
 		memory.Set(outOffset.Uint64(), outSize.Uint64(), ret)
 	}
 }
@@ -554,7 +564,8 @@ func opStaticCall(instr instruction, pc *uint64, env Environment, contract *Cont
 
 	} else {
 		stack.push(big.NewInt(1))
-
+	}
+	if err == nil || err == ErrExecutionReverted {
 		memory.Set(outOffset.Uint64(), outSize.Uint64(), ret)
 	}
 }
