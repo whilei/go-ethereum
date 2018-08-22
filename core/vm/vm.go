@@ -155,30 +155,38 @@ func (evm *EVM) Run(contract *Contract, input []byte) (ret []byte, err error) {
 			} else {
 				switch op {
 				case CREATE:
-					ret, err = opCreate(instruction{}, &pc, evm.env, contract, mem, stack)
+					ret, _ = opCreate(instruction{}, &pc, evm.env, contract, mem, stack)
 				case PC:
 					opPc(instruction{data: new(big.Int).SetUint64(pc)}, &pc, evm.env, contract, mem, stack)
 				case JUMP:
-					err = jump(pc, stack.pop())
+					if err := jump(pc, stack.pop()); err != nil {
+						return nil, err
+					}
 
 				case JUMPI:
 					pos, cond := stack.pop(), stack.pop()
 
 					if cond.Sign() != 0 {
-						err = jump(pc, pos)
+						if err := jump(pc, pos); err != nil {
+							return nil, err
+						}
 					}
-				case RETURN, REVERT:
+				case REVERT:
 					offset, size := stack.pop(), stack.pop()
 					ret, err = mem.GetPtr(offset.Int64(), size.Int64()), nil
+
+				case RETURN:
+					offset, size := stack.pop(), stack.pop()
+					return mem.GetPtr(offset.Int64(), size.Int64()), nil
 
 				case RETURNDATACOPY:
 					_, err = opReturnDataCopy(instruction{}, &pc, evm.env, contract, mem, stack)
 
 				case SUICIDE:
 					opSuicide(instruction{}, nil, evm.env, contract, mem, stack)
-
+					fallthrough
 				case STOP: // Stop the contract
-					ret, err = nil, nil
+					return nil, nil
 				}
 			}
 		} else {
@@ -198,10 +206,11 @@ func (evm *EVM) Run(contract *Contract, input []byte) (ret []byte, err error) {
 			return ret, ErrExecutionReverted
 		case opPtr.halts:
 			return ret, nil
-		case opPtr.jumps:
+		case !opPtr.jumps:
 			pc++
 		}
 	}
+	return nil, nil
 }
 
 // calculateGasAndSize calculates the required given the opcode and stack items calculates the new memorysize for
@@ -307,7 +316,7 @@ func calculateGasAndSize(gasTable *GasTable, env Environment, contract *Contract
 	case MSTORE:
 		newMemSize = calcMemSize(stack.peek(), u256(32))
 		quadMemGas(mem, newMemSize, gas)
-	case RETURN:
+	case RETURN, REVERT:
 		newMemSize = calcMemSize(stack.peek(), stack.data[stack.len()-2])
 		quadMemGas(mem, newMemSize, gas)
 	case SHA3:
