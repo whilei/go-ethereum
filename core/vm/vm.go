@@ -180,7 +180,9 @@ func (evm *EVM) Run(contract *Contract, input []byte) (ret []byte, err error) {
 					return mem.GetPtr(offset.Int64(), size.Int64()), nil
 
 				case RETURNDATACOPY:
-					_, err = opReturnDataCopy(instruction{}, &pc, evm.env, contract, mem, stack)
+					if _, err = opReturnDataCopy(instruction{}, &pc, evm.env, contract, mem, stack); err != nil {
+						return nil, err
+					}
 
 				case SUICIDE:
 					opSuicide(instruction{}, nil, evm.env, contract, mem, stack)
