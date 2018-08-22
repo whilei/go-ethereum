@@ -19,11 +19,11 @@ package vm
 import "math/big"
 
 type jumpPtr struct {
-	fn     instrFn
-	valid  bool
-	writes bool
-	// returns determines whether the operation sets the return data
-	returns bool
+	fn      instrFn
+	valid   bool // indicates whether the retrieved operation is valid and known
+	writes  bool // determines whether this is a state modifying operation
+	reverts bool // determines whether the operation reverts state (implicitly halts)
+	returns bool // returns determines whether the operation sets the return data
 }
 
 type vmJumpTable [256]jumpPtr
@@ -54,6 +54,12 @@ func newJumpTable(ruleset RuleSet, blockNumber *big.Int) vmJumpTable {
 			// This is called manually during VM.Run in order to do error handling in case return data size is out of bounds.
 			// fn:    opReturnDataCopy,
 			valid: true,
+		}
+		jumpTable[REVERT] = jumpPtr{
+			// fn: TODO
+			valid:   true,
+			reverts: true,
+			returns: true,
 		}
 	}
 

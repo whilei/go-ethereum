@@ -29,6 +29,7 @@ var (
 
 	errWriteProtection       = errors.New("evm: write protection")
 	errReturnDataOutOfBounds = errors.New("evm: return data out of bounds")
+	errExecutionReverted     = errors.New("evm: execution reverted")
 )
 
 type instrFn func(instr instruction, pc *uint64, env Environment, contract *Contract, memory *Memory, stack *stack)
@@ -447,6 +448,7 @@ func opCreate(instr instruction, pc *uint64, env Environment, contract *Contract
 	}
 
 	contract.UseGas(gas)
+	// TODO
 	_, addr, suberr := env.Create(contract, input, gas, contract.Price, value)
 	// Push item on the stack based on the returned error. If the ruleset is
 	// homestead we must check for CodeStoreOutOfGasError (homestead only
@@ -485,7 +487,7 @@ func opCall(instr instruction, pc *uint64, env Environment, contract *Contract, 
 	if err != nil {
 		stack.push(new(big.Int))
 
-	} else {
+	} else if err == nil || err == errExecutionReverted {
 		stack.push(big.NewInt(1))
 
 		memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
