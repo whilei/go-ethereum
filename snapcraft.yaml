@@ -1,6 +1,6 @@
-name: geth
+name: geth-classic
 version: git
-summary: Ethereum Classic's Official go-ethereum client.
+summary: Ethereum Classic's official go-ethereum client.
 description: |
   Geth lets you operate a node on the Ethereum Classic network.
 
@@ -8,12 +8,15 @@ grade: devel
 confinement: devmode
 
 parts:
+  go:
+    source-tag: go1.10.3
   geth:
+    after: [go]
     source: .
     plugin: go
     go-importpath: github.com/ethereumproject/go-ethereum
 
-  apps:
-    geth:
-      command: geth
+apps:
+  geth:
+    command: bin/geth
 
