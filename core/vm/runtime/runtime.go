@@ -36,8 +36,8 @@ func (ruleSet) IsHomestead(*big.Int) bool { return true }
 // TODO/PTAL(whilei): WTF
 func (ruleSet) IsECIP1045B(*big.Int) bool { return true }
 func (ruleSet) IsECIP1045C(*big.Int) bool { return true }
-func (ruleSet) GasTable(*big.Int) *vm.GasTable {
-	return &vm.GasTable{
+func (rs ruleSet) GasTable(n *big.Int) *vm.GasTable {
+	gt := &vm.GasTable{
 		ExtcodeSize:     big.NewInt(700),
 		ExtcodeCopy:     big.NewInt(700),
 		Balance:         big.NewInt(400),
@@ -47,7 +47,10 @@ func (ruleSet) GasTable(*big.Int) *vm.GasTable {
 		ExpByte:         big.NewInt(10),
 		CreateBySuicide: big.NewInt(25000),
 	}
-}
+	if rs.IsECIP1045C(n) {
+		gt.ExtcodeHash = big.NewInt(400)
+	}
+	return gt
 
 // Config is a basic type specifying certain configuration flags for running
 // the EVM.
