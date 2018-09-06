@@ -1,3 +1,5 @@
+// +build deterministic
+
 // Copyright 2015 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
