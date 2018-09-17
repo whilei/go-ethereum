@@ -13,6 +13,7 @@ import (
 	"github.com/ethereumproject/go-ethereum/crypto"
 	"github.com/ethereumproject/go-ethereum/logger"
 	"github.com/ethereumproject/go-ethereum/logger/glog"
+	"log"
 )
 
 const SputnikVMExists = true
@@ -20,7 +21,7 @@ const SputnikVMExists = true
 // UseSputnikVM determines whether the VM will be Sputnik or Geth's native one.
 // Awkward though it is to use a string variable, go's -ldflags relies on it being a constant string in order to be settable via -X from the command line,
 // eg. -ldflags "-X core.UseSputnikVM=true".
-var UseSputnikVM string = "false"
+var UseSputnikVM string = "true"
 
 // Apply a transaction using the SputnikVM processor with the given
 // chain config and state. Note that we use the name of the chain
@@ -28,6 +29,8 @@ var UseSputnikVM string = "false"
 // would not be used.
 func ApplyMultiVmTransaction(config *ChainConfig, bc *BlockChain, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, totalUsedGas *big.Int) (*types.Receipt, evm.Logs, *big.Int, error) {
 	tx.SetSigner(config.GetSigner(header.Number))
+
+	log.Println("using svm")
 
 	from, err := tx.From()
 	if err != nil {

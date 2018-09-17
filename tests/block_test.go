@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/ethereumproject/go-ethereum/logger/glog"
+	"log"
 )
 
 func init() {
@@ -53,6 +54,7 @@ func TestBlockchainTests(t *testing.T) {
 			return nil
 		}
 		mil := big.NewInt(1000000)
+		log.Printf("blocktest: %s\n", p)
 		if e := RunBlockTest(mil, mil, p, BlockSkipTests); e != nil {
 			// Originally our tests had hardcoded fork block parameters. This "softly" ensures that those parameters can be met.
 			// Interestingly, however, this appears to never be touched.
