@@ -43,7 +43,7 @@ make -C "$sputnik_dir/c"
 echo "Doing geth $OUTPUT ..."
 cd "$GOPATH/src/$geth_path"
 
-LDFLAGS="$sputnik_dir/c/libsputnikvm.a "
+LDFLAGS="$sputnik_dir/c/libsputnikvm.a -lm "
 case $OS in
 	"Linux")
 		LDFLAGS+="-ldl"
