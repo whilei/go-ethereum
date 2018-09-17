@@ -20,6 +20,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/big"
 
 	"bytes"
@@ -47,6 +48,33 @@ import (
 
 // 	return nil
 // }
+
+func RunStateTestWithReader(ruleSet RuleSet, r io.Reader, skipTests []string) error {
+	bs := []byte{}
+	_, err := r.Read(bs)
+	if err != nil {
+		return err
+	}
+	var tests map[string]*StateTest
+	if err = json.Unmarshal(bs, &tests); err != nil {
+		return err
+	}
+	// results := make([]Stat)
+	for key, test := range tests {
+		for _, st := range test.Subtests() {
+			rs, ok := Rules[st.Fork]
+			if !ok {
+				return fmt.Errorf("key=%s fork=%s not supported", key, st.Fork)
+			}
+			_, err := test.Run(test, st, rs)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
 
 // func RunStateTest(ruleSet RuleSet, p string, skipTests []string) error {
 // 	tests := make(map[string]stTest)
