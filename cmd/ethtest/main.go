@@ -127,6 +127,8 @@ func getFiles(path string) ([]string, error) {
 	case mode.IsRegular():
 		files = make([]string, 1)
 		files[0] = path
+	default:
+		glog.Error("irreg mode", fi.Name())
 	}
 
 	return files, nil

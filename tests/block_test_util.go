@@ -145,6 +145,8 @@ OUTER:
 		if blockTestSkipMatches(skipTests, name) || blockTestSkipMatches(skipTests, test.Json.Network) {
 			glog.Infof("%s: SKIP", name)
 			continue OUTER
+		} else {
+			glog.Infof("%s: RUNNING", name)
 		}
 		// test the block
 		if err := runBlockTest(homesteadBlock, gasPriceFork, test); err != nil {
@@ -192,7 +194,7 @@ func runBlockTest(homesteadBlock, gasPriceFork *big.Int, test *BlockTest) error 
 	}
 
 	chainConfig, ok := forks[test.Json.Network]
-	if !ok {
+	if !ok && strings.TrimSpace(test.Json.Network) != "" {
 		return fmt.Errorf("unsupported fork: %s", test.Json.Network)
 	}
 

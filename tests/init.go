@@ -103,7 +103,11 @@ func initBlockSkipTests() []string {
 // blockTestSkipMatches returns true if pattern matches, and test should be skipped
 func blockTestSkipMatches(skipTests []string, pattern string) bool {
 	for _, skip := range skipTests {
-		re := regexp.MustCompile(skip)
+		skipClean := strings.TrimSpace(skip)
+		if skipClean == "" {
+			continue
+		}
+		re := regexp.MustCompile(skipClean)
 		if re.MatchString(pattern) {
 			return true
 		}
