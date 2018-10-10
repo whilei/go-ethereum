@@ -34,59 +34,56 @@ type VmTest2 struct {
 }
 
 func TestECIP1045BitwiseLogicOperationsVMTests(t *testing.T) {
-	rs := RuleSet{
-		HomesteadBlock:           big.NewInt(0),
-		HomesteadGasRepriceBlock: big.NewInt(0),
-		DiehardBlock:             big.NewInt(0),
-		ExplosionBlock:           big.NewInt(0),
-		ECIP1045BBlock:           big.NewInt(0),
-		ECIP1045CBlock:           big.NewInt(0),
-	}
 	fns, _ := filepath.Glob(filepath.Join(vmTestDir, "ECIP1045", "vmBitwiseLogicOperation", "*"))
 	for _, fn := range fns {
-		if err := RunVmTest2(fn, VmSkipTests, rs); err != nil {
+		if err := RunVmTest2(fn, VmSkipTests); err != nil {
 			t.Error(err)
 		}
 	}
 }
 
 func TestECIP1045EIP1283VMTests(t *testing.T) {
-	rs := RuleSet{
-		HomesteadBlock:           big.NewInt(0),
-		HomesteadGasRepriceBlock: big.NewInt(0),
-		DiehardBlock:             big.NewInt(0),
-		ExplosionBlock:           big.NewInt(0),
-		ECIP1045BBlock:           big.NewInt(0),
-		ECIP1045CBlock:           big.NewInt(0),
-		EIP1283Block:             big.NewInt(0),
-	}
 	fns, _ := filepath.Glob(filepath.Join(vmTestDir, "ECIP1045", "vmEIP1283", "*"))
 	for _, fn := range fns {
 		if filepath.Ext(fn) != ".json" {
 			continue
 		}
-		if err := RunVmTest2(fn, VmSkipTests, rs); err != nil {
+		if err := RunVmTest2(fn, VmSkipTests); err != nil {
 			t.Error(err)
 		}
 	}
 }
 
+func TestCreate2VMTests(t *testing.T) {
+	fns, _ := filepath.Glob(filepath.Join(vmTestDir, "ECIP1045", "vmCreate2", "*"))
+	for _, fn := range fns {
+		if filepath.Ext(fn) != ".json" {
+			continue
+		}
+		if err := RunVmTest2(fn, VmSkipTests); err != nil {
+			t.Error(err)
+		} else {
+			t.Log("PASS:", fn)
+		}
+	}
+}
+
 // RunVmTest2 reads input JSON and runs associated test.
-func RunVmTest2(p string, skipTests []string, rs RuleSet) error {
+func RunVmTest2(p string, skipTests []string) error {
 	tests := make(map[string]VmTest2)
 	err := readJsonFile(p, &tests)
 	if err != nil {
 		return err
 	}
 
-	if err := runVmTests2(tests, skipTests, rs); err != nil {
+	if err := runVmTests2(tests, skipTests); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func runVmTests2(tests map[string]VmTest2, skipTests []string, rs RuleSet) error {
+func runVmTests2(tests map[string]VmTest2, skipTests []string) error {
 	skipTest := make(map[string]bool, len(skipTests))
 	for _, name := range skipTests {
 		skipTest[name] = true
@@ -98,7 +95,7 @@ func runVmTests2(tests map[string]VmTest2, skipTests []string, rs RuleSet) error
 			return nil
 		}
 
-		if err := runVmTest2(test, rs); err != nil {
+		if err := runVmTest2(test); err != nil {
 			return fmt.Errorf("%s %s", name, err.Error())
 		}
 
@@ -108,7 +105,7 @@ func runVmTests2(tests map[string]VmTest2, skipTests []string, rs RuleSet) error
 	return nil
 }
 
-func runVmTest2(test VmTest2, rs RuleSet) error {
+func runVmTest2(test VmTest2) error {
 	db, _ := ethdb.NewMemDatabase()
 	statedb := makePreState(db, test.Pre)
 
@@ -125,7 +122,7 @@ func runVmTest2(test VmTest2, rs RuleSet) error {
 		env["currentTimestamp"] = test.Env.CurrentTimestamp.(string)
 	}
 
-	ret, vmlogs, gas, err := RunVm2(rs, statedb, env, test.Exec)
+	ret, vmlogs, gas, err := RunVm2(statedb, env, test.Exec)
 
 	// Compare expected and actual return
 	rexp := common.FromHex(test.Out)
@@ -181,7 +178,7 @@ func runVmTest2(test VmTest2, rs RuleSet) error {
 // RunVm2 is the same as RunVm, except that it configures a RuleSet definition that includes ECIP1045* forks.
 // This is an example of terrible code factoring, since the RuleSet (ie ChainConfig) params are _hardcoded_
 // inside of the function. Kids, if you're watching at home, don't do this.
-func RunVm2(rs RuleSet, state *state.StateDB, env, exec map[string]string) ([]byte, vm.Logs, *big.Int, error) {
+func RunVm2(state *state.StateDB, env, exec map[string]string) ([]byte, vm.Logs, *big.Int, error) {
 	var (
 		to       = common.HexToAddress(exec["address"])
 		from     = common.HexToAddress(exec["caller"])
@@ -198,7 +195,14 @@ func RunVm2(rs RuleSet, state *state.StateDB, env, exec map[string]string) ([]by
 
 	caller := state.GetOrNewStateObject(from)
 
-	vmenv := NewEnvFromMap(rs, state, env, exec)
+	vmenv := NewEnvFromMap(RuleSet{
+		HomesteadBlock:           big.NewInt(0),
+		HomesteadGasRepriceBlock: big.NewInt(0),
+		DiehardBlock:             big.NewInt(0),
+		ExplosionBlock:           big.NewInt(0),
+		ECIP1045BBlock:           big.NewInt(0),
+		ECIP1045CBlock:           big.NewInt(0),
+	}, state, env, exec)
 	vmenv.vmTest = true
 	vmenv.skipTransfer = true
 	vmenv.initial = true
