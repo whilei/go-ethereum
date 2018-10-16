@@ -235,7 +235,8 @@ func (r RuleSet) IsEIP1014(n *big.Int) bool {
 
 func (r RuleSet) IsEIP1052(n *big.Int) bool {
 	if n == nil || r.ECIP1045CBlock == nil {
-		return false
+		panic("false 1052")
+		// return false
 	}
 	return n.Cmp(r.ECIP1045CBlock) >= 0
 }

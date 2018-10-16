@@ -249,6 +249,15 @@ func calculateGasAndSize(gasTable *GasTable, env Environment, contract *Contract
 		}
 	case EXTCODESIZE:
 		gas.Set(gasTable.ExtcodeSize)
+	case EXTCODEHASH:
+		if gasTable.ExtcodeHash != nil {
+			if gasTable.ExtcodeHash.Cmp(big.NewInt(400)) != 0 {
+				panic("0 at 0")
+			}
+			gas.Set(gasTable.ExtcodeHash)
+		} else {
+			return nil, nil, errors.New("invalid opcode EXTCODEHASH")
+		}
 	case BALANCE:
 		gas.Set(gasTable.Balance)
 	case SLOAD:
