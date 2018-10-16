@@ -758,10 +758,12 @@ func TestCreate2Addreses(t *testing.T) {
 		address := crypto.CreateAddress2(origin, salt, codeHash.Bytes())
 
 		stack := newstack()
-		stack.push(big.NewInt(0))                // 4. salt, although we don't need it for this test
-		stack.push(big.NewInt(int64(len(code)))) // 3. size
-		stack.push(big.NewInt(0))                // 2. memstart
-		stack.push(big.NewInt(0))                // 1. value (endowment)
+
+		stack.push(big.NewInt(0)) // 4. salt, although we don't need it for this test
+		codeLen := big.NewInt(int64(len(code)))
+		stack.push(codeLen)       // 3. size
+		stack.push(big.NewInt(0)) // 2. memstart
+		stack.push(big.NewInt(0)) // 1. value (endowment)
 
 		gas := new(big.Int)
 		baseCheck(CREATE2, stack, gas) // Ensures stack length, and sets initial gas cost for CREATE2.
@@ -769,8 +771,9 @@ func TestCreate2Addreses(t *testing.T) {
 		// Tests assume no memory expansion, so newMemSize is 0.
 		gasCreate2WordCost(NewMemory(), big.NewInt(0), gas, stack)
 
+		t.Logf("Example %d\n* address `0x%x`\n* salt `0x%x`\n* init_code `0x%x`\n* codelen=%d\n* gas (assuming no mem expansion): `%v`\n* result: `%s`\n\n", i, origin, salt, code, codeLen, gas, address.Str())
+
 		if gas.Cmp(tt.wantGas) != 0 {
-			// t.Logf("Example %d\n* address `0x%x`\n* salt `0x%x`\n* init_code `0x%x`\n* gas (assuming no mem expansion): `%v`\n* result: `%s`\n\n", i, origin, salt, code, gas, address.Str())
 			t.Errorf("[gas] want=%v got=%v", tt.wantGas, gas)
 		}
 
