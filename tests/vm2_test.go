@@ -219,8 +219,6 @@ func runVmTest2(test VmTest2, rs RuleSet) error {
 }
 
 // RunVm2 is the same as RunVm, except that it configures a RuleSet definition that includes ECIP1045* forks.
-// This is an example of terrible code factoring, since the RuleSet (ie ChainConfig) params are _hardcoded_
-// inside of the function. Kids, if you're watching at home, don't do this.
 func RunVm2(rs RuleSet, state *state.StateDB, env, exec map[string]string) ([]byte, vm.Logs, *big.Int, error) {
 	var (
 		to       = common.HexToAddress(exec["address"])
