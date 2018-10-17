@@ -1,0 +1,17 @@
+How I came up with values for code and gas for test case 1.
+
+Generate 'code'
+
+echo "PUSH1 0x00
+PUSH1 0x1
+PUSH1 0x00
+PUSH1 0x00
+CREATE" | evmasm -a \ # evm assemble (using CREATE because repo/tool doesn't support constantinople codes yet)
+| sed 's/f0/f5/g' # find and replace CREATE with CREATE2 opcode
+#=> 0x6000600160006000f5
+
+
+Expected gas
+
+cost = 4(PUSH1=3) + 2*(MEMRESIZE=3) + CREATE2=32000 + CREATE2.sha3cost/word@0x2=6(ceil(44/32)) => 12 + 6 + 32000 + 12 = 32021
+gas = 100000 - cost = 67979 => tohex(67979)->0x1098b
