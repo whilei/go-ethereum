@@ -13,6 +13,7 @@ import (
 	"math/big"
 	"path/filepath"
 	"strconv"
+	// "strings"
 	"testing"
 )
 
@@ -52,13 +53,13 @@ func TestECIP1045BitwiseLogicOperationsVMTests(t *testing.T) {
 
 func TestConstantinopleVMTests(t *testing.T) {
 	rs := RuleSet{
-		// HomesteadBlock:           big.NewInt(0),
-		// HomesteadGasRepriceBlock: big.NewInt(0),
-		// DiehardBlock:             big.NewInt(0),
-		// ExplosionBlock:           big.NewInt(0),
-		// ECIP1045BBlock: big.NewInt(0),
-		ECIP1045CBlock: big.NewInt(0),
-		// EIP1283Block:             big.NewInt(0),
+		HomesteadBlock:           big.NewInt(0),
+		HomesteadGasRepriceBlock: big.NewInt(0),
+		DiehardBlock:             big.NewInt(0),
+		ExplosionBlock:           big.NewInt(0),
+		ECIP1045BBlock:           big.NewInt(0),
+		ECIP1045CBlock:           big.NewInt(0),
+		// EIP1283Block:   big.NewInt(0),
 	}
 	fns, _ := filepath.Glob(filepath.Join(vmTestDir, "vmConstantinopleTests", "*"))
 	for _, fn := range fns {
