@@ -190,9 +190,12 @@ func runVmTest2(test VmTest2, rs RuleSet) error {
 
 	// check post state
 	for addr, account := range test.Post {
+		if !statedb.Exist(common.HexToAddress(addr)) {
+			return fmt.Errorf("[test.post] missing account: %s", addr)
+		}
 		obj := statedb.GetAccount(common.HexToAddress(addr))
 		if obj == nil {
-			continue
+			return fmt.Errorf("[test.post] nil account: %s", addr)
 		}
 		for addr, value := range account.Storage {
 			v := statedb.GetState(obj.Address(), common.HexToHash(addr))
