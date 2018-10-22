@@ -19,6 +19,7 @@ package vm
 import (
 	"errors"
 	"fmt"
+	"log"
 	"math/big"
 	"time"
 
@@ -214,6 +215,10 @@ func (evm *EVM) Run(contract *Contract, input []byte) (ret []byte, err error) {
 		}
 
 		if op.IsReturning() {
+			if ret == nil && err == nil {
+				ret = stack.peek().Bytes()
+			}
+			log.Println("returning ret=", common.ToHex(ret))
 			evm.env.SetReturnData(ret)
 		}
 

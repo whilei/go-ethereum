@@ -18,6 +18,7 @@ package vm
 
 import (
 	"errors"
+	"log"
 	"math/big"
 
 	"github.com/ethereumproject/go-ethereum/common"
@@ -523,7 +524,12 @@ func opCreate2(instr instruction, pc *uint64, env Environment, contract *Contrac
 	}
 
 	contract.UseGas(gas)
+
 	_, addr, suberr := env.Create2(contract, input, gas, contract.Price, value, salt)
+	log.Println("off=", offset.Int64(), "size=", size.Int64(), "input=", common.ToHex(input), "salt=", common.ToHex(salt.Bytes()), "addr=", addr.Hex())
+
+	// panic("input:" + common.ToHex(input) + ", addr: " + addr.Hex() + ", salt: " + common.ToHex(salt.Bytes()))
+
 	// Push item on the stack based on the returned error. If the ruleset is
 	// homestead we must check for CodeStoreOutOfGasError (homestead only
 	// rule) and treat as an error, if the ruleset is frontier we must
