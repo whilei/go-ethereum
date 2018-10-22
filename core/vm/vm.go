@@ -65,6 +65,8 @@ func (evm *EVM) Run(contract *Contract, input []byte) (ret []byte, err error) {
 
 	evm.env.SetReturnData(nil)
 
+	log.Println("caller:", contract.Caller().Hex())
+
 	if contract.CodeAddr != nil {
 		precompiles := PrecompiledHomestead
 		rs, bn := evm.env.RuleSet(), evm.env.BlockNumber()
@@ -215,11 +217,8 @@ func (evm *EVM) Run(contract *Contract, input []byte) (ret []byte, err error) {
 		}
 
 		if op.IsReturning() {
-			if ret == nil && err == nil {
-				ret = stack.peek().Bytes()
-			}
-			log.Println("returning ret=", common.ToHex(ret))
 			evm.env.SetReturnData(ret)
+			// log.Printf("returndata=%x", evm.env.ReturnData())
 		}
 
 		pc++

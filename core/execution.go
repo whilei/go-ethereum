@@ -62,6 +62,7 @@ func DelegateCall(env vm.Environment, caller vm.ContractRef, addr common.Address
 func Create(env vm.Environment, caller vm.ContractRef, code []byte, gas, gasPrice, value *big.Int) (ret []byte, address common.Address, err error) {
 	codeHash := crypto.Keccak256Hash(code)
 	ret, address, err = exec(env, caller, nil, nil, codeHash, nil, code, gas, gasPrice, value, nil)
+
 	// Here we get an error if we run into maximum stack depth,
 	// See: https://github.com/ethereum/yellowpaper/pull/131
 	// and YP definitions for CREATE instruction
@@ -77,14 +78,15 @@ func Create(env vm.Environment, caller vm.ContractRef, code []byte, gas, gasPric
 func Create2(env vm.Environment, caller vm.ContractRef, code []byte, gas, gasPrice, value, salt *big.Int) (ret []byte, address common.Address, err error) {
 	codeHash := crypto.Keccak256Hash(code)
 	ret, address, err = exec(env, caller, nil, nil, codeHash, nil, code, gas, gasPrice, value, salt)
+
+	// 	panic("CREATE2 address:" + address.Hex() + " err: " + err.Error())
 	// Here we get an error if we run into maximum stack depth,
 	// See: https://github.com/ethereum/yellowpaper/pull/131
 	// and YP definitions for CREATE instruction
 	if err != nil && err != vm.ErrExecutionReverted {
 		return nil, address, err
 	}
-	panic("CREATE2 address:" + address.Hex())
-	// return ret, address, err
+	return ret, address, err
 }
 
 // exec switches on nil value for 'salt' to decide whether to use crypto.Create (nil) or crypto.Create2 (non-nil)
