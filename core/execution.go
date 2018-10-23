@@ -69,8 +69,7 @@ func Create(env vm.Environment, caller vm.ContractRef, code []byte, gas, gasPric
 	if err != nil && err != vm.ErrExecutionReverted {
 		return nil, address, err
 	}
-	panic("CREATE2 address:" + address.Hex())
-	// return ret, address, err
+	return ret, address, err
 }
 
 // Create2 creates a new contract with the given code. The difference between Create2 and Create is Create2 uses
@@ -79,7 +78,6 @@ func Create2(env vm.Environment, caller vm.ContractRef, code []byte, gas, gasPri
 	codeHash := crypto.Keccak256Hash(code)
 	ret, address, err = exec(env, caller, nil, nil, codeHash, nil, code, gas, gasPrice, value, salt)
 
-	// 	panic("CREATE2 address:" + address.Hex() + " err: " + err.Error())
 	// Here we get an error if we run into maximum stack depth,
 	// See: https://github.com/ethereum/yellowpaper/pull/131
 	// and YP definitions for CREATE instruction
