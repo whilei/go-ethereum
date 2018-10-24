@@ -65,7 +65,7 @@ func (evm *EVM) Run(contract *Contract, input []byte) (ret []byte, err error) {
 
 	evm.env.SetReturnData(nil)
 
-	log.Println("caller:", contract.Caller().Hex())
+	log.Printf("evm.Run: caller=%s input=%x", contract.Caller().Hex(), input)
 
 	if contract.CodeAddr != nil {
 		precompiles := PrecompiledHomestead
@@ -160,6 +160,8 @@ func (evm *EVM) Run(contract *Contract, input []byte) (ret []byte, err error) {
 		if !contract.UseGas(cost) {
 			return nil, OutOfGasError
 		}
+
+		log.Printf("vm/Run.pc: op=%v cost=%v contract.gas=%v", op.String(), cost, contract.Gas)
 
 		// Resize the memory calculated previously
 		mem.Resize(newMemSize.Uint64())
@@ -393,11 +395,15 @@ func calculateGasAndSize(gasTable *GasTable, env Environment, contract *Contract
 		quadMemGas(mem, newMemSize, gas)
 	case CREATE2:
 		newMemSize = calcMemSize(stack.data[stack.len()-2], stack.data[stack.len()-3])
+		log.Println("newmemsize", newMemSize)
 
+		log.Println("gas1", gas)
 		// Add gas cost for SHA3/word. This fn modifies the gas pointer-variable as needed.
 		gasCreate2WordCost(mem, newMemSize, gas, stack)
+		log.Println("gas2", gas)
 
 		quadMemGas(mem, newMemSize, gas)
+		log.Println("gas3", gas)
 	case CALL, CALLCODE:
 		gas.Set(gasTable.Calls)
 

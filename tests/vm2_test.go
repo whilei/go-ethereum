@@ -99,7 +99,6 @@ func TestECIP1045CREATE2Tests(t *testing.T) {
 		ExplosionBlock:           big.NewInt(0),
 		ECIP1045BBlock:           big.NewInt(0),
 		ECIP1045CBlock:           big.NewInt(0),
-		EIP1283Block:             big.NewInt(0),
 	}
 	fns, _ := filepath.Glob(filepath.Join(vmTestDir, "ECIP1045", "vmCreate2", "*"))
 	for _, fn := range fns {
@@ -239,6 +238,7 @@ func RunVm2(rs RuleSet, state *state.StateDB, env, exec map[string]string) ([]by
 	if gas == nil || price == nil || value == nil {
 		panic("malformed gas, price or value")
 	}
+	log.Printf("RunVM2 data: data=%x", data)
 	// Reset the pre-compiled contracts for VM tests.
 	vm.PrecompiledHomestead = make(map[string]*vm.PrecompiledAccount)
 
