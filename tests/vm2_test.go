@@ -10,6 +10,7 @@ import (
 	"github.com/ethereumproject/go-ethereum/core/vm"
 	"github.com/ethereumproject/go-ethereum/ethdb"
 	"github.com/ethereumproject/go-ethereum/logger/glog"
+	"log"
 	"math/big"
 	"path/filepath"
 	"strconv"
@@ -107,6 +108,8 @@ func TestECIP1045CREATE2Tests(t *testing.T) {
 		}
 		if err := RunVmTest2(fn, VmSkipTests, rs); err != nil {
 			t.Error(err)
+		} else {
+			log.Println("----")
 		}
 	}
 }
@@ -202,6 +205,8 @@ func runVmTest2(test VmTest2, rs RuleSet) error {
 			vexp := common.HexToHash(value)
 			if v != vexp {
 				return fmt.Errorf("(%x: %s) storage failed. Expected %x, got %x (%v %v)\n", obj.Address().Bytes()[0:4], addr, vexp, v, vexp.Big(), v.Big())
+			} else {
+				log.Printf("matcher: %v == %v", v.Hex(), vexp.Hex())
 			}
 		}
 	}
