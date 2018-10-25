@@ -526,6 +526,7 @@ func opCreate2(instr instruction, pc *uint64, env Environment, contract *Contrac
 	contract.UseGas(gas)
 
 	log.Println("opCreate2: off=", offset.Int64(), "size=", size.Int64(), "input=", common.ToHex(input), "salt=", common.ToHex(salt.Bytes()))
+	log.Printf("opCreate: memory.data=%x", memory.Data())
 	_, addr, suberr := env.Create2(contract, input, gas, contract.Price, value, salt)
 	log.Println("addr=", addr.Hex())
 	// _, addr, suberr := env.Create2(contract, contract.Input, gas, contract.Price, value, salt)

@@ -18,6 +18,7 @@ package core
 
 import (
 	"fmt"
+	"log"
 	"math/big"
 
 	"github.com/ethereumproject/go-ethereum/common"
@@ -76,6 +77,7 @@ func Create(env vm.Environment, caller vm.ContractRef, code []byte, gas, gasPric
 // keccak256(0xff ++ msg.sender ++ salt ++ keccak256(init_code)[12:])
 func Create2(env vm.Environment, caller vm.ContractRef, code []byte, gas, gasPrice, value, salt *big.Int) (ret []byte, address common.Address, err error) {
 	codeHash := crypto.Keccak256Hash(code)
+	log.Printf("core/execution.go: code=%x codehash=%x", code, codeHash)
 	ret, address, err = exec(env, caller, nil, nil, codeHash, nil, code, gas, gasPrice, value, salt)
 
 	// Here we get an error if we run into maximum stack depth,
