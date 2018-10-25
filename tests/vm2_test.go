@@ -238,7 +238,7 @@ func RunVm2(rs RuleSet, state *state.StateDB, env, exec map[string]string) ([]by
 	if gas == nil || price == nil || value == nil {
 		panic("malformed gas, price or value")
 	}
-	log.Printf("RunVM2 data: data=%x", data)
+	log.Printf("RunVM2 data: data=%x data.len=%d", data, len(data))
 	// Reset the pre-compiled contracts for VM tests.
 	vm.PrecompiledHomestead = make(map[string]*vm.PrecompiledAccount)
 
