@@ -65,7 +65,7 @@ func (evm *EVM) Run(contract *Contract, input []byte) (ret []byte, err error) {
 
 	evm.env.SetReturnData(nil)
 
-	log.Printf("evm.Run: caller=%s input=%x", contract.Caller().Hex(), input)
+	log.Printf("evm.Run: caller=%s input=%x code=%x", contract.Caller().Hex(), input, contract.Code)
 
 	if contract.CodeAddr != nil {
 		precompiles := PrecompiledHomestead

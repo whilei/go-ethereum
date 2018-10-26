@@ -422,24 +422,18 @@ func (self *Env) Create(caller vm.ContractRef, data []byte, gas, price, value *b
 }
 
 func (self *Env) Create2(caller vm.ContractRef, data []byte, gas, price, value, salt *big.Int) ([]byte, common.Address, error) {
-	// PTAL why...?
-	// if self.vmTest {
-	// 	caller.ReturnGas(gas, price)
+	if self.vmTest { // }self.vmTest {
+		caller.ReturnGas(gas, price)
 
-	// 	// nonce := self.state.GetNonce(caller.Address())
-	// 	_salt := [32]byte{}
-	// 	for i, v := range salt.Bytes() {
-	// 		if i >= 32 {
-	// 			break
-	// 		}
-	// 		_salt[i] = v
-	// 	}
-	// 	obj := self.state.GetOrNewStateObject(crypto.CreateAddress2(caller.Address(), _salt, data))
+		_salt := common.BigToHash(salt)
 
-	// 	return nil, obj.Address(), nil
-	// } else {
-	return core.Create2(self, caller, data, gas, price, value, salt)
-	// }
+		codeHash := crypto.Keccak256Hash((data))
+		obj := self.state.GetOrNewStateObject(crypto.CreateAddress2(caller.Address(), _salt, codeHash.Bytes()))
+
+		return nil, obj.Address(), nil
+	} else {
+		return core.Create2(self, caller, data, gas, price, value, salt)
+	}
 }
 
 type Message struct {

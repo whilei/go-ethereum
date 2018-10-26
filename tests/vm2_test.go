@@ -107,9 +107,8 @@ func TestECIP1045CREATE2Tests(t *testing.T) {
 		}
 		if err := RunVmTest2(fn, VmSkipTests, rs); err != nil {
 			t.Error(err)
-		} else {
-			log.Println("----")
 		}
+		log.Println("----")
 	}
 }
 
@@ -121,6 +120,7 @@ func RunVmTest2(p string, skipTests []string, rs RuleSet) error {
 		return err
 	}
 
+	log.Println("@", p)
 	if err := runVmTests2(tests, skipTests, rs); err != nil {
 		return err
 	}
@@ -238,6 +238,7 @@ func RunVm2(rs RuleSet, state *state.StateDB, env, exec map[string]string) ([]by
 	if gas == nil || price == nil || value == nil {
 		panic("malformed gas, price or value")
 	}
+	oGas := new(big.Int).Set(gas)
 	log.Printf("RunVM2 data: data=%x data.len=%d", data, len(data))
 	// Reset the pre-compiled contracts for VM tests.
 	vm.PrecompiledHomestead = make(map[string]*vm.PrecompiledAccount)
@@ -249,6 +250,8 @@ func RunVm2(rs RuleSet, state *state.StateDB, env, exec map[string]string) ([]by
 	vmenv.skipTransfer = true
 	vmenv.initial = true
 	ret, err := vmenv.Call(caller, to, data, gas, price, value)
+
+	log.Printf("RunVm2: startgas=%v endgas=%v diffgas=%v", oGas, gas, new(big.Int).Sub(oGas, gas))
 
 	return ret, vmenv.state.Logs(), gas, err
 }

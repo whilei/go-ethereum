@@ -1,44 +1,50 @@
 {
-    "create2_2": {
-        "callcreates": [],
-        "env": {
-            "currentCoinbase": "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
-            "currentDifficulty": "0x0100",
-            "currentGasLimit": "0x0f4240",
-            "currentNumber": "0x00",
-            "currentTimestamp": "0x01"
-        },
-        "exec": {
-            "address": "0xdeadbeef00000000000000000000000000000000",
-            "caller": "0xdeadbeef00000000000000000000000000000000",
-            "code": "0x7f000000000000000000000000feed000000000000000000000000000000000000600160006000f5600055",
-            "data": "0x00",
-            "gas": "0x0186a0",
-            "gasPrice": "0x5af3107a4000",
-            "origin": "0xcd1722f3947def4cf144679da39c4c32bdc35681",
-            "value": "0x0de0b6b3a7640000"
-        },
-        "gas": "0xbb68",
-        "logs": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
-        "out": "",
-        "post": {
-            "0xdeadbeef00000000000000000000000000000000": {
-                "balance": "0xd3c21bcecceda1000000",
-                "code": "0x7f000000000000000000000000feed000000000000000000000000000000000000600160006000f5600055",
-                "nonce": "0x00",
-                "storage": {
-                    "0x00": "0xD04116cDd17beBE565EB2422F2497E06cC1C9833"
-                }
-            }
-        },
-        "pre": {
-            "0xdeadbeef00000000000000000000000000000000": {
-                "balance": "0xd3c21bcecceda1000000",
-                "code": "0x7f000000000000000000000000feed000000000000000000000000000000000000600160006000f5600055",
-                "nonce": "0x00",
-                "storage": {
-                }
-            }
+  "create2_2": {
+    "callcreates": [],
+    "env": {
+      "currentCoinbase": "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
+      "currentDifficulty": "0x0100",
+      "currentGasLimit": "0x0f4240",
+      "currentNumber": "0x00",
+      "currentTimestamp": "0x01"
+    },
+    "exec": {
+      "address": "0xdeadbeef00000000000000000000000000000000",
+      "caller": "0xdeadbeef00000000000000000000000000000000",
+      "code": "0x7f000000000000000000000000feed000000000000000000000000000000000000600160006000f5600055",
+      "data": "0x00",
+      "gas": "0x0186a0",
+      "gasPrice": "0x5af3107a4000",
+      "origin": "0xcd1722f3947def4cf144679da39c4c32bdc35681",
+      "value": "0x0de0b6b3a7640000"
+    },
+    "gas": "0xbb68",
+    "logs": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+    "out": "",
+    "post": {
+      "0xdeadbeef00000000000000000000000000000000": {
+        "balance": "0xd3c21bcecceda1000000",
+        "code": "0x7f000000000000000000000000feed000000000000000000000000000000000000600160006000f5600055",
+        "nonce": "0x01",
+        "storage": {
+          "0x00": "0xD04116cDd17beBE565EB2422F2497E06cC1C9833"
         }
+      },
+        "0xD04116cDd17beBE565EB2422F2497E06cC1C9833": {
+            "balance": "0x0de0b6b3a7640000",
+            "code": "0x0",
+            "nonce": "0x0",
+            "storage": {}
+        }
+    },
+    "pre": {
+      "0xdeadbeef00000000000000000000000000000000": {
+        "balance": "0xd3c21bcecceda1000000",
+        "code": "0x7f000000000000000000000000feed000000000000000000000000000000000000600160006000f5600055",
+        "nonce": "0x00",
+        "storage": {
+        }
+      }
     }
+  }
 }
