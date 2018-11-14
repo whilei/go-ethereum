@@ -126,6 +126,95 @@ func init() {
 	}
 }
 
+// callmsg is the message type used for call transactions.
+type callmsg struct {
+	from          *state.StateObject
+	to            *common.Address
+	gas, gasPrice *big.Int
+	value         *big.Int
+	data          []byte
+}
+
+// accessor boilerplate to implement core.Message
+func (m callmsg) From() (common.Address, error)         { return m.from.Address(), nil }
+func (m callmsg) FromFrontier() (common.Address, error) { return m.from.Address(), nil }
+func (m callmsg) Nonce() uint64                         { return m.from.Nonce() }
+func (m callmsg) To() *common.Address                   { return m.to }
+func (m callmsg) GasPrice() *big.Int                    { return m.gasPrice }
+func (m callmsg) Gas() *big.Int                         { return m.gas }
+func (m callmsg) Value() *big.Int                       { return m.value }
+func (m callmsg) Data() []byte                          { return m.data }
+
+func runevm2(ctx *cli.Context) error {
+	db, _ := ethdb.NewMemDatabase()
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db))
+	sender := statedb.CreateAccount(common.StringToAddress("sender"))
+
+	valueFlag, _ := new(big.Int).SetString(ctx.GlobalString(ValueFlag.Name), 0)
+	if valueFlag == nil {
+		log.Fatalf("malformed %s flag value %q", ValueFlag.Name, ctx.GlobalString(ValueFlag.Name))
+	}
+	vmenv := NewEnv(statedb, common.StringToAddress("evmuser"), valueFlag)
+	gasFlag, _ := new(big.Int).SetString(ctx.GlobalString(GasFlag.Name), 0)
+	if gasFlag == nil {
+		log.Fatalf("malformed %s flag value %q", GasFlag.Name, ctx.GlobalString(GasFlag.Name))
+	}
+	priceFlag, _ := new(big.Int).SetString(ctx.GlobalString(PriceFlag.Name), 0)
+	if priceFlag == nil {
+		log.Fatalf("malformed %s flag value %q", PriceFlag.Name, ctx.GlobalString(PriceFlag.Name))
+	}
+
+	tstart := time.Now()
+
+	statedb.SetBalance(sender.Address(), common.MaxBig)
+
+	msg := callmsg{
+		from:     statedb.GetOrNewStateObject(sender.Address()),
+		to:       nil,
+		gas:      gasFlag,
+		gasPrice: priceFlag,
+		value:    valueFlag,
+		data:     append(common.Hex2Bytes(ctx.GlobalString(CodeFlag.Name)), common.Hex2Bytes(ctx.GlobalString(InputFlag.Name))...),
+	}
+	if msg.gas.Sign() == 0 {
+		msg.gas = big.NewInt(50000000)
+	}
+	if msg.gasPrice.Sign() == 0 {
+		msg.gasPrice = new(big.Int).Mul(big.NewInt(50), common.Shannon)
+	}
+
+	gp := new(core.GasPool).AddGas(common.MaxBig)
+	ret, _, _, err := core.ApplyMessage(vmenv, msg, gp)
+
+	vmdone := time.Since(tstart)
+
+	if ctx.GlobalBool(DumpFlag.Name) {
+		statedb.CommitTo(db, false)
+		fmt.Println(string(statedb.Dump([]common.Address{})))
+	}
+
+	if ctx.GlobalBool(SysStatFlag.Name) {
+		var mem runtime.MemStats
+		runtime.ReadMemStats(&mem)
+		fmt.Printf("vm took %v\n", vmdone)
+		fmt.Printf(`alloc:      %d
+tot alloc:  %d
+no. malloc: %d
+heap alloc: %d
+heap objs:  %d
+num gc:     %d
+`, mem.Alloc, mem.TotalAlloc, mem.Mallocs, mem.HeapAlloc, mem.HeapObjects, mem.NumGC)
+	}
+
+	fmt.Printf("OUT: 0x%x", ret)
+	if err != nil {
+		fmt.Printf(" error: %v", err)
+	}
+	fmt.Println()
+	return nil
+
+}
+
 func runevm(ctx *cli.Context) error {
 
 	db, _ := ethdb.NewMemDatabase()
@@ -204,17 +293,164 @@ func runsvm(ctx *cli.Context) error {
 		log.Fatalf("malformed %s flag value %q", ValueFlag.Name, ctx.GlobalString(ValueFlag.Name))
 	}
 	vmenv := NewEnv(statedb, common.StringToAddress("evmuser"), valueFlag)
-
-	vmtx := sputnikvm.Transaction{
-		Caller:   from,
-		GasPrice: tx.GasPrice(),
-		GasLimit: tx.Gas(),
-		Address:  tx.To(),
-		Value:    tx.Value(),
-		Input:    tx.Data(),
-		Nonce:    new(big.Int).SetUint64(tx.Nonce()),
+	gasFlag, _ := new(big.Int).SetString(ctx.GlobalString(GasFlag.Name), 0)
+	if gasFlag == nil {
+		log.Fatalf("malformed %s flag value %q", GasFlag.Name, ctx.GlobalString(GasFlag.Name))
+	}
+	priceFlag, _ := new(big.Int).SetString(ctx.GlobalString(PriceFlag.Name), 0)
+	if priceFlag == nil {
+		log.Fatalf("malformed %s flag value %q", PriceFlag.Name, ctx.GlobalString(PriceFlag.Name))
 	}
 
+	tstart := time.Now()
+
+	vmtx := sputnikvm.Transaction{
+		Caller:   sender.Address(),
+		GasPrice: gasFlag,
+		GasLimit: priceFlag,
+		Address:  nil,
+		Value:    valueFlag,
+		Input:    append(common.Hex2Bytes(ctx.GlobalString(CodeFlag.Name)), common.Hex2Bytes(ctx.GlobalString(InputFlag.Name))...),
+		Nonce:    new(big.Int).SetUint64(statedb.GetOrNewStateObject(sender.Address()).Nonce()),
+	}
+	vmheader := sputnikvm.HeaderParams{
+		Beneficiary: vmenv.Coinbase(),
+		Timestamp:   vmenv.Time().Uint64(),
+		Number:      vmenv.BlockNumber(),
+		Difficulty:  vmenv.Difficulty(),
+		GasLimit:    vmenv.GasLimit(),
+	}
+
+	// always using latest configuration for now.
+	var vm *sputnikvm.VM
+	if state.StartingNonce == 0 {
+		vm = sputnikvm.NewEIP160(&vmtx, &vmheader)
+	} else if state.StartingNonce == 1048576 {
+		vm = sputnikvm.NewMordenEIP160(&vmtx, &vmheader)
+	} else {
+		sputnikvm.SetCustomInitialNonce(big.NewInt(int64(state.StartingNonce)))
+		vm = sputnikvm.NewCustomEIP160(&vmtx, &vmheader)
+	}
+
+Loop:
+	for {
+		ret := vm.Fire()
+		switch ret.Typ() {
+		case sputnikvm.RequireNone:
+			break Loop
+		case sputnikvm.RequireAccount:
+			address := ret.Address()
+			if statedb.Exist(address) {
+				vm.CommitAccount(address, new(big.Int).SetUint64(statedb.GetNonce(address)),
+					statedb.GetBalance(address), statedb.GetCode(address))
+				break
+			}
+			vm.CommitNonexist(address)
+		case sputnikvm.RequireAccountCode:
+			address := ret.Address()
+			if statedb.Exist(address) {
+				vm.CommitAccountCode(address, statedb.GetCode(address))
+				break
+			}
+			vm.CommitNonexist(address)
+		case sputnikvm.RequireAccountStorage:
+			address := ret.Address()
+			key := common.BigToHash(ret.StorageKey())
+			if statedb.Exist(address) {
+				value := statedb.GetState(address, key).Big()
+				sKey := ret.StorageKey()
+				vm.CommitAccountStorage(address, sKey, value)
+				break
+			}
+			vm.CommitNonexist(address)
+		case sputnikvm.RequireBlockhash:
+			number := ret.BlockNumber()
+			hash := common.Hash{}
+			// if block := bc.GetBlockByNumber(number.Uint64()); block != nil && block.Number().Cmp(number) == 0 {
+			// 	hash = block.Hash()
+			// }
+			vm.CommitBlockhash(number, hash)
+		}
+	}
+
+	// VM execution is finished at this point. We apply changes to the statedb.
+
+	for _, account := range vm.AccountChanges() {
+		switch account.Typ() {
+		case sputnikvm.AccountChangeIncreaseBalance:
+			address := account.Address()
+			amount := account.ChangedAmount()
+			statedb.AddBalance(address, amount)
+		case sputnikvm.AccountChangeDecreaseBalance:
+			address := account.Address()
+			amount := account.ChangedAmount()
+			balance := new(big.Int).Sub(statedb.GetBalance(address), amount)
+			statedb.SetBalance(address, balance)
+		case sputnikvm.AccountChangeRemoved:
+			address := account.Address()
+			statedb.Suicide(address)
+		case sputnikvm.AccountChangeFull:
+			address := account.Address()
+			code := account.Code()
+			nonce := account.Nonce()
+			balance := account.Balance()
+			statedb.SetBalance(address, balance)
+			statedb.SetNonce(address, nonce.Uint64())
+			statedb.SetCode(address, code)
+			for _, item := range account.ChangedStorage() {
+				statedb.SetState(address, common.BigToHash(item.Key), common.BigToHash(item.Value))
+			}
+		case sputnikvm.AccountChangeCreate:
+			address := account.Address()
+			code := account.Code()
+			nonce := account.Nonce()
+			balance := account.Balance()
+			statedb.SetBalance(address, balance)
+			statedb.SetNonce(address, nonce.Uint64())
+			statedb.SetCode(address, code)
+			for _, item := range account.Storage() {
+				statedb.SetState(address, common.BigToHash(item.Key), common.BigToHash(item.Value))
+			}
+		default:
+			panic("unreachable")
+		}
+	}
+	for i, log := range vm.Logs() {
+		fmt.Println("log", i, log.Address, log.Topics, log.Data)
+	}
+	// for _, log := range vm.Logs() {
+	// 	statelog := evm.NewLog(log.Address, log.Topics, log.Data, header.Number.Uint64())
+	// 	statedb.AddLog(*statelog)
+	// }
+	// usedGas := vm.UsedGas()
+	// totalUsedGas.Add(totalUsedGas, usedGas)
+	fmt.Println("used gas: ", vm.UsedGas())
+	fmt.Println("intermediate root: ", statedb.IntermediateRoot(false).Hex())
+	fmt.Println("vm failed: ", vm.Failed())
+	fmt.Println("took: ", time.Since(tstart))
+
+	// receipt := types.NewReceipt(statedb.IntermediateRoot(false).Bytes(), totalUsedGas)
+	// receipt.TxHash = tx.Hash()
+	// receipt.GasUsed = new(big.Int).Set(totalUsedGas)
+	// if vm.Failed() {
+	// 	receipt.Status = types.TxFailure
+	// } else {
+	// 	receipt.Status = types.TxSuccess
+	// }
+	// if MessageCreatesContract(tx) {
+	// 	receipt.ContractAddress = crypto.CreateAddress(from, tx.Nonce())
+	// }
+
+	// logs := statedb.GetLogs(tx.Hash())
+	// receipt.Logs = logs
+	// receipt.Bloom = types.CreateBloom(types.Receipts{receipt})
+
+	// glog.V(logger.Debug).Infoln(receipt)
+
+	vm.Free()
+	// return ret, nil
+	return nil
+	// return receipt, logs, totalUsedGas, nil
 }
 
 func run(ctx *cli.Context) error {
@@ -222,7 +458,8 @@ func run(ctx *cli.Context) error {
 	glog.SetV(ctx.GlobalInt(VerbosityFlag.Name))
 
 	if !ctx.Bool(SVMFlag.Name) {
-		return runevm(ctx)
+		// return runevm(ctx)
+		return runevm2(ctx)
 	}
 	return runsvm(ctx)
 }

@@ -2078,7 +2078,7 @@ func (s *PublicBlockChainAPI) TraceCall(args CallArgs, blockNr rpc.BlockNumber) 
 	return &ExecutionResult{
 		Gas:         gas,
 		ReturnValue: fmt.Sprintf("%x", ret),
-	}, nil
+	}, err
 }
 
 // TraceTransaction returns the amount of gas and execution result of the given transaction.
