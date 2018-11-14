@@ -321,6 +321,13 @@ func runsvm(ctx *cli.Context) error {
 		GasLimit:    vmenv.GasLimit(),
 	}
 
+	if vmtx.GasLimit.Sign() == 0 {
+		vmtx.GasLimit = big.NewInt(50000000)
+	}
+	if vmtx.GasPrice.Sign() == 0 {
+		vmtx.GasPrice = new(big.Int).Mul(big.NewInt(50), common.Shannon)
+	}
+
 	// always using latest configuration for now.
 	var vm *sputnikvm.VM
 	if state.StartingNonce == 0 {
@@ -415,6 +422,9 @@ Loop:
 			panic("unreachable")
 		}
 	}
+
+	vmdone := time.Since(tstart)
+
 	for i, log := range vm.Logs() {
 		fmt.Println("log", i, log.Address, log.Topics, log.Data)
 	}
@@ -428,6 +438,25 @@ Loop:
 	fmt.Println("intermediate root: ", statedb.IntermediateRoot(false).Hex())
 	fmt.Println("vm failed: ", vm.Failed())
 	fmt.Println("took: ", time.Since(tstart))
+
+	if ctx.GlobalBool(SysStatFlag.Name) {
+		var mem runtime.MemStats
+		runtime.ReadMemStats(&mem)
+		fmt.Printf("vm took %v\n", vmdone)
+		fmt.Printf(`alloc:      %d
+tot alloc:  %d
+no. malloc: %d
+heap alloc: %d
+heap objs:  %d
+num gc:     %d
+`, mem.Alloc, mem.TotalAlloc, mem.Mallocs, mem.HeapAlloc, mem.HeapObjects, mem.NumGC)
+	}
+
+	if ctx.GlobalBool(DumpFlag.Name) {
+		fmt.Println("StateDB dump:")
+		statedb.CommitTo(db, false)
+		fmt.Println(string(statedb.Dump([]common.Address{})))
+	}
 
 	// receipt := types.NewReceipt(statedb.IntermediateRoot(false).Bytes(), totalUsedGas)
 	// receipt.TxHash = tx.Hash()
