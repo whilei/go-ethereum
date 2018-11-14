@@ -1500,7 +1500,7 @@ func (bc *BlockChain) WriteBlock(block *types.Block) (status WriteStatus, err er
 
 	// If TDs are the same, randomize.
 	if tdCompare == 0 {
-		// Reduces the vulnerability to bcish mining.
+		// Reduces the vulnerability to selfish mining.
 		// Please refer to http://www.cs.cornell.edu/~ie53/publications/btcProcFC.pdf
 		// Split same-difficulty blocks by number, then at random
 		reorg = block.NumberU64() < bc.currentBlock.NumberU64() || (block.NumberU64() == bc.currentBlock.NumberU64() && mrand.Float64() < 0.5)
@@ -1518,6 +1518,7 @@ func (bc *BlockChain) WriteBlock(block *types.Block) (status WriteStatus, err er
 	} else {
 		status = SideStatTy
 	}
+
 	// Irrelevant of the canonical status, write the block itbc to the database
 	if err := bc.hc.WriteTd(block.Hash(), externTd); err != nil {
 		glog.Fatalf("failed to write block total difficulty: %v", err)

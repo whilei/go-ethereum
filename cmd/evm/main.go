@@ -28,6 +28,7 @@ import (
 
 	"gopkg.in/urfave/cli.v1"
 
+	"github.com/ETCDEVTeam/sputnikvm-ffi/go/sputnikvm"
 	"github.com/ethereumproject/go-ethereum/common"
 	"github.com/ethereumproject/go-ethereum/core"
 	"github.com/ethereumproject/go-ethereum/core/state"
@@ -94,6 +95,10 @@ var (
 		Name:  "create",
 		Usage: "indicates the action should be create rather than call",
 	}
+	SVMFlag = cli.BoolFlag{
+		Name:  "sputnikvm",
+		Usage: "use SputnikEVM instead of standard EVM",
+	}
 )
 
 var app *cli.App
@@ -117,12 +122,11 @@ func init() {
 		ValueFlag,
 		DumpFlag,
 		InputFlag,
+		SVMFlag,
 	}
 }
 
-func run(ctx *cli.Context) error {
-	glog.SetToStderr(true)
-	glog.SetV(ctx.GlobalInt(VerbosityFlag.Name))
+func runevm(ctx *cli.Context) error {
 
 	db, _ := ethdb.NewMemDatabase()
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db))
@@ -186,6 +190,41 @@ num gc:     %d
 	}
 	fmt.Println()
 	return nil
+
+}
+
+func runsvm(ctx *cli.Context) error {
+
+	db, _ := ethdb.NewMemDatabase()
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db))
+	sender := statedb.CreateAccount(common.StringToAddress("sender"))
+
+	valueFlag, _ := new(big.Int).SetString(ctx.GlobalString(ValueFlag.Name), 0)
+	if valueFlag == nil {
+		log.Fatalf("malformed %s flag value %q", ValueFlag.Name, ctx.GlobalString(ValueFlag.Name))
+	}
+	vmenv := NewEnv(statedb, common.StringToAddress("evmuser"), valueFlag)
+
+	vmtx := sputnikvm.Transaction{
+		Caller:   from,
+		GasPrice: tx.GasPrice(),
+		GasLimit: tx.Gas(),
+		Address:  tx.To(),
+		Value:    tx.Value(),
+		Input:    tx.Data(),
+		Nonce:    new(big.Int).SetUint64(tx.Nonce()),
+	}
+
+}
+
+func run(ctx *cli.Context) error {
+	glog.SetToStderr(true)
+	glog.SetV(ctx.GlobalInt(VerbosityFlag.Name))
+
+	if !ctx.Bool(SVMFlag.Name) {
+		return runevm(ctx)
+	}
+	return runsvm(ctx)
 }
 
 func main() {
