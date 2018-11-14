@@ -99,6 +99,10 @@ var (
 		Name:  "sputnikvm",
 		Usage: "use SputnikEVM instead of standard EVM",
 	}
+	EVM2Flag = cli.BoolFlag{
+		Name:  "evm2",
+		Usage: "use ApplyTransaction fn instead of handrolled evm Call/Create",
+	}
 )
 
 var app *cli.App
@@ -123,6 +127,7 @@ func init() {
 		DumpFlag,
 		InputFlag,
 		SVMFlag,
+		EVM2Flag,
 	}
 }
 
@@ -486,11 +491,13 @@ func run(ctx *cli.Context) error {
 	glog.SetToStderr(true)
 	glog.SetV(ctx.GlobalInt(VerbosityFlag.Name))
 
-	if !ctx.Bool(SVMFlag.Name) {
-		// return runevm(ctx)
+	if ctx.Bool(SVMFlag.Name) {
+		return runsvm(ctx)
+	}
+	if ctx.Bool(EVM2Flag.Name) {
 		return runevm2(ctx)
 	}
-	return runsvm(ctx)
+	return runevm(ctx)
 }
 
 func main() {
