@@ -221,7 +221,6 @@ num gc:     %d
 }
 
 func runevm(ctx *cli.Context) error {
-
 	db, _ := ethdb.NewMemDatabase()
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db))
 	sender := statedb.CreateAccount(common.StringToAddress("sender"))
@@ -292,6 +291,8 @@ func runsvm(ctx *cli.Context) error {
 	db, _ := ethdb.NewMemDatabase()
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db))
 	sender := statedb.CreateAccount(common.StringToAddress("sender"))
+
+	statedb.SetBalance(sender.Address(), common.MaxBig)
 
 	valueFlag, _ := new(big.Int).SetString(ctx.GlobalString(ValueFlag.Name), 0)
 	if valueFlag == nil {
