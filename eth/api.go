@@ -505,7 +505,7 @@ func (s *PrivateAccountAPI) LockAccount(addr common.Address) bool {
 //
 // The key used to calculate the signature is decrypted with the given password.
 //
-// https://github.com/ethereum/go-ethereum/wiki/Management-APIs#personal_sign
+// https://github.com/ethereumproject/go-ethereum/wiki/Management-APIs#personal_sign
 func (s *PrivateAccountAPI) Sign(data hexutil.Bytes, addr common.Address, passwd string) (hexutil.Bytes, error) {
 	signature, err := s.am.SignWithPassphrase(addr, passwd, signHash(data))
 	if err != nil {
@@ -1386,7 +1386,7 @@ func signHash(data []byte) []byte {
 // Note, the signature must conform to the secp256k1 curve R, S and V values, where
 // the V value must be be 27 or 28 for legacy reasons.
 //
-// https://github.com/ethereum/go-ethereum/wiki/Management-APIs#personal_ecRecover
+// https://github.com/ethereumproject/go-ethereum/wiki/Management-APIs#personal_ecRecover
 func (s *PrivateAccountAPI) EcRecover(data, sig hexutil.Bytes) (common.Address, error) {
 	if len(sig) != 65 {
 		return common.Address{}, fmt.Errorf("signature must be 65 bytes long")

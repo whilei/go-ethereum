@@ -217,7 +217,7 @@ type LightChain interface {
 type BlockChain interface {
 	LightChain
 
-	// HasBlock verifies block presence in the local chain. // NOTE(whilei): https://github.com/ethereum/go-ethereum/pull/16061
+	// HasBlock verifies block presence in the local chain. // NOTE(whilei): https://github.com/ethereumproject/go-ethereum/pull/16061
 	HasBlock(common.Hash) bool
 
 	// HasBlock verifies block and associate state presence in the local chain.

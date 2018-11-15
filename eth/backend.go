@@ -29,7 +29,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereumproject/go-ethereum/params"
 	"github.com/ethereumproject/ethash"
 	"github.com/ethereumproject/go-ethereum/accounts"
 	"github.com/ethereumproject/go-ethereum/common"

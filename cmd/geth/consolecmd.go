@@ -35,7 +35,7 @@ var (
 		Description: `
 	The Geth console is an interactive shell for the JavaScript runtime environment
 	which exposes a node admin interface as well as the Ðapp JavaScript API.
-	See https://github.com/ethereum/go-ethereum/wiki/Javascipt-Console
+	See https://github.com/ethereumproject/go-ethereum/wiki/Javascipt-Console
 		`,
 		Flags: []cli.Flag{
 			ExecFlag,
@@ -48,7 +48,7 @@ var (
 		Description: `
 	The Geth console is an interactive shell for the JavaScript runtime environment
 	which exposes a node admin interface as well as the Ðapp JavaScript API.
-	See https://github.com/ethereum/go-ethereum/wiki/Javascipt-Console.
+	See https://github.com/ethereumproject/go-ethereum/wiki/Javascipt-Console.
 	This command allows to open a console on a running geth node.
 
 	<DATADIR> and <CHAINDIR> flags will be parsed as usual.
@@ -70,7 +70,7 @@ var (
 		Usage:  `Executes the given JavaScript files in the Geth JavaScript VM`,
 		Description: `
 	The JavaScript VM exposes a node admin interface as well as the Ðapp
-	JavaScript API. See https://github.com/ethereum/go-ethereum/wiki/Javascipt-Console
+	JavaScript API. See https://github.com/ethereumproject/go-ethereum/wiki/Javascipt-Console
 		`,
 	}
 )
