@@ -19,6 +19,7 @@ package ethash
 import (
 	"encoding/binary"
 	"hash"
+	"log"
 	"math/big"
 	"reflect"
 	"runtime"
@@ -31,7 +32,6 @@ import (
 	"github.com/ethereumproject/go-ethereum/common/bitutil"
 	"github.com/ethereumproject/go-ethereum/crypto"
 	"github.com/ethereumproject/go-ethereum/crypto/sha3"
-	"github.com/ethereumproject/go-ethereum/log"
 )
 
 const (
@@ -211,15 +211,6 @@ func generateCache(dest []uint32, epoch uint64, seed []byte) {
 func swap(buffer []byte) {
 	for i := 0; i < len(buffer); i += 4 {
 		binary.BigEndian.PutUint32(buffer[i:], binary.LittleEndian.Uint32(buffer[i:]))
-	}
-}
-
-// prepare converts an ethash cache or dataset from a byte stream into the internal
-// int representation. All ethash methods work with ints to avoid constant byte to
-// int conversions as well as to handle both little and big endian systems.
-func prepare(dest []uint32, src []byte) {
-	for i := 0; i < len(dest); i++ {
-		dest[i] = binary.LittleEndian.Uint32(src[i*4:])
 	}
 }
 
