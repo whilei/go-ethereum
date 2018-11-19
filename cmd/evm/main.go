@@ -34,6 +34,7 @@ import (
 	"github.com/ethereumproject/go-ethereum/core/state"
 	"github.com/ethereumproject/go-ethereum/core/types"
 	"github.com/ethereumproject/go-ethereum/core/vm"
+	evm "github.com/ethereumproject/go-ethereum/core/vm"
 	"github.com/ethereumproject/go-ethereum/crypto"
 	"github.com/ethereumproject/go-ethereum/ethdb"
 	"github.com/ethereumproject/go-ethereum/logger/glog"
@@ -150,6 +151,9 @@ func (m callmsg) Gas() *big.Int                         { return m.gas }
 func (m callmsg) Value() *big.Int                       { return m.value }
 func (m callmsg) Data() []byte                          { return m.data }
 
+// runevm2 differs from original runevm in that it's application of the evm code is made through 'ApplyMessage'
+// , as opposed to runevm, where the contract is evaluated thru a replicated evm interface. this causes
+// state outcomes to correspond to normal functioning
 func runevm2(ctx *cli.Context) error {
 	db, _ := ethdb.NewMemDatabase()
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db))
@@ -310,6 +314,10 @@ func runsvm(ctx *cli.Context) error {
 
 	tstart := time.Now()
 
+	// here we're just copy-and-paste implementing the code from multivm_processor.go, which is normally
+	// called from state_procesor.go
+	// difference is that chain configuration is hard-set to the latest=EIP160 (not configurable) and that
+	// no receipt is assembled afterward
 	vmtx := sputnikvm.Transaction{
 		Caller:   sender.Address(),
 		GasPrice: gasFlag,
@@ -436,12 +444,7 @@ Loop:
 		statelog := evm.NewLog(log.Address, log.Topics, log.Data, vmheader.Number.Uint64())
 		statedb.AddLog(*statelog)
 	}
-	// for _, log := range vm.Logs() {
-	// 	statelog := evm.NewLog(log.Address, log.Topics, log.Data, header.Number.Uint64())
-	// 	statedb.AddLog(*statelog)
-	// }
-	// usedGas := vm.UsedGas()
-	// totalUsedGas.Add(totalUsedGas, usedGas)
+
 	fmt.Println("used gas: ", vm.UsedGas())
 	fmt.Println("intermediate root: ", statedb.IntermediateRoot(false).Hex())
 	fmt.Println("vm failed: ", vm.Failed())
@@ -466,28 +469,8 @@ num gc:     %d
 		fmt.Println(string(statedb.Dump([]common.Address{})))
 	}
 
-	// receipt := types.NewReceipt(statedb.IntermediateRoot(false).Bytes(), totalUsedGas)
-	// receipt.TxHash = tx.Hash()
-	// receipt.GasUsed = new(big.Int).Set(totalUsedGas)
-	// if vm.Failed() {
-	// 	receipt.Status = types.TxFailure
-	// } else {
-	// 	receipt.Status = types.TxSuccess
-	// }
-	// if MessageCreatesContract(tx) {
-	// 	receipt.ContractAddress = crypto.CreateAddress(from, tx.Nonce())
-	// }
-
-	// logs := statedb.GetLogs(tx.Hash())
-	// receipt.Logs = logs
-	// receipt.Bloom = types.CreateBloom(types.Receipts{receipt})
-
-	// glog.V(logger.Debug).Infoln(receipt)
-
 	vm.Free()
-	// return ret, nil
 	return nil
-	// return receipt, logs, totalUsedGas, nil
 }
 
 func run(ctx *cli.Context) error {
