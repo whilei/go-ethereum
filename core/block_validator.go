@@ -17,8 +17,15 @@
 package core
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"math/big"
+	"os"
+	xec "os/exec"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/ethereumproject/go-ethereum/common"
@@ -42,6 +49,20 @@ var (
 var (
 	big10      = big.NewInt(10)
 	bigMinus99 = big.NewInt(-99)
+)
+
+type unableHeaderValidatorProc struct {
+	err error
+	msg string
+}
+
+func (e unableHeaderValidatorProc) Error() error {
+	return fmt.Errorf("%v: %s", e.err, e.msg)
+}
+
+var (
+	errInvalidHeaderValidatorProc = errors.New("invalid header validator proc")
+	errUnableHeaderValidatorProc  = errors.New("unable to validate header")
 )
 
 // Difficulty allows passing configurable options to a given difficulty algorithm.
@@ -211,13 +232,91 @@ func (v *BlockValidator) ValidateHeader(header, parent *types.Header, checkPow b
 	if v.bc.HasHeader(header.Hash()) {
 		return nil
 	}
-	return ValidateHeader(v.config, v.Pow, header, parent, checkPow, false)
+	err := ValidateHeader(v.config, v.Pow, header, parent, checkPow, false)
+
+	// catch invalid headerValidatorProc errors (invalid programs, "meta errors")
+	if err != nil {
+		if err == errInvalidHeaderValidatorProc {
+			glog.Fatal(err)
+		}
+		if strings.Contains(err.Error(), errUnableHeaderValidatorProc.Error()) {
+			glog.Fatal(err)
+		}
+	}
+	return err
 }
 
-// Validates a header. Returns an error if the header is invalid.
+func runHeaderValidatorProc(header *types.Header, parent *types.Header, isUncle bool, proc []string) error {
+	hb, e := json.Marshal(header)
+	// hb, e := json.MarshalIndent(header, "", "  ")
+	if e != nil {
+		return unableHeaderValidatorProc{
+			err: errUnableHeaderValidatorProc,
+			msg: e.Error(),
+		}.Error()
+	}
+	pb, e := json.Marshal(parent)
+	// pb, e := json.MarshalIndent(parent, "", "  ")
+	if e != nil {
+		return unableHeaderValidatorProc{
+			err: errUnableHeaderValidatorProc,
+			msg: e.Error(),
+		}.Error()
+	}
+	args := []string{}
+	if len(proc) > 1 {
+		args = append(args, proc[1:]...)
+	}
+
+	cmd := xec.Command(proc[0], args...)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+
+	stdin, er := cmd.StdinPipe()
+	if er != nil {
+		return unableHeaderValidatorProc{
+			err: errUnableHeaderValidatorProc,
+			msg: er.Error(),
+		}.Error()
+	}
+	var wg sync.WaitGroup
+	er = cmd.Start()
+	if er != nil {
+		return unableHeaderValidatorProc{
+			err: errUnableHeaderValidatorProc,
+			msg: er.Error(),
+		}.Error()
+	}
+	wg.Add(1)
+	go func() {
+		defer stdin.Close()
+		defer wg.Done()
+
+		// the standard 'protocol' values to be passed to the arbitrary validator program,
+		// 1: current header JSON string
+		// 2: parent header JSON string
+		// 3: ["true"|"false"] whether or not current header is an uncle
+		io.WriteString(stdin, fmt.Sprintf("%s %s %v", hb, pb, isUncle))
+	}()
+	wg.Wait()
+	err := cmd.Wait()
+	return err
+}
+
+// ValidateHeader validates a header. Returns an error if the header is invalid.
 //
 // See YP section 4.3.4. "Block Header Validity"
 func ValidateHeader(config *ChainConfig, pow pow.PoW, header *types.Header, parent *types.Header, checkPow, uncle bool) error {
+
+	if config.HeaderValidatorProc != nil {
+		err := runHeaderValidatorProc(header, parent, uncle, config.HeaderValidatorProc)
+		// NOTE we could make this logic configurable as well
+		// eg. headerValidatorProcOnly: [true|false], then if config.headerValidatorProcOnly { return err } <-- returns nil and nonnil vals, instead of allowing the header to pass rest of normal ethereum validations
+		if err != nil {
+			return err
+		}
+	}
+
 	if len(header.Extra) > types.HeaderExtraMax {
 		return fmt.Errorf("extra data size %d exceeds limit of %d", len(header.Extra), types.HeaderExtraMax)
 	}

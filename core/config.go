@@ -150,6 +150,14 @@ type ChainConfig struct {
 
 	// BadHashes holds well known blocks with consensus issues. See ErrHashKnownBad.
 	BadHashes []*BadHash `json:"badHashes"`
+
+	// HeaderValidatorProc describes an arbitrary process to run as the HeaderValidator fn.
+	// It will be passed 3 arguments: 1:parent header json, 2:current header json, 3:isUncle boolean
+	// This process should be given with full descriptive qualification for the geth process to be able
+	// to execute it, and the process should also of course be executable by the owner of the geth process.
+	// This process should return 0 if the validation passes or 1 if not. Any other return value
+	// will cause a fatal shutdown of all geth processes.
+	HeaderValidatorProc []string `json:"headerValidatorProc,omitempty"`
 }
 
 type Fork struct {

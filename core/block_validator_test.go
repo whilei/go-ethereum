@@ -17,7 +17,13 @@
 package core
 
 import (
+	"fmt"
 	"math/big"
+	"os"
+	xec "os/exec"
+	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/ethereumproject/ethash"
@@ -122,6 +128,78 @@ func TestNumber(t *testing.T) {
 	err = ValidateHeader(cfg, nil, header, chain.Genesis().Header(), false, false)
 	if err == BlockNumberErr {
 		t.Errorf("didn't expect block number error")
+	}
+}
+
+func TestValidateHeaderProc(t *testing.T) {
+	_, chain := proc(t)
+
+	statedb, err := state.New(chain.Genesis().Root(), state.NewDatabase(chain.chainDb))
+	if err != nil {
+		t.Fatal(err)
+	}
+	header := makeHeader(chain.config, chain.Genesis(), statedb)
+
+	cfg := testChainConfig()
+
+	orbVerifyExecPath := filepath.Join(append([]string{os.Getenv("GOPATH")}, strings.Split("/src/github.com/ethereumproject/go-ethereum/orb-verify", "/")...)...)
+	buildCmd := xec.Command("go", "build", "-o", orbVerifyExecPath, filepath.Join(orbVerifyExecPath, "..", "cmd", "orb-verify", "main.go"))
+	if err := buildCmd.Run(); err != nil {
+		t.Fatal(err)
+	}
+
+	trials := []struct {
+		cmd         []string
+		expectedErr error
+	}{
+		{
+			cmd:         []string{"grep", "-q", "0x56e"},
+			expectedErr: nil,
+		},
+		{
+			cmd:         []string{"grep", "-q", "abcdefghijk"},
+			expectedErr: fmt.Errorf("exit status 1"),
+		},
+		{
+			cmd:         []string{"sh", "-c", "exit", "0"},
+			expectedErr: nil,
+		},
+		{
+			cmd:         []string{"sh", "-c", "exit", "1"},
+			expectedErr: nil, // weird but true
+		},
+		{
+			cmd: []string{"bcash"},
+			expectedErr: unableHeaderValidatorProc{
+				err: errUnableHeaderValidatorProc,
+				msg: fmt.Sprintf(`exec: "bcash": executable file not found in %s`, func() string {
+					if runtime.GOOS == "windows" {
+						return "%PATH%"
+					} else {
+						return "$PATH"
+					}
+				}()),
+			}.Error(),
+		},
+		{
+			cmd:         []string{orbVerifyExecPath},
+			expectedErr: nil,
+		},
+	}
+
+	for i, try := range trials {
+		cfg.HeaderValidatorProc = try.cmd
+		err = ValidateHeader(cfg, nil, header, chain.Genesis().Header(), false, false)
+		if err == nil && try.expectedErr == nil {
+			continue
+		}
+		if err != nil && try.expectedErr == nil {
+			t.Fatal("i", i, "got=", err, "want=", try.expectedErr)
+		} else if err == nil && try.expectedErr != nil {
+			t.Fatal("i", i, "got=", err, "want=", try.expectedErr)
+		} else if err.Error() != try.expectedErr.Error() {
+			t.Fatal("i", i, "got=", err, "want=", try.expectedErr)
+		}
 	}
 }
 
