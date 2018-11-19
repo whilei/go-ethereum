@@ -433,6 +433,8 @@ Loop:
 
 	for i, log := range vm.Logs() {
 		fmt.Println("log", i, log.Address, log.Topics, log.Data)
+		statelog := evm.NewLog(log.Address, log.Topics, log.Data, vmheader.Number.Uint64())
+		statedb.AddLog(*statelog)
 	}
 	// for _, log := range vm.Logs() {
 	// 	statelog := evm.NewLog(log.Address, log.Topics, log.Data, header.Number.Uint64())
