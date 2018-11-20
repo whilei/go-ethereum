@@ -124,6 +124,10 @@ jobs:
               brew install gpg2
               go get github.com/etcdevteam/go-schroedinger/cmd/schroedinger/...
             fi
+            go version
+            go env
+            uname -a
+            sw_vers
       - persist_to_workspace:
           root: ~/
           paths:
