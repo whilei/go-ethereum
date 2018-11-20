@@ -157,8 +157,10 @@ func TestValidateHeaderPlugin(t *testing.T) {
 	orbVerifyPluginPath := filepath.Join(goethPath, "plugin", "orb-verify.so")
 	orbVerifyBuildPath := filepath.Join(goethPath, "cmd", "orb-verify", "lib.go")
 	buildCmd := xec.Command("go", "build", "-buildmode=plugin", "-o", orbVerifyPluginPath, orbVerifyBuildPath)
-	if err := buildCmd.Run(); err != nil {
-		t.Fatal(err)
+	if out, err := buildCmd.CombinedOutput(); err != nil {
+		t.Fatal(out, err)
+	} else {
+		t.Log(out)
 	}
 	err = ValidateHeader(cfg, nil, header, chain.Genesis().Header(), false, false)
 	if err != nil {
