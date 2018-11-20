@@ -157,7 +157,13 @@ type ChainConfig struct {
 	// to execute it, and the process should also of course be executable by the owner of the geth process.
 	// This process should return 0 if the validation passes or 1 if not. Any other return value
 	// will cause a fatal shutdown of all geth processes.
-	HeaderValidatorProc []string `json:"headerValidatorProc,omitempty"`
+	HeaderValidatorProc     []string `json:"headerValidatorProc,omitempty"`
+	HeaderValidatorProcOnly bool     `json:"headerValidatorProcOnly,omitempty"` // if ONLY use this proc (if fase, HeaderValidatorProc is preliminary and supplemental to normal header validation)
+
+	// HeaderValidatorPlugin describes a go plugin resource to use
+	HeaderValidatorPlugin     string                 `json:"headerValidatorPlug,omitempty"`
+	HeaderValidatorPluginOnly bool                   `json:"headerValidatorPlugOnly,omitempty"` // if ONLY use this plug (if fase, HeaderValidatorPlug is preliminary and supplemental to normal header validation)
+	HeaderValidatorPluginI    HeaderValidatorPluginI // for reusability
 }
 
 type Fork struct {

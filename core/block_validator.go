@@ -24,6 +24,8 @@ import (
 	"math/big"
 	"os"
 	xec "os/exec"
+	"path/filepath"
+	"plugin"
 	"strings"
 	"sync"
 	"time"
@@ -61,8 +63,9 @@ func (e unableHeaderValidatorProc) Error() error {
 }
 
 var (
-	errInvalidHeaderValidatorProc = errors.New("invalid header validator proc")
-	errUnableHeaderValidatorProc  = errors.New("unable to validate header")
+	errInvalidHeaderValidatorProc   = errors.New("invalid header validator proc")
+	errInvalidHeaderValidatorPlugin = errors.New("invalid header validator plugin")
+	errUnableHeaderValidatorProc    = errors.New("unable to validate header")
 )
 
 // Difficulty allows passing configurable options to a given difficulty algorithm.
@@ -246,23 +249,21 @@ func (v *BlockValidator) ValidateHeader(header, parent *types.Header, checkPow b
 	return err
 }
 
-func runHeaderValidatorProc(header *types.Header, parent *types.Header, isUncle bool, proc []string) error {
+func getHeaderValidatorPParams(header *types.Header, parent *types.Header, isUncle bool) (string, error) {
 	hb, e := json.Marshal(header)
 	// hb, e := json.MarshalIndent(header, "", "  ")
 	if e != nil {
-		return unableHeaderValidatorProc{
-			err: errUnableHeaderValidatorProc,
-			msg: e.Error(),
-		}.Error()
+		return "", e
 	}
 	pb, e := json.Marshal(parent)
 	// pb, e := json.MarshalIndent(parent, "", "  ")
 	if e != nil {
-		return unableHeaderValidatorProc{
-			err: errUnableHeaderValidatorProc,
-			msg: e.Error(),
-		}.Error()
+		return "", e
 	}
+	return fmt.Sprintf("%s %s %v", hb, pb, isUncle), nil
+}
+
+func runHeaderValidatorProc(header *types.Header, parent *types.Header, isUncle bool, proc []string, params string) error {
 	args := []string{}
 	if len(proc) > 1 {
 		args = append(args, proc[1:]...)
@@ -296,10 +297,56 @@ func runHeaderValidatorProc(header *types.Header, parent *types.Header, isUncle 
 		// 1: current header JSON string
 		// 2: parent header JSON string
 		// 3: ["true"|"false"] whether or not current header is an uncle
-		io.WriteString(stdin, fmt.Sprintf("%s %s %v", hb, pb, isUncle))
+		io.WriteString(stdin, params)
 	}()
 	wg.Wait()
 	err := cmd.Wait()
+	return err
+}
+
+type HeaderValidatorPluginI interface {
+	Validate(string) error
+}
+
+func runHeaderValidatorPlugin(config *ChainConfig, header, parent *types.Header, isUncle bool, params string) error {
+	if config.HeaderValidatorPluginI == nil {
+		var pluginPath string
+		switch config.HeaderValidatorPlugin {
+		case "orb-verify":
+			// pluginPath = "./plugin/orb-verify.so"
+			pluginPath = filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "ethereumproject", "go-ethereum", "plugin", "orb-verify.so")
+		default:
+			return unableHeaderValidatorProc{
+				err: errInvalidHeaderValidatorPlugin,
+				msg: "invalid plugin specified",
+			}.Error()
+		}
+		var p *plugin.Plugin
+		p, err := plugin.Open(pluginPath)
+		if err != nil {
+			return unableHeaderValidatorProc{
+				err: errInvalidHeaderValidatorPlugin,
+				msg: err.Error(),
+			}.Error()
+		}
+		symValidate, err := p.Lookup("Validator")
+		if err != nil {
+			return unableHeaderValidatorProc{
+				err: errInvalidHeaderValidatorPlugin,
+				msg: err.Error(),
+			}.Error()
+		}
+		var v HeaderValidatorPluginI
+		v, ok := symValidate.(HeaderValidatorPluginI)
+		if !ok {
+			return unableHeaderValidatorProc{
+				err: errInvalidHeaderValidatorPlugin,
+				msg: "unable to convert interface",
+			}.Error()
+		}
+		config.HeaderValidatorPluginI = v
+	}
+	err := config.HeaderValidatorPluginI.Validate(params)
 	return err
 }
 
@@ -309,10 +356,31 @@ func runHeaderValidatorProc(header *types.Header, parent *types.Header, isUncle 
 func ValidateHeader(config *ChainConfig, pow pow.PoW, header *types.Header, parent *types.Header, checkPow, uncle bool) error {
 
 	if config.HeaderValidatorProc != nil {
-		err := runHeaderValidatorProc(header, parent, uncle, config.HeaderValidatorProc)
+		params, err := getHeaderValidatorPParams(header, parent, uncle)
+		if err != nil {
+			return unableHeaderValidatorProc{
+				err: errInvalidHeaderValidatorPlugin,
+				msg: err.Error(),
+			}.Error()
+		}
+		err = runHeaderValidatorProc(header, parent, uncle, config.HeaderValidatorProc, params)
 		// NOTE we could make this logic configurable as well
 		// eg. headerValidatorProcOnly: [true|false], then if config.headerValidatorProcOnly { return err } <-- returns nil and nonnil vals, instead of allowing the header to pass rest of normal ethereum validations
+		if config.HeaderValidatorProcOnly || err != nil {
+			return err
+		}
+	}
+
+	if config.HeaderValidatorPlugin != "" {
+		params, err := getHeaderValidatorPParams(header, parent, uncle)
 		if err != nil {
+			return unableHeaderValidatorProc{
+				err: errInvalidHeaderValidatorPlugin,
+				msg: err.Error(),
+			}.Error()
+		}
+		err = runHeaderValidatorPlugin(config, header, parent, uncle, params)
+		if config.HeaderValidatorPluginOnly || err != nil {
 			return err
 		}
 	}

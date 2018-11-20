@@ -131,6 +131,36 @@ func TestNumber(t *testing.T) {
 	}
 }
 
+func projectRoot() string {
+	return filepath.Join(append([]string{os.Getenv("GOPATH")}, strings.Split("/src/github.com/ethereumproject/go-ethereum", "/")...)...)
+}
+
+func TestValidateHeaderPlugin(t *testing.T) {
+	_, chain := proc(t)
+
+	statedb, err := state.New(chain.Genesis().Root(), state.NewDatabase(chain.chainDb))
+	if err != nil {
+		t.Fatal(err)
+	}
+	header := makeHeader(chain.config, chain.Genesis(), statedb)
+
+	cfg := testChainConfig()
+	cfg.HeaderValidatorPlugin = "orb-verify"
+
+	goethPath := projectRoot()
+	os.MkdirAll(filepath.Join(goethPath, "plugin"), os.ModePerm)
+	orbVerifyPluginPath := filepath.Join(goethPath, "plugin", "orb-verify.so")
+	orbVerifyBuildPath := filepath.Join(goethPath, "cmd", "orb-verify", "lib.go")
+	buildCmd := xec.Command("go", "build", "-buildmode=plugin", "-o", orbVerifyPluginPath, orbVerifyBuildPath)
+	if err := buildCmd.Run(); err != nil {
+		t.Fatal(err)
+	}
+	err = ValidateHeader(cfg, nil, header, chain.Genesis().Header(), false, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestValidateHeaderProc(t *testing.T) {
 	_, chain := proc(t)
 
@@ -142,8 +172,11 @@ func TestValidateHeaderProc(t *testing.T) {
 
 	cfg := testChainConfig()
 
-	orbVerifyExecPath := filepath.Join(append([]string{os.Getenv("GOPATH")}, strings.Split("/src/github.com/ethereumproject/go-ethereum/orb-verify", "/")...)...)
-	buildCmd := xec.Command("go", "build", "-o", orbVerifyExecPath, filepath.Join(orbVerifyExecPath, "..", "cmd", "orb-verify", "main.go"))
+	goethPath := projectRoot()
+	os.MkdirAll(filepath.Join(goethPath, "bin"), os.ModePerm)
+	orbVerifyExecPath := filepath.Join(goethPath, "bin", "orb-verify")
+	orbVerifyBuildPath := filepath.Join("github.com/ethereumproject/go-ethereum", "cmd", "orb-verify")
+	buildCmd := xec.Command("go", "build", "-o", orbVerifyExecPath, orbVerifyBuildPath)
 	if err := buildCmd.Run(); err != nil {
 		t.Fatal(err)
 	}
@@ -201,6 +234,7 @@ func TestValidateHeaderProc(t *testing.T) {
 			t.Fatal("i", i, "got=", err, "want=", try.expectedErr)
 		}
 	}
+
 }
 
 func TestPutReceipt(t *testing.T) {
