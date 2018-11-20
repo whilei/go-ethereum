@@ -136,6 +136,11 @@ func projectRoot() string {
 }
 
 func TestValidateHeaderPlugin(t *testing.T) {
+
+	if runtime.GOOS == "windows" {
+		return
+	}
+
 	_, chain := proc(t)
 
 	statedb, err := state.New(chain.Genesis().Root(), state.NewDatabase(chain.chainDb))
@@ -162,6 +167,11 @@ func TestValidateHeaderPlugin(t *testing.T) {
 }
 
 func TestValidateHeaderProc(t *testing.T) {
+
+	if runtime.GOOS == "windows" {
+		return
+	}
+
 	_, chain := proc(t)
 
 	statedb, err := state.New(chain.Genesis().Root(), state.NewDatabase(chain.chainDb))
