@@ -51,7 +51,7 @@ func setupEZDev(ctx *cli.Context, config *core.SufficientChainConfig) error {
 	bal := "10000000000000000000000000000000"
 	if len(accman.Accounts()) == 0 {
 		glog.D(logger.Warn).Infoln("No existing EZDEV accounts found, creating 10")
-		password := "foo"
+		password := ""
 		// accounts := []accounts.Account{}
 		for i := 0; i < 10; i++ {
 			acc, err := accman.NewAccount(password)
