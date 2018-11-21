@@ -300,7 +300,7 @@ func (self *worker) wait() {
 			block := result.Block
 			work := result.Work
 
-			glog.D(logger.Error).Infoln("got result", block, work)
+			// glog.D(logger.Error).Infoln("got result", block, work)
 			if self.fullValidation {
 				glog.D(logger.Error).Infoln("full")
 				if res := self.chain.InsertChain(types.Blocks{block}); res.Error != nil {
