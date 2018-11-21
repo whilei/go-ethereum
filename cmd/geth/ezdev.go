@@ -20,6 +20,11 @@ func setCTXDefault(ctx *cli.Context, name, val string) {
 	}
 }
 
+func setEZDevFlags(ctx *cli.Context) {
+	setCTXDefault(ctx, NoDiscoverFlag.Name, "true")
+	setCTXDefault(ctx, LightKDFFlag.Name, "true")
+}
+
 func setupEZDev(ctx *cli.Context, config *core.SufficientChainConfig) error {
 	glog.Errorln("Initializing EZDEV...")
 
@@ -27,8 +32,6 @@ func setupEZDev(ctx *cli.Context, config *core.SufficientChainConfig) error {
 	// copy dev.json, dev_genesis.json, dev_genesis_allow.csv to datadir/ezdev/{ chain, dev_genesis, dev_genesis_alloc }.json/csv,
 	// init 10 accounts with password 'foo'
 	// add these accounts to genesis alloc csv
-	setCTXDefault(ctx, NoDiscoverFlag.Name, "true")
-	setCTXDefault(ctx, LightKDFFlag.Name, "true")
 
 	config.Include = []string{"dev_genesis.json"}
 
@@ -37,6 +40,9 @@ func setupEZDev(ctx *cli.Context, config *core.SufficientChainConfig) error {
 	// Set original genesis to nil so no conflict between GenesisAlloc field and present Genesis obj.
 	config.Genesis = nil
 	cg.AllocFile = "dev_genesis_alloc.csv"
+
+	// because this cli ctx is weird and accounts seem slower to generate if this isn't here
+	setEZDevFlags(ctx)
 
 	// cc.Genesis = cg
 	// make some accounts

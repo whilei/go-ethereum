@@ -488,16 +488,14 @@ func MakeSystemNode(version string, ctx *cli.Context) *node.Node {
 		miner.HeaderExtra = []byte(s)
 	}
 
+	if ctx.GlobalBool(EZDevModeFlag.Name) {
+		setEZDevFlags(ctx)
+	}
+
 	// Makes sufficient configuration from JSON file or DB pending flags.
 	// Delegates flag usage.
 	config := mustMakeSufficientChainConfig(ctx)
 	logChainConfiguration(ctx, config)
-
-	if ctx.GlobalBool(EZDevModeFlag.Name) {
-		if err := setupEZDev(ctx, config); err != nil {
-			log.Fatal(err)
-		}
-	}
 
 	// Configure the Ethereum service
 	ethConf := mustMakeEthConf(ctx, config)
@@ -707,20 +705,26 @@ func mustMakeSufficientChainConfig(ctx *cli.Context) *core.SufficientChainConfig
 			state.StartingNonce = state.DefaultTestnetStartingNonce // (2**20)
 		}
 		return config
-	} else if ctx.GlobalBool(EZDevModeFlag.Name) {
-		glog.Errorln("setting EZDEV suffconf...")
-		c := core.DefaultConfigEZDev
-		if c.State != nil {
-			state.StartingNonce = c.State.StartingNonce
-		}
-		return c
 	}
+	// else if ctx.GlobalBool(EZDevModeFlag.Name) {
+	// 	glog.Errorln("setting EZDEV suffconf...")
+	// 	c := core.DefaultConfigEZDev
+	// 	if c.State != nil {
+	// 		state.StartingNonce = c.State.StartingNonce
+	// 	}
+	// 	return c
+	// }
 
 	// Returns surely valid suff chain config.
 	chainDir := MustMakeChainDataDir(ctx)
 	defaultChainConfigPath := filepath.Join(chainDir, "chain.json")
 	if _, de := os.Stat(defaultChainConfigPath); de != nil && os.IsNotExist(de) {
-		glog.Fatalf(`%v: %v
+		if ctx.GlobalBool(EZDevModeFlag.Name) {
+			if err := setupEZDev(ctx, core.DefaultConfigEZDev); err != nil {
+				panic(err)
+			}
+		} else {
+			glog.Fatalf(`%v: %v
 		It looks like you haven't set up your custom chain yet...
 		Here's a possible workflow for that:
 
@@ -728,8 +732,10 @@ func mustMakeSufficientChainConfig(ctx *cli.Context) *core.SufficientChainConfig
 		$ sed -i.bak s/morden/%v/ %v/chain.json
 		$ vi %v/chain.json # <- make your customizations
 		`, core.ErrChainConfigNotFound, defaultChainConfigPath,
-			chainDir, chainIdentity, chainDir, chainDir)
+				chainDir, chainIdentity, chainDir, chainDir)
+		}
 	}
+	glog.D(logger.Warn).Infoln("Reading chain config from", defaultChainConfigPath)
 	config, err := core.ReadExternalChainConfigFromFile(defaultChainConfigPath)
 	if err != nil {
 		glog.Fatalf(`invalid external configuration JSON: '%v': %v
