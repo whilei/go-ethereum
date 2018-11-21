@@ -24,6 +24,8 @@ Then, in another session let's test out the automine feature.
 $ ./bin/geth --chain ezdev --preload test.js attach
 ```
 
+[./test.js](./test.js)
+
 ### Of note:
 - if you smell hack, it's because there is hack
 - the genesis and chain config setup "bootstraps itself" by reading a default config 
