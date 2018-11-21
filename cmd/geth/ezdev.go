@@ -4,10 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math"
-	"math/big"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/ethereumproject/go-ethereum/core"
 	"github.com/ethereumproject/go-ethereum/logger"
@@ -34,10 +33,45 @@ func setupEZDev(ctx *cli.Context, config *core.SufficientChainConfig) error {
 	cc := core.DefaultConfigEZDev
 	cc.Include = []string{"dev_genesis.json"}
 
-	cg := cc.Genesis
-	cc.Genesis = nil
+	var cg *core.GenesisDump
+	cg = cc.Genesis
 
+	// Set original genesis to nil so no conflict between GenesisAlloc field and present Genesis obj.
+	cc.Genesis = nil
 	cg.AllocFile = "dev_genesis_alloc.csv"
+
+	// cc.Genesis = cg
+	// make some accounts
+	accman := MakeAccountManager(ctx)
+	data := []byte{}
+	bal := "10000000000000000000000000000000"
+	if len(accman.Accounts()) == 0 {
+		glog.D(logger.Warn).Infoln("No existing EZDEV accounts found, creating 10")
+		password := "foo"
+		// accounts := []accounts.Account{}
+		for i := 0; i < 10; i++ {
+			acc, err := accman.NewAccount(password)
+			if err != nil {
+				return err
+			}
+			// accounts = append(accounts, acc)
+			d := fmt.Sprintf(`"%s","%v"
+`, strings.TrimLeft(acc.Address.Hex(), "0x"), bal)
+			glog.D(logger.Warn).Infoln(acc.Address.Hex(), acc.File)
+			// b, ok := new(big.Int).SetString(bal, 10)
+			// if !ok {
+			// 	panic("not ok set string", b, bal)
+			// }
+			data = append(data, []byte(d)...)
+		}
+	} else {
+		glog.D(logger.Warn).Infoln("Found existing keyfiles, using: ")
+		for _, acc := range accman.Accounts() {
+			d := fmt.Sprintf("%s,%v\n", acc.Address.Hex(), bal)
+			glog.D(logger.Warn).Infoln(acc.Address.Hex(), acc.File)
+			data = append(data, []byte(d)...)
+		}
+	}
 
 	// marshal and write config json
 	if err := cc.WriteToJSONFile(filepath.Join(MustMakeChainDataDir(ctx), "chain.json")); err != nil {
@@ -54,32 +88,14 @@ func setupEZDev(ctx *cli.Context, config *core.SufficientChainConfig) error {
 		return err
 	}
 
-	// make some accounts
-	accman := MakeAccountManager(ctx)
-	data := []byte{}
-	bal := big.NewInt(math.MaxInt16).String()
-	if len(accman.Accounts()) == 0 {
-		glog.D(logger.Warn).Infoln("No existing EZDEV accounts found, creating 10")
-		password := "foo"
-		// accounts := []accounts.Account{}
-		for i := 0; i < 10; i++ {
-			acc, err := accman.NewAccount(password)
-			if err != nil {
-				return err
-			}
-			// accounts = append(accounts, acc)
-			d := fmt.Sprintf("%s,%v\n", acc.Address.Hex(), bal)
-			glog.D(logger.Warn).Infoln(acc.Address.Hex(), acc.File)
-			data = append(data, []byte(d)...)
-		}
-	} else {
-		glog.D(logger.Warn).Infoln("Found existing keyfiles, using: ")
-		for _, acc := range accman.Accounts() {
-			d := fmt.Sprintf("%s,%v\n", acc.Address.Hex(), bal)
-			glog.D(logger.Warn).Infoln(acc.Address.Hex(), acc.File)
-			data = append(data, []byte(d)...)
-		}
-	}
+	// write alloc file
 	ioutil.WriteFile(filepath.Join(MustMakeChainDataDir(ctx), "dev_genesis_alloc.csv"), data, os.ModePerm)
+
+	ccc, err = core.ReadExternalChainConfigFromFile(filepath.Join(MustMakeChainDataDir(ctx), "chain.json"))
+	if err != nil {
+		panic(err)
+	}
+	cc.Genesis = ccc.Genesis
+
 	return nil
 }

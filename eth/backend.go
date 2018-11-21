@@ -258,8 +258,8 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 		if err != nil {
 			return nil, err
 		}
-		glog.V(logger.Info).Infof("Successfully wrote genesis block: %s", logger.ColorGreen(genesis.Hash().Hex()))
-		glog.D(logger.Warn).Infof("Wrote genesis block: %s", logger.ColorGreen(genesis.Hash().Hex()))
+		glog.V(logger.Info).Infof("Successfully wrote mainnet genesis block: %s", logger.ColorGreen(genesis.Hash().Hex()))
+		glog.D(logger.Warn).Infof("Wrote mainnet genesis block: %s", logger.ColorGreen(genesis.Hash().Hex()))
 	}
 
 	// Log genesis block information.
