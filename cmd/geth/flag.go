@@ -130,6 +130,8 @@ func copyChainConfigFileToChainDataDir(ctx *cli.Context, identity, configFilePat
 	return nil
 }
 
+// var localChainId string
+
 // getChainIdentity parses --chain and --testnet (legacy) flags.
 // It will fatal if finds notok value.
 // It returns one of valid strings: ["mainnet", "morden", or --chain="flaggedCustom"]
@@ -137,7 +139,9 @@ func mustMakeChainIdentity(ctx *cli.Context) (identity string) {
 
 	if id := core.GetCacheChainIdentity(); id != "" {
 		return id
-	}
+	} //  else if localChainId != "" {
+	// 	return localChainId
+	// }
 
 	if ctx.GlobalIsSet(aliasableName(TestNetFlag.Name, ctx)) && ctx.GlobalIsSet(aliasableName(ChainIdentityFlag.Name, ctx)) {
 		glog.Fatalf(`%v: used redundant/conflicting flags: --%v, --%v
@@ -146,6 +150,8 @@ func mustMakeChainIdentity(ctx *cli.Context) (identity string) {
 	}
 
 	defer func() {
+		glog.Error("chain set identity", identity)
+		// localChainId = identity
 		core.SetCacheChainIdentity(identity)
 	}()
 
@@ -197,6 +203,9 @@ func mustMakeChainIdentity(ctx *cli.Context) (identity string) {
 		}
 		// glog.V(logger.Debug).Infof("No existing file at --%v: '%v'. Using literal chain identity.", aliasableName(ChainIdentityFlag.Name, ctx), chainFlagVal)
 		identity = chainFlagVal
+
+		glog.Error("parse chain identity", identity)
+
 		return identity
 	} else if ctx.GlobalIsSet(aliasableName(ChainIdentityFlag.Name, ctx)) {
 		glog.Fatalf("%v: %v: chainID empty", ErrInvalidFlag, core.ErrInvalidChainID)
@@ -249,6 +258,7 @@ func MustMakeChainDataDir(ctx *cli.Context) string {
 		}
 		rp = af
 	}
+	glog.Error("chain data dir", rp)
 	return rp
 }
 
@@ -483,6 +493,17 @@ func MakeSystemNode(version string, ctx *cli.Context) *node.Node {
 	config := mustMakeSufficientChainConfig(ctx)
 	logChainConfiguration(ctx, config)
 
+	// if reflect.DeepEqual(core.DefaultConfigEZDev, config) {
+	// 	if err := setupEZDev(ctx, config); err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// }
+	if ctx.GlobalBool(EZDevModeFlag.Name) {
+		if err := setupEZDev(ctx, config); err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	// Configure the Ethereum service
 	ethConf := mustMakeEthConf(ctx, config)
 
@@ -691,6 +712,13 @@ func mustMakeSufficientChainConfig(ctx *cli.Context) *core.SufficientChainConfig
 			state.StartingNonce = state.DefaultTestnetStartingNonce // (2**20)
 		}
 		return config
+	} else if ctx.GlobalBool(EZDevModeFlag.Name) {
+		glog.Errorln("setting EZDEV suffconf...")
+		c := core.DefaultConfigEZDev
+		if c.State != nil {
+			state.StartingNonce = c.State.StartingNonce
+		}
+		return c
 	}
 
 	// Returns surely valid suff chain config.
