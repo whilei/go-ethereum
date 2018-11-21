@@ -18,7 +18,6 @@ package miner
 
 import (
 	"fmt"
-	"log"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -49,6 +48,7 @@ type Agent interface {
 	Stop()
 	Start()
 	GetHashRate() int64
+	Win(work *Work) *types.Block // just for automining
 }
 
 type uint64RingBuffer struct {
@@ -101,6 +101,8 @@ type worker struct {
 	agents map[Agent]struct{}
 	recv   chan *Result
 
+	autominer Agent
+
 	eth     core.Backend
 	chain   *core.BlockChain
 	proc    core.Validator
@@ -137,8 +139,13 @@ func newWorker(config *core.ChainConfig, coinbase common.Address, eth core.Backe
 		possibleUncles: make(map[common.Hash]*types.Block),
 		coinbase:       coinbase,
 		txQueue:        make(map[common.Hash]*types.Transaction),
-		agents:         make(map[Agent]struct{}),
 		fullValidation: false,
+	}
+	worker.agents = make(map[Agent]struct{})
+	if !config.Automine {
+	} else {
+		worker.autominer = NewAutoAgent(0)
+		worker.fullValidation = false
 	}
 	worker.events = worker.mux.Subscribe(core.ChainHeadEvent{}, core.ChainSideEvent{}, core.TxPreEvent{})
 	go worker.update()
@@ -217,21 +224,48 @@ func (self *worker) unregister(agent Agent) {
 }
 
 func (self *worker) update() {
-	for event := range self.events.Chan() {
-		// A real event arrived, process interesting content
-		switch ev := event.Data.(type) {
-		case core.ChainHeadEvent:
-			self.commitNewWork()
-		case core.ChainSideEvent:
-			self.uncleMu.Lock()
-			self.possibleUncles[ev.Block.Hash()] = ev.Block
-			self.uncleMu.Unlock()
-		case core.TxPreEvent:
-			// Apply transaction to the pending state if we're not mining
-			if atomic.LoadInt32(&self.mining) == 0 {
-				self.currentMu.Lock()
-				self.current.commitTransactions(self.mux, types.Transactions{ev.Tx}, self.gasPrice, self.chain)
-				self.currentMu.Unlock()
+	if self.config.Automine {
+		for event := range self.events.Chan() {
+			switch ev := event.Data.(type) {
+			case core.ChainHeadEvent:
+				self.commitNewWork()
+			case core.ChainSideEvent:
+				self.uncleMu.Lock()
+				self.possibleUncles[ev.Block.Hash()] = ev.Block
+				self.uncleMu.Unlock()
+			case core.TxPreEvent:
+				glog.D(logger.Warn).Infoln(" + tx: ", ev.Tx.Hash().Hex())
+
+				if atomic.LoadInt32(&self.mining) == 0 {
+					self.currentMu.Lock()
+					self.current.commitTransactions(self.mux, types.Transactions{ev.Tx}, self.gasPrice, self.chain)
+					self.currentMu.Unlock()
+				} else {
+					b := &Result{self.current, self.autominer.Win(self.current)}
+					// glog.D(logger.Warn).Infoln("b=", b)
+					glog.D(logger.Warn).Infoln("b <-", b.Block.Hash().Hex(), b.Block.Nonce(), b.Block.MixDigest().Hex())
+					self.recv <- b
+				}
+
+			}
+		}
+	} else {
+		for event := range self.events.Chan() {
+			// A real event arrived, process interesting content
+			switch ev := event.Data.(type) {
+			case core.ChainHeadEvent:
+				self.commitNewWork()
+			case core.ChainSideEvent:
+				self.uncleMu.Lock()
+				self.possibleUncles[ev.Block.Hash()] = ev.Block
+				self.uncleMu.Unlock()
+			case core.TxPreEvent:
+				// Apply transaction to the pending state if we're not mining
+				if atomic.LoadInt32(&self.mining) == 0 {
+					self.currentMu.Lock()
+					self.current.commitTransactions(self.mux, types.Transactions{ev.Tx}, self.gasPrice, self.chain)
+					self.currentMu.Unlock()
+				}
 			}
 		}
 	}
@@ -249,6 +283,12 @@ func newLocalMinedBlock(blockNumber uint64, prevMinedBlocks *uint64RingBuffer) (
 	return minedBlocks
 }
 
+func (self *worker) autowait() {
+	for {
+	}
+}
+
+// wait waits for agent to find new a new solved block
 func (self *worker) wait() {
 	for {
 		for result := range self.recv {
@@ -260,29 +300,35 @@ func (self *worker) wait() {
 			block := result.Block
 			work := result.Work
 
+			glog.D(logger.Error).Infoln("got result", block, work)
 			if self.fullValidation {
+				glog.D(logger.Error).Infoln("full")
 				if res := self.chain.InsertChain(types.Blocks{block}); res.Error != nil {
-					log.Printf("mine: ignoring invalid block #%d (%x) received: %v\n", block.Number(), block.Hash(), res.Error)
+					glog.Errorln("mine: ignoring invalid block #%d (%x) received: %v\n", block.Number(), block.Hash(), res.Error)
 					continue
 				}
 				go self.mux.Post(core.NewMinedBlockEvent{Block: block})
 			} else {
+				glog.D(logger.Error).Infoln("notfull")
 				work.state.CommitTo(self.chainDb, false)
 				parent := self.chain.GetBlock(block.ParentHash())
 				if parent == nil {
 					glog.V(logger.Error).Infoln("Invalid block found during mining")
+					glog.D(logger.Error).Infoln("Invalid block found during mining")
 					continue
 				}
 
 				auxValidator := self.eth.BlockChain().AuxValidator()
 				if err := core.ValidateHeader(self.config, auxValidator, block.Header(), parent.Header(), true, false); err != nil && err != core.BlockFutureErr {
 					glog.V(logger.Error).Infoln("Invalid header on mined block:", err)
+					glog.D(logger.Error).Infoln("Invalid header on mined block:", err)
 					continue
 				}
 
 				stat, err := self.chain.WriteBlock(block)
 				if err != nil {
 					glog.V(logger.Error).Infoln("error writing block to chain", err)
+					glog.D(logger.Error).Infoln("error writing block to chain", err)
 					continue
 				}
 

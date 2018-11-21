@@ -17,7 +17,9 @@
 package miner
 
 import (
+	"math/rand"
 	"sync"
+	"time"
 
 	"sync/atomic"
 
@@ -28,7 +30,7 @@ import (
 	"github.com/ethereumproject/go-ethereum/pow"
 )
 
-type CpuAgent struct {
+type AutoAgent struct {
 	mu sync.Mutex
 
 	workCh        chan *Work
@@ -42,27 +44,26 @@ type CpuAgent struct {
 	isMining int32 // isMining indicates whether the agent is currently mining
 }
 
-func NewCpuAgent(index int, pow pow.PoW) *CpuAgent {
-	miner := &CpuAgent{
-		pow:   pow,
+func NewAutoAgent(index int) *AutoAgent {
+	miner := &AutoAgent{
 		index: index,
 	}
 
 	return miner
 }
 
-func (self *CpuAgent) Work() chan<- *Work            { return self.workCh }
-func (self *CpuAgent) Pow() pow.PoW                  { return self.pow }
-func (self *CpuAgent) SetReturnCh(ch chan<- *Result) { self.returnCh = ch }
+func (self *AutoAgent) Work() chan<- *Work            { return self.workCh }
+func (self *AutoAgent) Pow() pow.PoW                  { return self.pow }
+func (self *AutoAgent) SetReturnCh(ch chan<- *Result) { self.returnCh = ch }
 
-func (self *CpuAgent) Stop() {
+func (self *AutoAgent) Stop() {
 	self.mu.Lock()
 	defer self.mu.Unlock()
 
 	close(self.quit)
 }
 
-func (self *CpuAgent) Start() {
+func (self *AutoAgent) Start() {
 	self.mu.Lock()
 	defer self.mu.Unlock()
 
@@ -78,7 +79,7 @@ func (self *CpuAgent) Start() {
 	go self.update()
 }
 
-func (self *CpuAgent) update() {
+func (self *AutoAgent) update() {
 out:
 	for {
 		select {
@@ -115,11 +116,13 @@ done:
 	atomic.StoreInt32(&self.isMining, 0)
 }
 
-func (self *CpuAgent) mine(work *Work, stop <-chan struct{}) {
+func (self *AutoAgent) mine(work *Work, stop <-chan struct{}) {
 	glog.V(logger.Debug).Infof("(re)started agent[%d]. mining...\n", self.index)
 
 	// Mine
-	nonce, mixDigest := self.pow.Search(work.Block, stop, self.index)
+	// nonce, mixDigest := self.pow.Search(work.Block, stop, self.index)
+	nonce := work.Block.NumberU64() + 1
+	mixDigest, _ := time.Now().MarshalBinary()
 	if nonce != 0 {
 		block := work.Block.WithMiningResult(nonce, common.BytesToHash(mixDigest))
 		self.returnCh <- &Result{work, block}
@@ -128,10 +131,17 @@ func (self *CpuAgent) mine(work *Work, stop <-chan struct{}) {
 	}
 }
 
-func (self *CpuAgent) GetHashRate() int64 {
+func (self *AutoAgent) GetHashRate() int64 {
 	return self.pow.GetHashrate()
 }
 
-func (self *CpuAgent) Win(work *Work) *types.Block {
-	panic("satisfies automining method")
+func (self *AutoAgent) Win(work *Work) *types.Block {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	nonce := uint64(r.Int63())
+
+	// nonce := work.Block.NumberU64()
+	// mixDigest, _ := time.Now().MarshalBinary()
+	// block := work.Block.WithMiningResult(nonce, common.BytesToHash(mixDigest))
+	block := work.Block.WithMiningResult(nonce, common.BytesToHash(nil))
+	return block
 }

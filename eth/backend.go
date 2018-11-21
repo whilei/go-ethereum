@@ -306,7 +306,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 	if eth.protocolManager, err = NewProtocolManager(eth.chainConfig, m, uint64(config.NetworkId), eth.eventMux, eth.txPool, eth.pow, eth.blockchain, chainDb); err != nil {
 		return nil, err
 	}
-	eth.miner = miner.New(eth, eth.chainConfig, eth.EventMux(), eth.pow)
+	eth.miner = miner.New(eth, eth.chainConfig, eth.EventMux(), eth.pow, config.ChainConfig.Automine)
 	if err = eth.miner.SetGasPrice(config.GasPrice); err != nil {
 		return nil, err
 	}

@@ -150,6 +150,8 @@ type ChainConfig struct {
 
 	// BadHashes holds well known blocks with consensus issues. See ErrHashKnownBad.
 	BadHashes []*BadHash `json:"badHashes"`
+
+	Automine bool `json:"automine,omitempty"`
 }
 
 type Fork struct {

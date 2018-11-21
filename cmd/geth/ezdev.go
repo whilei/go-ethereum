@@ -30,14 +30,12 @@ func setupEZDev(ctx *cli.Context, config *core.SufficientChainConfig) error {
 	setCTXDefault(ctx, NoDiscoverFlag.Name, "true")
 	setCTXDefault(ctx, LightKDFFlag.Name, "true")
 
-	cc := core.DefaultConfigEZDev
-	cc.Include = []string{"dev_genesis.json"}
+	config.Include = []string{"dev_genesis.json"}
 
-	var cg *core.GenesisDump
-	cg = cc.Genesis
+	cg := config.Genesis
 
 	// Set original genesis to nil so no conflict between GenesisAlloc field and present Genesis obj.
-	cc.Genesis = nil
+	config.Genesis = nil
 	cg.AllocFile = "dev_genesis_alloc.csv"
 
 	// cc.Genesis = cg
@@ -55,8 +53,10 @@ func setupEZDev(ctx *cli.Context, config *core.SufficientChainConfig) error {
 				return err
 			}
 			// accounts = append(accounts, acc)
+			// a := acc.Address.Hex()
+			a := strings.Replace(acc.Address.Hex(), "0x", "", -1)
 			d := fmt.Sprintf(`"%s","%v"
-`, strings.TrimLeft(acc.Address.Hex(), "0x"), bal)
+`, a, bal)
 			glog.D(logger.Warn).Infoln(acc.Address.Hex(), acc.File)
 			// b, ok := new(big.Int).SetString(bal, 10)
 			// if !ok {
@@ -74,7 +74,7 @@ func setupEZDev(ctx *cli.Context, config *core.SufficientChainConfig) error {
 	}
 
 	// marshal and write config json
-	if err := cc.WriteToJSONFile(filepath.Join(MustMakeChainDataDir(ctx), "chain.json")); err != nil {
+	if err := config.WriteToJSONFile(filepath.Join(MustMakeChainDataDir(ctx), "chain.json")); err != nil {
 		return err
 	}
 	// marshal and write dev_genesis.json
@@ -91,11 +91,12 @@ func setupEZDev(ctx *cli.Context, config *core.SufficientChainConfig) error {
 	// write alloc file
 	ioutil.WriteFile(filepath.Join(MustMakeChainDataDir(ctx), "dev_genesis_alloc.csv"), data, os.ModePerm)
 
-	ccc, err = core.ReadExternalChainConfigFromFile(filepath.Join(MustMakeChainDataDir(ctx), "chain.json"))
+	cc, err := core.ReadExternalChainConfigFromFile(filepath.Join(MustMakeChainDataDir(ctx), "chain.json"))
 	if err != nil {
 		panic(err)
 	}
-	cc.Genesis = ccc.Genesis
+	config.Genesis = cc.Genesis
+	config.ChainConfig.Automine = true
 
 	return nil
 }

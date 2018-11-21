@@ -481,7 +481,7 @@ func init() {
 				fi: FileInfo{
 					name:    "dev_genesis_alloc.csv",
 					size:    0,
-					modTime: time.Unix(0, 1542804884724147473),
+					modTime: time.Unix(0, 1542823445002300459),
 					isDir:   false,
 				},
 			}, "/core/config/dev_morden.json": File{

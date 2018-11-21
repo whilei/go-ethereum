@@ -493,11 +493,6 @@ func MakeSystemNode(version string, ctx *cli.Context) *node.Node {
 	config := mustMakeSufficientChainConfig(ctx)
 	logChainConfiguration(ctx, config)
 
-	// if reflect.DeepEqual(core.DefaultConfigEZDev, config) {
-	// 	if err := setupEZDev(ctx, config); err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// }
 	if ctx.GlobalBool(EZDevModeFlag.Name) {
 		if err := setupEZDev(ctx, config); err != nil {
 			log.Fatal(err)
