@@ -73,10 +73,14 @@ func setupEZDev(ctx *cli.Context, config *core.SufficientChainConfig) error {
 		}
 	}
 
-	// marshal and write config json
-	if err := config.WriteToJSONFile(filepath.Join(MustMakeChainDataDir(ctx), "chain.json")); err != nil {
-		return err
+	// marshal and write config json IFF it doesn't already exist
+	if _, err := os.Stat(filepath.Join(MustMakeChainDataDir(ctx), "chain.json")); err != nil && os.IsNotExist(err) {
+
+		if err := config.WriteToJSONFile(filepath.Join(MustMakeChainDataDir(ctx), "chain.json")); err != nil {
+			return err
+		}
 	}
+
 	// marshal and write dev_genesis.json
 	genC, err := json.MarshalIndent(struct {
 		Genesis *core.GenesisDump `json:"genesis"`
@@ -88,9 +92,10 @@ func setupEZDev(ctx *cli.Context, config *core.SufficientChainConfig) error {
 		return err
 	}
 
-	// write alloc file
+	// write alloc file, ALWAYS, because these never change and it's just extra logic, even though it would seem more right to care if the file already exists or not
 	ioutil.WriteFile(filepath.Join(MustMakeChainDataDir(ctx), "dev_genesis_alloc.csv"), data, os.ModePerm)
 
+	// again.. hacky. maybe unnecessary.
 	cc, err := core.ReadExternalChainConfigFromFile(filepath.Join(MustMakeChainDataDir(ctx), "chain.json"))
 	if err != nil {
 		panic(err)
