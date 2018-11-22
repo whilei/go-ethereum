@@ -225,6 +225,7 @@ func (self *worker) unregister(agent Agent) {
 
 func (self *worker) update() {
 	if self.config.Automine {
+		glog.D(logger.Warn).Infoln("miner worker updating:", "AUTOMINE")
 		for event := range self.events.Chan() {
 			switch ev := event.Data.(type) {
 			case core.ChainHeadEvent:
@@ -250,6 +251,7 @@ func (self *worker) update() {
 			}
 		}
 	} else {
+		glog.D(logger.Warn).Infoln("miner worker updating:", "NORMALMINE")
 		for event := range self.events.Chan() {
 			// A real event arrived, process interesting content
 			switch ev := event.Data.(type) {

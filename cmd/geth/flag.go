@@ -130,8 +130,6 @@ func copyChainConfigFileToChainDataDir(ctx *cli.Context, identity, configFilePat
 	return nil
 }
 
-// var localChainId string
-
 // getChainIdentity parses --chain and --testnet (legacy) flags.
 // It will fatal if finds notok value.
 // It returns one of valid strings: ["mainnet", "morden", or --chain="flaggedCustom"]
@@ -139,9 +137,7 @@ func mustMakeChainIdentity(ctx *cli.Context) (identity string) {
 
 	if id := core.GetCacheChainIdentity(); id != "" {
 		return id
-	} //  else if localChainId != "" {
-	// 	return localChainId
-	// }
+	}
 
 	if ctx.GlobalIsSet(aliasableName(TestNetFlag.Name, ctx)) && ctx.GlobalIsSet(aliasableName(ChainIdentityFlag.Name, ctx)) {
 		glog.Fatalf(`%v: used redundant/conflicting flags: --%v, --%v
@@ -150,8 +146,6 @@ func mustMakeChainIdentity(ctx *cli.Context) (identity string) {
 	}
 
 	defer func() {
-		glog.Error("chain set identity", identity)
-		// localChainId = identity
 		core.SetCacheChainIdentity(identity)
 	}()
 
@@ -491,6 +485,11 @@ func MakeSystemNode(version string, ctx *cli.Context) *node.Node {
 	if ctx.GlobalBool(EZDevModeFlag.Name) {
 		setEZDevFlags(ctx)
 	}
+	if ctx.GlobalBool(EZDevModeFlag.Name) {
+		if err := setupEZDev(ctx, core.DefaultConfigEZDev); err != nil {
+			panic(err)
+		}
+	}
 
 	// Makes sufficient configuration from JSON file or DB pending flags.
 	// Delegates flag usage.
@@ -705,26 +704,20 @@ func mustMakeSufficientChainConfig(ctx *cli.Context) *core.SufficientChainConfig
 			state.StartingNonce = state.DefaultTestnetStartingNonce // (2**20)
 		}
 		return config
+	} else if ctx.GlobalBool(EZDevModeFlag.Name) {
+		glog.Errorln("setting EZDEV suffconf...")
+		c := core.DefaultConfigEZDev
+		if c.State != nil {
+			state.StartingNonce = c.State.StartingNonce
+		}
+		return c
 	}
-	// else if ctx.GlobalBool(EZDevModeFlag.Name) {
-	// 	glog.Errorln("setting EZDEV suffconf...")
-	// 	c := core.DefaultConfigEZDev
-	// 	if c.State != nil {
-	// 		state.StartingNonce = c.State.StartingNonce
-	// 	}
-	// 	return c
-	// }
 
 	// Returns surely valid suff chain config.
 	chainDir := MustMakeChainDataDir(ctx)
 	defaultChainConfigPath := filepath.Join(chainDir, "chain.json")
 	if _, de := os.Stat(defaultChainConfigPath); de != nil && os.IsNotExist(de) {
-		if ctx.GlobalBool(EZDevModeFlag.Name) {
-			if err := setupEZDev(ctx, core.DefaultConfigEZDev); err != nil {
-				panic(err)
-			}
-		} else {
-			glog.Fatalf(`%v: %v
+		glog.Fatalf(`%v: %v
 		It looks like you haven't set up your custom chain yet...
 		Here's a possible workflow for that:
 
@@ -732,8 +725,7 @@ func mustMakeSufficientChainConfig(ctx *cli.Context) *core.SufficientChainConfig
 		$ sed -i.bak s/morden/%v/ %v/chain.json
 		$ vi %v/chain.json # <- make your customizations
 		`, core.ErrChainConfigNotFound, defaultChainConfigPath,
-				chainDir, chainIdentity, chainDir, chainDir)
-		}
+			chainDir, chainIdentity, chainDir, chainDir)
 	}
 	glog.D(logger.Warn).Infoln("Reading chain config from", defaultChainConfigPath)
 	config, err := core.ReadExternalChainConfigFromFile(defaultChainConfigPath)

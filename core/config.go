@@ -495,9 +495,7 @@ func resolvePath(path, parentOrAdjacentPath string) string {
 }
 
 func parseAllocationFile(config *SufficientChainConfig, open func(string) (io.ReadCloser, error), currentFile string) error {
-	glog.Errorln(" ** parsing alloc file")
 	if config.Genesis == nil || config.Genesis.AllocFile == "" {
-		glog.Errorln(" ** returning ")
 		return nil
 	}
 
