@@ -242,8 +242,17 @@ func (self *worker) update() {
 					self.current.commitTransactions(self.mux, types.Transactions{ev.Tx}, self.gasPrice, self.chain)
 					self.currentMu.Unlock()
 				} else {
-					b := &Result{self.current, self.autominer.Win(self.current)}
-					// glog.D(logger.Warn).Infoln("b=", b)
+					var ww *Work
+					for ww == nil {
+						ww = self.current
+					}
+					var w *types.Block
+					for w == nil {
+						if ww.Block != nil {
+							w = self.autominer.Win(ww)
+						}
+					}
+					b := &Result{ww, w}
 					glog.D(logger.Warn).Infoln("b <-", b.Block.Hash().Hex(), b.Block.Nonce(), b.Block.MixDigest().Hex())
 					self.recv <- b
 				}
