@@ -223,7 +223,6 @@ func (self *worker) unregister(agent Agent) {
 
 func (self *worker) update() {
 	glog.D(logger.Warn).Infoln("miner worker updating:", "AUTOMINE")
-	// var txPreN = 0
 	for event := range self.events.Chan() {
 		var t = time.Now()
 		switch ev := event.Data.(type) {
@@ -235,21 +234,15 @@ func (self *worker) update() {
 			self.uncleMu.Unlock()
 		case core.TxPreEvent:
 			if self.config.Automine {
-				// if txPreN < 2 {
-				// 	txPreN++
-				// 	continue
-				// }
-				// txPreN = 0
 				if atomic.LoadInt32(&self.mining) == 0 {
 					self.start()
 				} else {
-					// If many txs are fired at geth at once, they will be included in blocks more quickly than this event will be processed, causing ~200+ transactions per block, and yielding many empty blocks after the burst is complete as the channel drains. This conditional simply
+					// If many txs are fired at geth at once, they will be included in blocks more quickly than this event will be processed, causing ~200+ transactions per block, and yielding many empty blocks after the burst is complete as the channel drains. This conditional simply ensure that there are actually transactions to add a next block. If not, the event is essentially ignored.
 					pending, queued := self.eth.TxPool().Stats()
 					if pending+queued == 0 {
 						continue
 					}
 					glog.D(logger.Info).Infoln("+tx: ", ev.Tx.Hash().Hex()[:9], "p=", pending, "q=", queued, "took=", time.Since(t))
-					t = time.Now()
 
 					self.currentMu.Lock()
 					ww := self.current
@@ -287,11 +280,6 @@ func newLocalMinedBlock(blockNumber uint64, prevMinedBlocks *uint64RingBuffer) (
 	minedBlocks.ints[minedBlocks.next] = blockNumber
 	minedBlocks.next = (minedBlocks.next + 1) % len(minedBlocks.ints)
 	return minedBlocks
-}
-
-func (self *worker) autowait() {
-	for {
-	}
 }
 
 // wait waits for agent to find new a new solved block
