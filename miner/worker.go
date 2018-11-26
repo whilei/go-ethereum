@@ -365,7 +365,7 @@ func (self *worker) wait() {
 
 				// broadcast before waiting for validation
 				go func(block *types.Block, logs vm.Logs, receipts []*types.Receipt) {
-					self.mux.Post(core.NewMinedBlockEvent{Block: block})
+					self.mux.Post(core.NewMinedBlockEvent{Block: block, Stat: stat})
 					self.mux.Post(core.ChainEvent{Block: block, Hash: block.Hash(), Logs: logs})
 
 					if stat == core.CanonStatTy {
