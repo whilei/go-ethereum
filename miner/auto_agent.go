@@ -17,7 +17,6 @@
 package miner
 
 import (
-	"math/rand"
 	"sync"
 	"time"
 
@@ -136,8 +135,7 @@ func (self *AutoAgent) GetHashRate() int64 {
 }
 
 func (self *AutoAgent) Win(work *Work) *types.Block {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	nonce := uint64(r.Int63())
+	nonce := uint64(time.Now().UnixNano())
 
 	// nonce := work.Block.NumberU64()
 	// mixDigest, _ := time.Now().MarshalBinary()
