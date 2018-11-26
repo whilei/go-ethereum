@@ -142,10 +142,8 @@ func newWorker(config *core.ChainConfig, coinbase common.Address, eth core.Backe
 		fullValidation: false,
 	}
 	worker.agents = make(map[Agent]struct{})
-	if !config.Automine {
-	} else {
+	if config.Automine {
 		worker.autominer = NewAutoAgent(0)
-		worker.fullValidation = false
 	}
 	worker.events = worker.mux.Subscribe(core.ChainHeadEvent{}, core.ChainSideEvent{}, core.TxPreEvent{})
 	go worker.update()
@@ -224,53 +222,49 @@ func (self *worker) unregister(agent Agent) {
 }
 
 func (self *worker) update() {
-	if self.config.Automine {
-		glog.D(logger.Warn).Infoln("miner worker updating:", "AUTOMINE")
-		for event := range self.events.Chan() {
-			switch ev := event.Data.(type) {
-			case core.ChainHeadEvent:
-				self.commitNewWork()
-			case core.ChainSideEvent:
-				self.uncleMu.Lock()
-				self.possibleUncles[ev.Block.Hash()] = ev.Block
-				self.uncleMu.Unlock()
-			case core.TxPreEvent:
-				glog.D(logger.Warn).Infoln(" + tx: ", ev.Tx.Hash().Hex())
-
+	glog.D(logger.Warn).Infoln("miner worker updating:", "AUTOMINE")
+	// var txPreN = 0
+	for event := range self.events.Chan() {
+		var t = time.Now()
+		switch ev := event.Data.(type) {
+		case core.ChainHeadEvent:
+			self.commitNewWork()
+		case core.ChainSideEvent:
+			self.uncleMu.Lock()
+			self.possibleUncles[ev.Block.Hash()] = ev.Block
+			self.uncleMu.Unlock()
+		case core.TxPreEvent:
+			if self.config.Automine {
+				// if txPreN < 2 {
+				// 	txPreN++
+				// 	continue
+				// }
+				// txPreN = 0
 				if atomic.LoadInt32(&self.mining) == 0 {
-					self.currentMu.Lock()
-					self.current.commitTransactions(self.mux, types.Transactions{ev.Tx}, self.gasPrice, self.chain)
-					self.currentMu.Unlock()
+					self.start()
 				} else {
-					var ww *Work
-					for ww == nil {
-						ww = self.current
+					// If many txs are fired at geth at once, they will be included in blocks more quickly than this event will be processed, causing ~200+ transactions per block, and yielding many empty blocks after the burst is complete as the channel drains. This conditional simply
+					pending, queued := self.eth.TxPool().Stats()
+					if pending+queued == 0 {
+						continue
 					}
-					var w *types.Block
-					for w == nil {
-						if ww.Block != nil {
-							w = self.autominer.Win(ww)
-						}
-					}
+					glog.D(logger.Info).Infoln("+tx: ", ev.Tx.Hash().Hex()[:9], "p=", pending, "q=", queued, "took=", time.Since(t))
+					t = time.Now()
+
+					self.currentMu.Lock()
+					ww := self.current
+					self.currentMu.Unlock()
+
+					self.currentMu.Lock()
+					w := self.autominer.Win(ww) // ftw
+					self.currentMu.Unlock()
+
 					b := &Result{ww, w}
-					glog.D(logger.Warn).Infoln("b <-", b.Block.Hash().Hex(), b.Block.Nonce(), b.Block.MixDigest().Hex())
+
+					glog.D(logger.Warn).Infoln("b <-", b.Block.Hash().Hex()[:8], b.Block.Nonce(), b.Block.MixDigest().Hex()[:8])
 					self.recv <- b
 				}
-
-			}
-		}
-	} else {
-		glog.D(logger.Warn).Infoln("miner worker updating:", "NORMALMINE")
-		for event := range self.events.Chan() {
-			// A real event arrived, process interesting content
-			switch ev := event.Data.(type) {
-			case core.ChainHeadEvent:
-				self.commitNewWork()
-			case core.ChainSideEvent:
-				self.uncleMu.Lock()
-				self.possibleUncles[ev.Block.Hash()] = ev.Block
-				self.uncleMu.Unlock()
-			case core.TxPreEvent:
+			} else {
 				// Apply transaction to the pending state if we're not mining
 				if atomic.LoadInt32(&self.mining) == 0 {
 					self.currentMu.Lock()
@@ -278,6 +272,7 @@ func (self *worker) update() {
 					self.currentMu.Unlock()
 				}
 			}
+
 		}
 	}
 }
@@ -311,16 +306,13 @@ func (self *worker) wait() {
 			block := result.Block
 			work := result.Work
 
-			// glog.D(logger.Error).Infoln("got result", block, work)
 			if self.fullValidation {
-				glog.D(logger.Error).Infoln("full")
 				if res := self.chain.InsertChain(types.Blocks{block}); res.Error != nil {
 					glog.Errorln("mine: ignoring invalid block #%d (%x) received: %v\n", block.Number(), block.Hash(), res.Error)
 					continue
 				}
 				go self.mux.Post(core.NewMinedBlockEvent{Block: block})
 			} else {
-				glog.D(logger.Error).Infoln("notfull")
 				work.state.CommitTo(self.chainDb, false)
 				parent := self.chain.GetBlock(block.ParentHash())
 				if parent == nil {
