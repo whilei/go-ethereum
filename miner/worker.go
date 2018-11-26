@@ -516,11 +516,15 @@ func (self *worker) commitNewWork() {
 	tstart := time.Now()
 	parent := self.chain.CurrentBlock()
 	tstamp := tstart.Unix()
+
+	// compare parent time and ~now time (tstamp),
+	// if parent time is greater than or the same as tstamp,
+	// then set stamp to be one second after parent
 	if parent.Time().Cmp(new(big.Int).SetInt64(tstamp)) >= 0 {
 		tstamp = parent.Time().Int64() + 1
 	}
 	// this will ensure we're not going off too far in the future
-	if now := time.Now().Unix(); tstamp > now+4 {
+	if now := time.Now().Unix(); tstamp > now+4 && !self.config.Automine {
 		wait := time.Duration(tstamp-now) * time.Second
 		glog.V(logger.Info).Infoln("We are too far in the future. Waiting for", wait)
 		time.Sleep(wait)
