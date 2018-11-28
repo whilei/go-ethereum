@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,20 +15,19 @@ import (
 	"gopkg.in/urfave/cli.v1"
 )
 
-func setCTXDefault(ctx *cli.Context, name, val string) {
-	if !ctx.GlobalIsSet(aliasableName(name, ctx)) {
-		ctx.GlobalSet(name, val)
+func mustSetCTXDefault(ctx *cli.Context, name, val string) {
+	if err := ctx.GlobalSet(aliasableName(name, ctx), val); err != nil {
+		log.Fatal(err)
 	}
 }
 
 func setEZDevFlags(ctx *cli.Context) {
-	setCTXDefault(ctx, NoDiscoverFlag.Name, "true")
-	setCTXDefault(ctx, LightKDFFlag.Name, "true")
+	mustSetCTXDefault(ctx, NoDiscoverFlag.Name, "true")
+	mustSetCTXDefault(ctx, LightKDFFlag.Name, "true")
+	mustSetCTXDefault(ctx, MiningEnabledFlag.Name, "true")
 }
 
 func setupEZDev(ctx *cli.Context, config *core.SufficientChainConfig) error {
-	glog.Errorln("Initializing EZDEV...")
-
 	// set flag config defaults
 	// copy dev.json, dev_genesis.json, dev_genesis_allow.csv to datadir/ezdev/{ chain, dev_genesis, dev_genesis_alloc }.json/csv,
 	// init 10 accounts with password 'foo'

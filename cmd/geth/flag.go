@@ -252,7 +252,6 @@ func MustMakeChainDataDir(ctx *cli.Context) string {
 		}
 		rp = af
 	}
-	glog.Error("chain data dir", rp)
 	return rp
 }
 
@@ -484,8 +483,6 @@ func MakeSystemNode(version string, ctx *cli.Context) *node.Node {
 
 	if ctx.GlobalBool(EZDevModeFlag.Name) {
 		setEZDevFlags(ctx)
-	}
-	if ctx.GlobalBool(EZDevModeFlag.Name) {
 		if err := setupEZDev(ctx, core.DefaultConfigEZDev); err != nil {
 			panic(err)
 		}
@@ -705,7 +702,6 @@ func mustMakeSufficientChainConfig(ctx *cli.Context) *core.SufficientChainConfig
 		}
 		return config
 	} else if ctx.GlobalBool(EZDevModeFlag.Name) {
-		glog.Errorln("setting EZDEV suffconf...")
 		c := core.DefaultConfigEZDev
 		if c.State != nil {
 			state.StartingNonce = c.State.StartingNonce

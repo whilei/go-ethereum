@@ -280,37 +280,12 @@ func makeCLIApp() (app *cli.App) {
 			if !ctx.GlobalIsSet(aliasableName(ChainIdentityFlag.Name, ctx)) {
 				if e := ctx.GlobalSet(ChainIdentityFlag.Name, "morden"); e != nil {
 					return fmt.Errorf("failed to set chain value: %v", e)
-				} else {
-					core.SetCacheChainIdentity("morden")
 				}
 			}
-
-			// if mustMakeChainIdentity(ctx) != "morden" {
-			// 	log.Fatal("--dev not morden")
-			// }
 		}
 
 		if ctx.GlobalBool(aliasableName(EZDevModeFlag.Name, ctx)) {
-			log.Println("setting ezdev...")
-			setCTXDefault := func(ctx *cli.Context, name, val string) {
-				if !ctx.GlobalIsSet(aliasableName(name, ctx)) {
-					if err := ctx.GlobalSet(name, val); err != nil {
-						log.Fatal(err)
-					}
-					if err := ctx.Set(name, val); err != nil {
-						log.Fatal(err)
-					}
-				}
-			}
-			setCTXDefault(ctx, ChainIdentityFlag.Name, "ezdev")
-			if ctx.GlobalString(ChainIdentityFlag.Name) != "ezdev" {
-				log.Fatal("ez != ez")
-			}
-			if ctx.String(ChainIdentityFlag.Name) != "ezdev" {
-				log.Fatal("ez != ez ng")
-			}
-			// This is what's really doing work here. The ctx package is either very weird or buggy, and
-			// values that I expect to be set are not actually, sometimes.
+			log.Println("Turning on EZDEV...")
 			core.SetCacheChainIdentity("ezdev")
 		}
 
