@@ -222,7 +222,6 @@ func (self *worker) unregister(agent Agent) {
 }
 
 func (self *worker) update() {
-	glog.D(logger.Warn).Infoln("miner worker updating:", "AUTOMINE")
 	for event := range self.events.Chan() {
 		var t = time.Now()
 		switch ev := event.Data.(type) {
@@ -241,21 +240,16 @@ func (self *worker) update() {
 					pending, queued := self.eth.TxPool().Stats()
 					if pending+queued == 0 {
 						continue
+
 					}
-					glog.D(logger.Info).Infoln("+tx: ", ev.Tx.Hash().Hex()[:9], "p=", pending, "q=", queued, "took=", time.Since(t))
 
 					self.currentMu.Lock()
 					ww := self.current
-					self.currentMu.Unlock()
-
-					self.currentMu.Lock()
 					w := self.autominer.Win(ww) // ftw
 					self.currentMu.Unlock()
 
-					b := &Result{ww, w}
-
-					glog.D(logger.Warn).Infoln("b <-", b.Block.Hash().Hex()[:8], b.Block.Nonce(), b.Block.MixDigest().Hex()[:8])
-					self.recv <- b
+					glog.D(logger.Info).Infoln("+tx: ", ev.Tx.String(), "txpool(p=", pending, "q=", queued, ") took=", time.Since(t))
+					self.recv <- &Result{ww, w}
 				}
 			} else {
 				// Apply transaction to the pending state if we're not mining
